@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: saas-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mysql://root:root@db:3306/saas_delivery
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=sua_secret_aqui
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: saas-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=saas_delivery
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
