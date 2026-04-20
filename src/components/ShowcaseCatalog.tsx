@@ -179,13 +179,13 @@ export default function ShowcaseCatalog({ store, products, categories }: Showcas
                 <div key={product.id} className="group cursor-pointer" onClick={() => openProduct(product)}>
                   {/* Imagem */}
                   <div className="relative aspect-[3/4] overflow-hidden bg-slate-100 mb-3">
-                    <img
-                      src={firstVariant?.imageUrl || product.imageUrl || ""}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      alt={product.name}
-                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                    {!firstVariant?.imageUrl && !product.imageUrl && (
+                    {(firstVariant?.imageUrl || product.imageUrl) ? (
+                      <img
+                        src={firstVariant?.imageUrl || product.imageUrl}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        alt={product.name}
+                      />
+                    ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-slate-200">
                         <Package size={40} />
                       </div>
@@ -262,12 +262,17 @@ export default function ShowcaseCatalog({ store, products, categories }: Showcas
                 <ArrowLeft size={20} className="text-slate-700" />
               </button>
 
-              <img
-                src={selectedVariant?.imageUrl || selectedProduct.imageUrl || ""}
-                className="w-full h-full object-cover"
-                alt={selectedProduct.name}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
+              {(selectedVariant?.imageUrl || selectedProduct.imageUrl) ? (
+                <img
+                  src={selectedVariant?.imageUrl || selectedProduct.imageUrl}
+                  className="w-full h-full object-cover"
+                  alt={selectedProduct.name}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-200 bg-slate-50">
+                  <Package size={60} />
+                </div>
+              )}
             </div>
 
             {/* Informações */}

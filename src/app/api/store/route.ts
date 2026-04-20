@@ -42,7 +42,8 @@ export async function PATCH(req: NextRequest) {
       coverImage, 
       primaryColor,
       openingHours,
-      isOpen
+      isOpen,
+      storeType
     } = body;
 
     // 1. Validar Slug (se mudou)
@@ -69,6 +70,7 @@ export async function PATCH(req: NextRequest) {
       coverImage: coverImage !== undefined ? coverImage : undefined,
       primaryColor: primaryColor || undefined,
       isOpen: isOpen !== undefined ? Boolean(isOpen) : undefined,
+      storeType: storeType || undefined,
     };
 
     if (slug) {

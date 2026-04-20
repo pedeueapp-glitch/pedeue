@@ -56,6 +56,7 @@ interface Product {
   isActive: boolean;
   inStock: boolean;
   optiongroup?: OptionGroup[];
+  variants?: any[];
 }
 
 interface Category {
@@ -417,7 +418,13 @@ export default function StorefrontPage() {
 
   // MODO VITRINE: Layout completamente diferente para lojas de moda/acessórios
   if (store.storeType === "SHOWCASE") {
-    const allProducts = store.category.flatMap(c => c.product.map((p: any) => ({ ...p, categoryId: c.id })));
+    const allProducts = store.category.flatMap(c => 
+      c.product.map((p: any) => ({ 
+        ...p, 
+        categoryId: c.id,
+        variants: p.variants || []
+      }))
+    );
     const categories = store.category.map(c => ({ id: c.id, name: c.name, emoji: c.emoji }));
     return (
       <ShowcaseCatalog
