@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
       colorHex: data.colorHex || "#000000",
       sizes: JSON.stringify(data.sizes || []),
       imageUrl: data.imageUrl || null,
-      stock: parseInt(data.stock || "0")
+      stock: parseInt(data.stock || "0"),
+      barcode: data.barcode || null
     }
   });
 

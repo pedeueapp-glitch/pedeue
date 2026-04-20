@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { 
   ShoppingBag, Search, Plus, Minus, Trash2, 
   CreditCard, Banknote, Smartphone, User, Loader2, Barcode,
-  AlertCircle, Package, Receipt, LogOut, Menu
+  AlertCircle, Package, Receipt, LogOut, Menu, CheckCircle2, X
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useSidebar } from "@/app/dashboard/layout";
@@ -33,6 +33,8 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   const [isCashierModalOpen, setIsCashierModalOpen] = useState(false);
   const [cashierAction, setCashierAction] = useState<"OPEN" | "CLOSE">("OPEN");
   const [openingBalance, setOpeningBalance] = useState("0");
+
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -263,38 +265,29 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
               {products.map(product => {
                 const hasVariants = product.variants && product.variants.length > 0;
                 return (
-                  <div key={product.id} className="bg-white border text-center border-slate-200 p-4 hover:border-orange-500 transition-all cursor-pointer rounded-none flex flex-col h-full group">
+                  <div 
+                    key={product.id} 
+                    onClick={() => {
+                       if (hasVariants) {
+                         setSelectedProductForVariant(product);
+                       } else {
+                         addToCart(product);
+                       }
+                    }}
+                    className="bg-white border text-center border-slate-200 p-4 hover:border-orange-500 transition-all cursor-pointer rounded-none flex flex-col h-full group relative"
+                  >
                      {product.imageUrl ? (
                        <img src={product.imageUrl} className="w-16 h-16 object-cover mx-auto mb-3" />
                      ) : (
                        <Package size={32} className="text-slate-300 mx-auto mb-3" />
                      )}
                      <h3 className="text-xs font-black text-slate-800 uppercase line-clamp-2 leading-tight flex-1">{product.name}</h3>
-                     <p className="text-orange-600 font-black text-sm mt-2">R$ {product.price.toFixed(2)}</p>
+                     <p className="text-orange-600 font-black text-sm mt-2">R$ {product.price.toFixed(2).replace('.', ',')}</p>
 
-                     {/* Se tem variantes, mostrar quick links, senao add direto */}
-                     {hasVariants ? (
-                       <div className="mt-4 border-t border-slate-100 pt-3 flex flex-wrap justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                         {product.variants.map((v: any) => (
-                           v.sizes.map((s: string) => (
-                              <button 
-                                key={`${v.id}-${s}`}
-                                onClick={(e) => { e.stopPropagation(); addToCart(product, v, s); }}
-                                className="w-6 h-6 border bg-slate-50 hover:bg-slate-900 hover:text-white flex items-center justify-center text-[8px] font-black transition-all"
-                                title={`Cor: ${v.color}, Tam: ${s}`}
-                              >
-                                {s}
-                              </button>
-                           ))
-                         ))}
+                     {hasVariants && (
+                       <div className="absolute top-2 right-2 bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 uppercase tracking-widest rounded-none">
+                         Opções
                        </div>
-                     ) : (
-                       <button 
-                         className="mt-4 w-full py-2 bg-slate-100 text-slate-600 font-black uppercase text-[10px] group-hover:bg-slate-900 group-hover:text-white transition-all rounded-none"
-                         onClick={() => addToCart(product)}
-                       >
-                         Adicionar
-                       </button>
                      )}
                   </div>
                 );
@@ -450,6 +443,62 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                 {loading ? <Loader2 className="animate-spin" size={14} /> : null}
                 Confirmar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SELEÇÃO DE VARIANTE */}
+      {selectedProductForVariant && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-none shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-6 bg-slate-900 flex justify-between items-center text-white shrink-0">
+               <div>
+                  <h2 className="font-black uppercase tracking-tight text-lg leading-tight">{selectedProductForVariant.name}</h2>
+                  <p className="text-orange-500 font-black text-sm mt-1 mb-1">R$ {selectedProductForVariant.price.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selecione uma cor e tamanho</p>
+               </div>
+               <button onClick={() => setSelectedProductForVariant(null)} className="p-2 bg-white/10 hover:bg-white/20 text-white transition-all">
+                  <X size={20} />
+               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+               {selectedProductForVariant.variants.map((v: any) => (
+                 <div key={v.id} className="bg-white border border-slate-200 p-5 shadow-sm">
+                   <div className="flex items-center gap-4 mb-4">
+                      {v.imageUrl ? (
+                        <img src={v.imageUrl} className="w-12 h-12 object-cover border border-slate-100" />
+                      ) : (
+                        <div className="w-12 h-12 border border-slate-200 flex shrink-0" style={{ backgroundColor: v.colorHex }} />
+                      )}
+                      <div>
+                        <h4 className="font-black text-slate-800 uppercase text-sm">{v.color}</h4>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                           Cod Barras: {v.barcode || 'N/A'} &bull; Estoque: {v.stock}
+                        </p>
+                      </div>
+                   </div>
+
+                   <div>
+                     <p className="text-[9px] font-black uppercase text-slate-400 mb-2">Tamanhos</p>
+                     <div className="flex flex-wrap gap-2">
+                        {v.sizes.map((s: string) => (
+                          <button
+                            key={s}
+                            onClick={() => {
+                              addToCart(selectedProductForVariant, v, s);
+                              setSelectedProductForVariant(null);
+                            }}
+                            className="w-12 h-12 border-2 border-slate-200 font-black uppercase text-sm text-slate-700 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center shrink-0"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                     </div>
+                   </div>
+                 </div>
+               ))}
             </div>
           </div>
         </div>

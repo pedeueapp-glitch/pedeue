@@ -17,6 +17,7 @@ interface Variant {
   sizes: string[];
   imageUrl?: string;
   stock: number;
+  barcode?: string;
 }
 
 interface VariantEditorProps {
@@ -36,7 +37,8 @@ export function VariantEditor({ productId, productName, onClose }: VariantEditor
     colorHex: "#000000",
     sizes: [],
     imageUrl: "",
-    stock: 0
+    stock: 0,
+    barcode: ""
   });
 
   const [draft, setDraft] = useState<Variant>(emptyVariant());
@@ -171,10 +173,16 @@ export function VariantEditor({ productId, productName, onClose }: VariantEditor
                 </div>
               </div>
 
-              {/* Estoque */}
-              <div className="space-y-1">
-                <p className="text-[9px] font-black text-slate-400 uppercase">Quantidade em Estoque</p>
-                <input type="number" className="w-full bg-white border border-slate-200 p-3 rounded-none text-xs font-bold outline-none" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: parseInt(e.target.value) || 0 }))} />
+              {/* Estoque e Código de Barras */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Estoque (Qtd)</p>
+                  <input type="number" className="w-full bg-white border border-slate-200 p-3 rounded-none text-xs font-bold outline-none" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: parseInt(e.target.value) || 0 }))} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Código de Barras</p>
+                  <input type="text" className="w-full bg-white border border-slate-200 p-3 rounded-none text-xs font-bold outline-none uppercase" placeholder="OPCIONAL" value={draft.barcode || ""} onChange={e => setDraft(d => ({ ...d, barcode: e.target.value }))} />
+                </div>
               </div>
 
               <button onClick={saveVariant} className="w-full bg-orange-500 text-white py-4 rounded-none font-black text-xs uppercase tracking-widest border-none shadow-lg hover:brightness-110 transition-all">

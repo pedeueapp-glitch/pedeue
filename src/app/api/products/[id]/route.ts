@@ -30,7 +30,8 @@ export async function PATCH(
         imageUrl: data.imageUrl,
         categoryId: data.categoryId,
         isActive: data.isActive,
-        inStock: data.inStock
+        inStock: data.inStock,
+        barcode: data.barcode || null
       }
     });
 

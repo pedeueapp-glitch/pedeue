@@ -205,7 +205,7 @@ export default function ProductsPage() {
             <button 
               onClick={() => {
                 setEditingProduct(null);
-                setFormData({ name: "", description: "", price: "", categoryId: categories[0]?.id || "", imageUrl: "", inStock: true, isActive: true });
+                setFormData({ name: "", description: "", price: "", categoryId: categories[0]?.id || "", imageUrl: "", inStock: true, isActive: true, barcode: "" });
                 setIsModalOpen(true);
               }}
               className="btn-primary flex items-center gap-2 !py-3.5 !rounded-2xl"
@@ -282,7 +282,7 @@ export default function ProductsPage() {
 
                         <div className="mt-auto pt-3 border-t border-slate-50 flex items-center gap-2">
                            <button 
-                              onClick={() => { setEditingProduct(product); setFormData({...product, price: product.price.toString()}); setIsModalOpen(true); }}
+                              onClick={() => { setEditingProduct(product); setFormData({...product, price: product.price.toString(), barcode: product.barcode || "" }); setIsModalOpen(true); }}
                               className="p-2 bg-navy text-white rounded-lg hover:bg-orange-500 transition-all flex items-center justify-center shadow-sm"
                            >
                               <Edit3 size={14} />
@@ -338,6 +338,9 @@ export default function ProductsPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
+              {isShowcase && (
+                <input className="input-field" placeholder="Código de Barras (Opcional)" value={formData.barcode || ""} onChange={e => setFormData({...formData, barcode: e.target.value})} />
+              )}
               <textarea className="input-field h-24 resize-none" placeholder="Descrição..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               
               <label className="block border-2 border-dashed border-slate-100 p-6 rounded-2xl text-center hover:bg-slate-50/50 cursor-pointer transition-all">

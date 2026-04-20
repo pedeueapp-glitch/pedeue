@@ -178,6 +178,7 @@ model product {
   isActive    Boolean           @default(true)
   inStock     Boolean           @default(true)
   barcode     String?
+  productType String            @default("RESTAURANT")
   position    Int               @default(0)
   categoryId  String
   storeId     String

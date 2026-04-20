@@ -16,7 +16,12 @@ export async function GET(req: NextRequest) {
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const products = await prisma.product.findMany({
-      where: { storeId: store.id },
+      where: { 
+        storeId: store.id,
+        // Ao buscar, tenta retornar só produtos criados pro tipo de loja atual.
+        // Como o padrão de productType é RESTAURANT, lojas antigas continuarão funcionando.
+        productType: store.storeType
+      },
       include: { 
         category: true,
         optiongroup: {
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const body = await req.json();
-    const { name, description, price, imageUrl, categoryId, isActive, inStock } = body;
+    const { name, description, price, imageUrl, categoryId, isActive, inStock, barcode } = body;
 
     if (!name || !price || !categoryId) {
       return NextResponse.json(
@@ -73,6 +78,8 @@ export async function POST(req: NextRequest) {
         storeId: store.id,
         isActive: isActive ?? true,
         inStock: inStock ?? true,
+        barcode: barcode || null,
+        productType: store.storeType,
         position: (lastProduct?.position ?? 0) + 1,
         updatedAt: new Date()
       },
