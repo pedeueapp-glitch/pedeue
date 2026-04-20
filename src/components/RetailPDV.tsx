@@ -377,29 +377,29 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       </div>
 
       {/* ===== LADO DIREITO: CARRINHO E CHECKOUT ===== */}
-      <div className="w-full lg:w-[450px] bg-white flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.05)] border-l border-slate-200 z-10">
+      <div className="w-full lg:w-[420px] bg-white flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.05)] border-l border-slate-200 z-10">
          
-         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-              <ShoppingBag size={18} className="text-orange-500" /> Venda Atual
+         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 text-sm">
+              <ShoppingBag size={15} className="text-orange-500" /> Venda Atual
             </h2>
          </div>
 
          {/* Cliente */}
-         <div className="p-6 border-b border-slate-100 space-y-3">
-             <div className="flex gap-3">
-               <div className="p-3 bg-slate-100 text-slate-500 rounded-none"><User size={18} /></div>
+         <div className="px-4 py-3 border-b border-slate-100 space-y-2">
+             <div className="flex gap-2">
+               <div className="p-2 bg-slate-100 text-slate-500 rounded-none"><User size={14} /></div>
                <input 
-                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-xs uppercase px-4 outline-none focus:border-slate-400 rounded-none" 
+                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px] uppercase px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
                  placeholder="Nome do Cliente (Opcional)"
                  value={customerName}
                  onChange={e => setCustomerName(e.target.value)}
                />
              </div>
-             <div className="flex gap-3">
-               <div className="p-3 bg-slate-100 text-slate-500 rounded-none"><Smartphone size={18} /></div>
+             <div className="flex gap-2">
+               <div className="p-2 bg-slate-100 text-slate-500 rounded-none"><Smartphone size={14} /></div>
                <input 
-                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-xs uppercase px-4 outline-none focus:border-slate-400 rounded-none" 
+                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px] uppercase px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
                  placeholder="Telefone (Opcional)"
                  value={customerPhone}
                  onChange={e => setCustomerPhone(e.target.value)}
@@ -408,29 +408,29 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
          </div>
 
          {/* Itens do Carrinho */}
-         <div className="flex-1 overflow-y-auto p-6 space-y-3">
+         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
              {cart.length === 0 ? (
-               <div className="h-full flex flex-col items-center justify-center text-slate-300 text-center px-6">
-                 <Barcode size={48} className="mb-4 opacity-50" />
-                 <p className="font-black uppercase text-xs tracking-widest leading-relaxed">Leia o codigo de barras ou adicione itens pelo painel para iniciar a venda.</p>
+               <div className="h-full flex flex-col items-center justify-center text-slate-300 text-center px-4">
+                 <Barcode size={36} className="mb-3 opacity-50" />
+                 <p className="font-black uppercase text-[10px] tracking-widest leading-relaxed">Leia o codigo de barras ou adicione itens pelo painel.</p>
                </div>
              ) : (
                cart.map((item) => (
-                 <div key={item.id} className="bg-white border border-slate-200 p-4 rounded-none group hover:border-orange-500 transition-all flex items-center gap-4">
+                 <div key={item.id} className="bg-white border border-slate-200 p-2.5 rounded-none group hover:border-orange-500 transition-all flex items-center gap-3">
                     <div className="flex-1 min-w-0">
-                       <h4 className="font-black text-slate-900 uppercase text-xs leading-tight line-clamp-1">{item.name}</h4>
-                       {item.variantText && <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{item.variantText}</p>}
-                       <p className="text-orange-600 font-black text-sm mt-1">R$ {item.price.toFixed(2).replace('.', ',')}</p>
+                       <h4 className="font-black text-slate-900 uppercase text-[10px] leading-tight line-clamp-1">{item.name}</h4>
+                       {item.variantText && <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{item.variantText}</p>}
+                       <p className="text-orange-600 font-black text-xs mt-0.5">R$ {item.price.toFixed(2).replace('.', ',')}</p>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                       <div className="flex items-center gap-1 bg-slate-100 p-1">
-                          <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-200"><Minus size={12} /></button>
-                          <span className="w-8 text-center font-black text-xs">{item.qty}</span>
-                          <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-200"><Plus size={12} /></button>
+                    <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-0.5 bg-slate-100 p-0.5">
+                          <button onClick={() => updateQty(item.id, -1)} className="w-5 h-5 bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-200"><Minus size={10} /></button>
+                          <span className="w-6 text-center font-black text-[10px]">{item.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="w-5 h-5 bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-200"><Plus size={10} /></button>
                        </div>
-                       <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
-                         <Trash2 size={16} />
+                       <button onClick={() => removeFromCart(item.id)} className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                         <Trash2 size={13} />
                        </button>
                     </div>
                  </div>
@@ -439,22 +439,22 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
          </div>
 
          {/* Pagamento e Fechamento */}
-         <div className="p-6 bg-slate-900 border-t-4 border-orange-500">
+         <div className="p-4 bg-slate-900 border-t-4 border-orange-500">
 
              {/* Desconto */}
-             <div className="mb-5">
-               <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Desconto</p>
-               <div className="flex gap-2">
-                 <div className="flex border-2 border-slate-800 rounded-none overflow-hidden">
+             <div className="mb-3">
+               <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Desconto</p>
+               <div className="flex gap-1.5">
+                 <div className="flex border border-slate-800 rounded-none overflow-hidden">
                    <button 
                      onClick={() => setDiscountType("percent")}
-                     className={`px-3 py-2 text-[10px] font-black transition-all ${discountType === 'percent' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'percent' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                    >
-                     <Percent size={14} />
+                     <Percent size={11} />
                    </button>
                    <button 
                      onClick={() => setDiscountType("fixed")}
-                     className={`px-3 py-2 text-[10px] font-black transition-all ${discountType === 'fixed' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'fixed' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                    >
                      R$
                    </button>
@@ -464,73 +464,73 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                    step="0.01" 
                    min="0"
                    placeholder={discountType === 'percent' ? 'Ex: 10' : 'Ex: 5.00'}
-                   className="flex-1 bg-slate-800 border-2 border-slate-700 text-white font-black text-sm px-4 py-2 outline-none focus:border-orange-500 rounded-none placeholder-slate-600"
+                   className="flex-1 bg-slate-800 border border-slate-700 text-white font-black text-xs px-3 py-1.5 outline-none focus:border-orange-500 rounded-none placeholder-slate-600"
                    value={discountValue}
                    onChange={e => setDiscountValue(e.target.value)}
                  />
                </div>
                {discountAmount > 0 && (
-                 <p className="text-green-400 text-[10px] font-black uppercase mt-2">
-                   Desconto aplicado: -R$ {discountAmount.toFixed(2).replace('.', ',')}
+                 <p className="text-green-400 text-[9px] font-black uppercase mt-1">
+                   -{discountType === 'percent' ? `${discountNum}%` : ''} R$ {discountAmount.toFixed(2).replace('.', ',')}
                  </p>
                )}
              </div>
              
              {/* Total */}
-             <div className="flex justify-between items-end mb-2">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
-                 <span className="text-sm font-bold text-slate-400">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+             <div className="flex justify-between items-center mb-1">
+                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
+                 <span className="text-xs font-bold text-slate-400">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
              </div>
              {discountAmount > 0 && (
-               <div className="flex justify-between items-end mb-2">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-green-500">Desconto</span>
-                 <span className="text-sm font-bold text-green-400">-R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+               <div className="flex justify-between items-center mb-1">
+                 <span className="text-[9px] font-black uppercase tracking-widest text-green-500">Desconto</span>
+                 <span className="text-xs font-bold text-green-400">-R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
                </div>
              )}
-             <div className="flex justify-between items-end mb-6">
-                 <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total a Pagar</span>
-                 <span className="text-3xl font-black text-white">R$ {totalFinal.toFixed(2).replace('.', ',')}</span>
+             <div className="flex justify-between items-end mb-4">
+                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</span>
+                 <span className="text-2xl font-black text-white">R$ {totalFinal.toFixed(2).replace('.', ',')}</span>
              </div>
 
              {/* Metodos */}
-             <div className="grid grid-cols-2 gap-2 mb-4">
+             <div className="grid grid-cols-4 gap-1.5 mb-3">
                 {[
-                  { name: "DINHEIRO", icon: Banknote },
-                  { name: "CARTAO DE CREDITO", icon: CreditCard },
-                  { name: "CARTAO DE DEBITO", icon: CreditCard },
-                  { name: "PIX", icon: Smartphone }
+                  { name: "DINHEIRO", icon: Banknote, label: "Dinheiro" },
+                  { name: "CARTAO DE CREDITO", icon: CreditCard, label: "Credito" },
+                  { name: "CARTAO DE DEBITO", icon: CreditCard, label: "Debito" },
+                  { name: "PIX", icon: Smartphone, label: "Pix" }
                 ].map(method => (
                   <button 
                     key={method.name}
                     onClick={() => setPaymentMethod(method.name)}
-                    className={`py-3 px-2 flex items-center gap-2 border-2 transition-all rounded-none ${paymentMethod === method.name ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                    className={`py-2 px-1 flex flex-col items-center gap-1 border transition-all rounded-none ${paymentMethod === method.name ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-slate-800 text-slate-400 hover:border-slate-700'}`}
                   >
-                    <method.icon size={16} className={paymentMethod === method.name ? 'text-orange-500' : ''} />
-                    <span className="font-black uppercase text-[9px] tracking-tight truncate">{method.name}</span>
+                    <method.icon size={14} className={paymentMethod === method.name ? 'text-orange-500' : ''} />
+                    <span className="font-black uppercase text-[7px] tracking-tight">{method.label}</span>
                   </button>
                 ))}
              </div>
 
              {/* Troco - Apenas quando dinheiro selecionado */}
              {paymentMethod === "DINHEIRO" && (
-               <div className="mb-6 p-4 bg-slate-800 border border-slate-700">
-                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Valor Recebido</p>
+               <div className="mb-3 p-3 bg-slate-800 border border-slate-700">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Valor Recebido</p>
                  <div className="relative">
-                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">R$</span>
                    <input 
                      type="number" 
                      step="0.01" 
                      min="0"
                      placeholder="0,00"
-                     className="w-full bg-slate-900 border-2 border-slate-700 text-white font-black text-lg pl-10 pr-4 py-3 outline-none focus:border-orange-500 rounded-none placeholder-slate-700"
+                     className="w-full bg-slate-900 border border-slate-700 text-white font-black text-sm pl-9 pr-3 py-2 outline-none focus:border-orange-500 rounded-none placeholder-slate-700"
                      value={cashReceived}
                      onChange={e => setCashReceived(e.target.value)}
                    />
                  </div>
                  {cashReceivedNum > 0 && (
-                   <div className={`flex justify-between items-center mt-3 pt-3 border-t border-slate-700`}>
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Troco</span>
-                     <span className={`text-lg font-black ${changeAmount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
+                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Troco</span>
+                     <span className={`text-sm font-black ${changeAmount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                        {changeAmount >= 0 ? `R$ ${changeAmount.toFixed(2).replace('.', ',')}` : `Faltam R$ ${Math.abs(changeAmount).toFixed(2).replace('.', ',')}`}
                      </span>
                    </div>
@@ -542,9 +542,9 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              <button 
                onClick={handleCheckout}
                disabled={checkoutLoading || cart.length === 0}
-               className="w-full bg-orange-500 hover:brightness-110 text-white py-5 font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-[0_0_20px_rgba(249,115,22,0.3)] rounded-none"
+               className="w-full bg-orange-500 hover:brightness-110 text-white py-3 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-[0_0_20px_rgba(249,115,22,0.3)] rounded-none"
              >
-               {checkoutLoading ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+               {checkoutLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
                {checkoutLoading ? "Processando..." : "Confirmar Recebimento"}
              </button>
          </div>
