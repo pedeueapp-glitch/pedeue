@@ -170,47 +170,48 @@ model plan {
 }
 
 model product {
-  id          String        @id
+  id          String            @id
   name        String
-  description String?       @db.Text
+  description String?           @db.Text
   price       Float
   imageUrl    String?
-  isActive    Boolean       @default(true)
-  inStock     Boolean       @default(true)
-  position    Int           @default(0)
+  isActive    Boolean           @default(true)
+  inStock     Boolean           @default(true)
+  barcode     String?
+  position    Int               @default(0)
   categoryId  String
   storeId     String
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime          @default(now())
   updatedAt   DateTime
   optiongroup optiongroup[]
   orderitem   orderitem[]
   variants    product_variant[]
-  category    category      @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Product_categoryId_fkey")
-  store       store         @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Product_storeId_fkey")
+  category    category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Product_categoryId_fkey")
+  store       store             @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Product_storeId_fkey")
 
   @@index([categoryId], map: "Product_categoryId_fkey")
   @@index([storeId], map: "Product_storeId_fkey")
 }
 
 model store {
-  id             String           @id @default(cuid())
-  slug           String           @unique(map: "Store_slug_key")
-  name           String
-  description    String?          @db.Text
-  logo           String?
-  coverImage     String?
-  whatsapp       String
-  address        String?
-  city           String?
-  state          String?
-  deliveryFee    Float            @default(0)
-  minOrderValue  Float            @default(0)
-  isOpen         Boolean          @default(true)
-  isActive       Boolean          @default(true)
-  primaryColor   String           @default("#f97316")
-  openingHours   String?          @db.LongText
-  userId         String           @unique(map: "Store_userId_key")
-  createdAt      DateTime         @default(now())
+  id                   String                 @id @default(cuid())
+  slug                 String                 @unique(map: "Store_slug_key")
+  name                 String
+  description          String?                @db.Text
+  logo                 String?
+  coverImage           String?
+  whatsapp             String
+  address              String?
+  city                 String?
+  state                String?
+  deliveryFee          Float                  @default(0)
+  minOrderValue        Float                  @default(0)
+  isOpen               Boolean                @default(true)
+  isActive             Boolean                @default(true)
+  primaryColor         String                 @default("#f97316")
+  openingHours         String?                @db.LongText
+  userId               String                 @unique(map: "Store_userId_key")
+  createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   deliveryTime         String?                @default("30-45")
   storeType            String                 @default("RESTAURANT")
@@ -235,9 +236,9 @@ model subscription {
   status        subscription_status @default(ACTIVE)
   expiresAt     DateTime            @default(now())
   lastPaymentAt DateTime?
-  planId    String
-  storeId   String              @unique(map: "Subscription_storeId_key")
-  createdAt DateTime            @default(now())
+  planId        String
+  storeId       String              @unique(map: "Subscription_storeId_key")
+  createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   plan          plan                @relation(fields: [planId], references: [id], map: "Subscription_planId_fkey")
   store         store               @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Subscription_storeId_fkey")
@@ -377,6 +378,7 @@ enum order_orderType {
   DELIVERY
   PICKUP
   DINING_IN
+  RETAIL
 }
 
 model platformcity {
@@ -392,7 +394,7 @@ model platform_expense {
   id        String   @id @default(cuid())
   title     String
   amount    Float
-  type      String   // FIXED, VARIABLE, WITHDRAWAL
+  type      String // FIXED, VARIABLE, WITHDRAWAL
   date      DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -406,6 +408,7 @@ model product_variant {
   sizes     String   @db.LongText // JSON array: ["P","M","G","GG"]
   imageUrl  String?
   stock     Int      @default(0)
+  barcode   String?  // Código de barras (SKU) da variante
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   product   product  @relation(fields: [productId], references: [id], onDelete: Cascade)

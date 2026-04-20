@@ -44,7 +44,7 @@ export function Sidebar({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
 
   const planFeatures = store?.subscription?.plan?.features;
 
-  const merchantLinks = [
+  const allMerchantLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "PDV Pedidos", href: "/dashboard/pdv", icon: ShoppingBag, feature: 'PDV_SYSTEM' },
     { name: "Mesas", href: "/dashboard/tables", icon: Layers, feature: 'TABLE_MANAGEMENT' },
@@ -56,6 +56,15 @@ export function Sidebar({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Categorias", href: "/dashboard/categories", icon: Layers },
     { name: "Configurações", href: "/dashboard/settings", icon: Settings },
   ];
+
+  const merchantLinks = allMerchantLinks.filter(link => {
+    if (store?.storeType === "SHOWCASE") {
+      const hiddenInShowcase = ["Mesas", "Garçons", "Motoboys", "Taxas de Entrega"];
+      if (hiddenInShowcase.includes(link.name)) return false;
+      if (link.name === "PDV Pedidos") link.name = "PDV Loja"; // Renomeia levemente para modo loja
+    }
+    return true;
+  });
 
   const superAdminLinks = [
     { name: "Lojas", href: "/superadmin", icon: ShoppingBag },
