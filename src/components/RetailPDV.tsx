@@ -5,7 +5,7 @@ import {
   ShoppingBag, Search, Plus, Minus, Trash2, 
   CreditCard, Banknote, Smartphone, User, Loader2, Barcode,
   AlertCircle, Package, Receipt, LogOut, Menu, CheckCircle2, X,
-  ClipboardList, Calendar, DollarSign, TrendingUp, Eye, ChevronDown
+  ClipboardList, Calendar, DollarSign, TrendingUp, Eye, ChevronDown, Percent
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useSidebar } from "@/app/dashboard/layout";
@@ -29,6 +29,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  // Desconto
+  const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
+  const [discountValue, setDiscountValue] = useState("");
+
+  // Troco
+  const [cashReceived, setCashReceived] = useState("");
 
   // Controle de Caixa
   const [isCashierModalOpen, setIsCashierModalOpen] = useState(false);
@@ -159,6 +166,17 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
 
   const subtotal = cart.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
 
+  // Calculo do desconto
+  const discountNum = parseFloat(discountValue) || 0;
+  const discountAmount = discountType === "percent" 
+    ? (subtotal * Math.min(discountNum, 100)) / 100 
+    : Math.min(discountNum, subtotal);
+  const totalFinal = Math.max(0, subtotal - discountAmount);
+
+  // Calculo do troco
+  const cashReceivedNum = parseFloat(cashReceived) || 0;
+  const changeAmount = cashReceivedNum - totalFinal;
+
   async function handleCheckout() {
     if (!cashier) return toast.error("Por favor, abra o caixa antes de registrar vendas.");
     if (cart.length === 0) return toast.error("O carrinho esta vazio.");
@@ -176,7 +194,9 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
           customerName,
           customerPhone,
           paymentMethod,
-          total: subtotal
+          total: totalFinal,
+          discount: discountAmount,
+          subtotal: subtotal
         })
       });
 
@@ -187,6 +207,8 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
+      setDiscountValue("");
+      setCashReceived("");
       barcodeInputRef.current?.focus();
     } catch (err: any) {
       toast.error(err.message || "Erro ao registrar venda", { id: toastId });
@@ -418,15 +440,60 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
 
          {/* Pagamento e Fechamento */}
          <div className="p-6 bg-slate-900 border-t-4 border-orange-500">
+
+             {/* Desconto */}
+             <div className="mb-5">
+               <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Desconto</p>
+               <div className="flex gap-2">
+                 <div className="flex border-2 border-slate-800 rounded-none overflow-hidden">
+                   <button 
+                     onClick={() => setDiscountType("percent")}
+                     className={`px-3 py-2 text-[10px] font-black transition-all ${discountType === 'percent' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                   >
+                     <Percent size={14} />
+                   </button>
+                   <button 
+                     onClick={() => setDiscountType("fixed")}
+                     className={`px-3 py-2 text-[10px] font-black transition-all ${discountType === 'fixed' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                   >
+                     R$
+                   </button>
+                 </div>
+                 <input 
+                   type="number" 
+                   step="0.01" 
+                   min="0"
+                   placeholder={discountType === 'percent' ? 'Ex: 10' : 'Ex: 5.00'}
+                   className="flex-1 bg-slate-800 border-2 border-slate-700 text-white font-black text-sm px-4 py-2 outline-none focus:border-orange-500 rounded-none placeholder-slate-600"
+                   value={discountValue}
+                   onChange={e => setDiscountValue(e.target.value)}
+                 />
+               </div>
+               {discountAmount > 0 && (
+                 <p className="text-green-400 text-[10px] font-black uppercase mt-2">
+                   Desconto aplicado: -R$ {discountAmount.toFixed(2).replace('.', ',')}
+                 </p>
+               )}
+             </div>
              
              {/* Total */}
+             <div className="flex justify-between items-end mb-2">
+                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
+                 <span className="text-sm font-bold text-slate-400">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+             </div>
+             {discountAmount > 0 && (
+               <div className="flex justify-between items-end mb-2">
+                 <span className="text-[10px] font-black uppercase tracking-widest text-green-500">Desconto</span>
+                 <span className="text-sm font-bold text-green-400">-R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+               </div>
+             )}
              <div className="flex justify-between items-end mb-6">
                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total a Pagar</span>
-                 <span className="text-3xl font-black text-white">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                 <span className="text-3xl font-black text-white">R$ {totalFinal.toFixed(2).replace('.', ',')}</span>
              </div>
 
              {/* Metodos */}
-             <div className="grid grid-cols-2 gap-2 mb-6">
+             <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
                   { name: "DINHEIRO", icon: Banknote },
                   { name: "CARTAO DE CREDITO", icon: CreditCard },
@@ -443,6 +510,33 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                   </button>
                 ))}
              </div>
+
+             {/* Troco - Apenas quando dinheiro selecionado */}
+             {paymentMethod === "DINHEIRO" && (
+               <div className="mb-6 p-4 bg-slate-800 border border-slate-700">
+                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Valor Recebido</p>
+                 <div className="relative">
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
+                   <input 
+                     type="number" 
+                     step="0.01" 
+                     min="0"
+                     placeholder="0,00"
+                     className="w-full bg-slate-900 border-2 border-slate-700 text-white font-black text-lg pl-10 pr-4 py-3 outline-none focus:border-orange-500 rounded-none placeholder-slate-700"
+                     value={cashReceived}
+                     onChange={e => setCashReceived(e.target.value)}
+                   />
+                 </div>
+                 {cashReceivedNum > 0 && (
+                   <div className={`flex justify-between items-center mt-3 pt-3 border-t border-slate-700`}>
+                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Troco</span>
+                     <span className={`text-lg font-black ${changeAmount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                       {changeAmount >= 0 ? `R$ ${changeAmount.toFixed(2).replace('.', ',')}` : `Faltam R$ ${Math.abs(changeAmount).toFixed(2).replace('.', ',')}`}
+                     </span>
+                   </div>
+                 )}
+               </div>
+             )}
 
              {/* Botao Concluir */}
              <button 

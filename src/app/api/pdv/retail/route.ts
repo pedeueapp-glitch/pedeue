@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { storeId, cart, customerName, customerPhone, paymentMethod, total } = body;
+    const { storeId, cart, customerName, customerPhone, paymentMethod, total, discount, subtotal } = body;
 
     // Verificar caixa
     const openSession = await prisma.cashiersession.findFirst({
@@ -69,8 +69,10 @@ export async function POST(req: NextRequest) {
         customerPhone: customerPhone || "",
         paymentMethod,
         total,
+        subtotal: subtotal || total,
+        discount: discount || 0,
         orderType: "RETAIL",
-        status: "DONE", // Venda de balcão já sai concluída
+        status: "DONE",
         updatedAt: new Date(),
         items: {
           create: cart.map((item: any) => ({
