@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     // Criar o pedido (RETAIL)
     const order = await prisma.order.create({
       data: {
+        id: `ord_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
         storeId,
         customerName: customerName || "Venda Balcão",
         customerPhone: customerPhone || "",
@@ -70,13 +71,14 @@ export async function POST(req: NextRequest) {
         total,
         orderType: "RETAIL",
         status: "DONE", // Venda de balcão já sai concluída
+        updatedAt: new Date(),
         items: {
           create: cart.map((item: any) => ({
+            id: `item_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
             productId: item.productId,
-            name: item.name,
             quantity: item.qty,
-            unitPrice: item.price,
-            optionsText: item.variantText || ""
+            price: item.price,
+            choices: JSON.stringify([item.variantText || ""])
           }))
         }
       }

@@ -113,7 +113,7 @@ model order {
   status        order_status    @default(PENDING)
   storeId       String
   createdAt     DateTime        @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime        @updatedAt
   driverId      String?
   change        Float?
   complement    String?
@@ -183,7 +183,7 @@ model product {
   categoryId  String
   storeId     String
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime          @updatedAt
   optiongroup optiongroup[]
   orderitem   orderitem[]
   variants    product_variant[]

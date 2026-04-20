@@ -15,7 +15,8 @@ import {
   ChevronRight,
   TrendingUp,
   Tag,
-  CreditCard
+  CreditCard,
+  ClipboardList
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
@@ -47,21 +48,25 @@ export function Sidebar({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
   const allMerchantLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "PDV Pedidos", href: "/dashboard/pdv", icon: ShoppingBag, feature: 'PDV_SYSTEM' },
+    { name: "Vendas Vitrine", href: "/dashboard/vendas-vitrine", icon: ClipboardList, showcaseOnly: true },
     { name: "Mesas", href: "/dashboard/tables", icon: Layers, feature: 'TABLE_MANAGEMENT' },
-    { name: "Garçons", href: "/dashboard/waiters", icon: Users, feature: 'TABLE_MANAGEMENT' },
+    { name: "Garcons", href: "/dashboard/waiters", icon: Users, feature: 'TABLE_MANAGEMENT' },
     { name: "Motoboys", href: "/dashboard/drivers", icon: Users },
     { name: "Meus Produtos", href: "/dashboard/products", icon: UtensilsCrossed },
     { name: "Cupons & Cashback", href: "/dashboard/coupons", icon: Tag, feature: 'COUPON_SYSTEM' },
     { name: "Taxas de Entrega", href: "/dashboard/delivery-fees", icon: MapPin },
     { name: "Categorias", href: "/dashboard/categories", icon: Layers },
-    { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+    { name: "Configuracoes", href: "/dashboard/settings", icon: Settings },
   ];
 
-  const merchantLinks = allMerchantLinks.filter(link => {
+  const merchantLinks = allMerchantLinks.filter((link: any) => {
     if (store?.storeType === "SHOWCASE") {
-      const hiddenInShowcase = ["Mesas", "Garçons", "Motoboys", "Taxas de Entrega"];
+      const hiddenInShowcase = ["Mesas", "Garcons", "Motoboys", "Taxas de Entrega"];
       if (hiddenInShowcase.includes(link.name)) return false;
-      if (link.name === "PDV Pedidos") link.name = "PDV Loja"; // Renomeia levemente para modo loja
+      if (link.name === "PDV Pedidos") link.name = "PDV Loja";
+    } else {
+      // Esconde links exclusivos da vitrine quando no modo lanchonete
+      if (link.showcaseOnly) return false;
     }
     return true;
   });
