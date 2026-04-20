@@ -2,48 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  Loader2, 
-  MoreVertical,
-  X,
-  PlusSquare,
-  Package,
-  Eye,
-  EyeOff,
-  Camera,
-  AlertCircle,
-  CheckCircle2,
-  PlusCircle
+  Plus, Search, Edit3, Trash2, Loader2, X, PlusSquare,
+  Package, Camera, AlertCircle, CheckCircle2, PlusCircle, Palette
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Header } from "@/components/Header";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { VariantEditor } from "@/components/VariantEditor";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [storeType, setStoreType] = useState<string>("RESTAURANT");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
 
-  // Form Produto
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    categoryId: "",
-    imageUrl: "",
-    inStock: true,
-    isActive: true
+    name: "", description: "", price: "", categoryId: "",
+    imageUrl: "", inStock: true, isActive: true
   });
 
   const [uploading, setUploading] = useState(false);
@@ -56,17 +39,22 @@ export default function ProductsPage() {
   const [newItemName, setNewItemName] = useState("");
   const [newItemPrice, setNewItemPrice] = useState("");
 
+  const isShowcase = storeType === "SHOWCASE";
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes] = await Promise.all([
+      const [prodRes, catRes, storeRes] = await Promise.all([
         fetch("/api/products"),
-        fetch("/api/categories")
+        fetch("/api/categories"),
+        fetch("/api/store")
       ]);
       const prodData = await prodRes.json();
       const catData = await catRes.json();
+      const storeData = await storeRes.json();
       setProducts(Array.isArray(prodData) ? prodData : []);
       setCategories(Array.isArray(catData) ? catData : []);
+      setStoreType(storeData?.storeType || "RESTAURANT");
     } catch { toast.error("Erro ao carregar"); } finally { setLoading(false); }
   };
 
@@ -100,7 +88,7 @@ export default function ProductsPage() {
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error();
-      toast.success("Salvo com sucesso!");
+      toast.success(isShowcase ? "Produto da Vitrine salvo!" : "Salvo com sucesso!");
       setIsModalOpen(false);
       fetchData();
     } catch { toast.error("Erro ao salvar"); }
@@ -108,88 +96,62 @@ export default function ProductsPage() {
 
   const toggleStatus = async (product: any) => {
     try {
-      const res = await fetch(`/api/products/${product.id}`, {
+      await fetch(`/api/products/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        // Enviando apenas o campo que mudou e tratando os dados
-        body: JSON.stringify({ 
-           ...product,
-           price: product.price.toString(),
-           isActive: product.isActive === false ? true : false 
-        }),
+        body: JSON.stringify({ ...product, price: product.price.toString(), isActive: !product.isActive }),
       });
-      if (!res.ok) throw new Error();
       toast.success("Status atualizado");
       fetchData();
-    } catch { toast.error("Erro ao atualizar status"); }
+    } catch { toast.error("Erro"); }
   };
 
-  const deleteProduct = async (id: string) => {
-    setProductToDelete(id);
-    setIsDeleteModalOpen(true);
-  };
+  const deleteProduct = async (id: string) => { setProductToDelete(id); setIsDeleteModalOpen(true); };
 
   const confirmDelete = async () => {
     if (!productToDelete) return;
-    const toastId = toast.loading("Removendo produto...");
+    const toastId = toast.loading("Removendo...");
     try {
       const res = await fetch(`/api/products/${productToDelete}`, { method: "DELETE" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Falha ao excluir");
-      }
-
-      toast.success("Produto removido com sucesso", { id: toastId });
+      if (!res.ok) throw new Error();
+      toast.success("Produto removido", { id: toastId });
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
-      
-      // Atualizar a lista localmente para resposta instantânea
-      setProducts(prev => prev.filter(p => p.id !== productToDelete));
-      
-      // Re-sincronizar com o banco
       fetchData();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao excluir", { id: toastId });
+      toast.error(error.message || "Erro", { id: toastId });
     }
   };
 
   const fetchOptions = async (productId: string) => {
-    try {
-      const res = await fetch(`/api/products/options?productId=${productId}`);
-      const data = await res.json();
-      setOptionGroups(Array.isArray(data) ? data : []);
-    } catch { setOptionGroups([]); }
+    const res = await fetch(`/api/products/options?productId=${productId}`);
+    const data = await res.json();
+    setOptionGroups(Array.isArray(data) ? data : []);
   };
 
   const addOptionGroup = async () => {
     if (!newGroupName) return;
-    try {
-       await fetch("/api/products/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: editingProduct.id, name: newGroupName, minChoices: isMandatory ? 1 : 0, maxChoices: maxSelect }),
-      });
-      setNewGroupName("");
-      fetchOptions(editingProduct.id);
-    } catch { toast.error("Erro ao adicionar grupo"); }
+    await fetch("/api/products/options", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: editingProduct.id, name: newGroupName, minChoices: isMandatory ? 1 : 0, maxChoices: maxSelect }),
+    });
+    setNewGroupName("");
+    fetchOptions(editingProduct.id);
   };
 
   const addOptionItem = async (groupId: string) => {
     if (!newItemName) return;
-    try {
-      await fetch("/api/products/options/item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupId, name: newItemName, price: parseFloat(newItemPrice || "0") }),
-      });
-      setNewItemName(""); setNewItemPrice(""); setAddingItemToGroup(null);
-      fetchOptions(editingProduct.id);
-    } catch { toast.error("Erro ao adicionar item"); }
+    await fetch("/api/products/options/item", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId, name: newItemName, price: parseFloat(newItemPrice || "0") }),
+    });
+    setNewItemName(""); setNewItemPrice(""); setAddingItemToGroup(null);
+    fetchOptions(editingProduct.id);
   };
 
   const deleteOptionGroup = async (groupId: string) => {
-    if (!confirm("Excluir este grupo?")) return;
     await fetch(`/api/products/options?id=${groupId}`, { method: "DELETE" });
     fetchOptions(editingProduct.id);
   };
@@ -199,10 +161,7 @@ export default function ProductsPage() {
     fetchOptions(editingProduct.id);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const productsByCategory = categories.map(cat => ({
     ...cat,
     items: filteredProducts.filter(p => p.categoryId === cat.id)
@@ -210,13 +169,26 @@ export default function ProductsPage() {
 
   return (
     <>
-      <Header title="Gerenciamento de Cardápio" />
+      <Header title={isShowcase ? "Catálogo da Vitrine" : "Gerenciamento de Cardápio"} />
+
+      {isShowcase && (
+        <div className="mx-6 lg:mx-10 mt-6 p-4 bg-orange-50 border border-orange-200 rounded-none flex items-center gap-3">
+          <Palette size={18} className="text-orange-500 flex-shrink-0" />
+          <p className="text-xs font-bold text-orange-700">
+            Modo Vitrine ativo. Gerencie cores, tamanhos e fotos individuais clicando em Variações em cada produto.
+          </p>
+        </div>
+      )}
 
       <div className="p-6 lg:p-10 max-w-7xl mx-auto w-full">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Lista de Itens</h2>
-            <p className="text-slate-400 text-sm mt-1">Configure seus produtos e categorias.</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {isShowcase ? "Produtos da Vitrine" : "Lista de Itens"}
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">
+              {isShowcase ? "Configure produtos com cores e tamanhos." : "Configure seus produtos e categorias."}
+            </p>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -239,7 +211,7 @@ export default function ProductsPage() {
               className="btn-primary flex items-center gap-2 !py-3.5 !rounded-2xl"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">Adicionar Produto</span>
+              <span className="hidden sm:inline">{isShowcase ? "Novo Produto" : "Adicionar Produto"}</span>
             </button>
           </div>
         </div>
@@ -264,7 +236,6 @@ export default function ProductsPage() {
                       key={product.id} 
                       className={`card-premium group relative flex flex-col h-full !p-4 ${product.isActive === false ? 'opacity-70 saturate-50' : ''}`}
                     >
-                      {/* Badge de Status */}
                       <div className="absolute top-3 left-3 z-10">
                         <button 
                           onClick={() => toggleStatus(product)}
@@ -275,11 +246,10 @@ export default function ProductsPage() {
                           }`}
                         >
                           <div className={`w-1 h-1 rounded-full ${product.isActive !== false ? "bg-white animate-pulse" : "bg-slate-400"}`} />
-                          {product.isActive !== false ? "Visível" : "Não visível"}
+                          {product.isActive !== false ? "Visível" : "Oculto"}
                         </button>
                       </div>
 
-                      {/* Botão Excluir Flutuante */}
                       <button 
                         onClick={() => deleteProduct(product.id)}
                         className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm text-slate-300 hover:text-red-500 rounded-lg shadow-sm transition-all"
@@ -295,34 +265,46 @@ export default function ProductsPage() {
                              <Package size={30} />
                           </div>
                         )}
+                        {isShowcase && (
+                          <div className="absolute bottom-2 right-2 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-none">
+                            VITRINE
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex-1 flex flex-col">
                         <div className="flex flex-col mb-3">
-                           <h4 className="font-bold text-navy text-sm line-clamp-1 italic-none">{product.name}</h4>
+                           <h4 className="font-bold text-navy text-sm line-clamp-1">{product.name}</h4>
                            <div className="text-sm font-black text-orange-500 mt-0.5">
                               R$ {product.price.toFixed(2).replace('.', ',')}
                            </div>
                         </div>
 
                         <div className="mt-auto pt-3 border-t border-slate-50 flex items-center gap-2">
-                           {/* Botão Editar Compacto */}
                            <button 
                               onClick={() => { setEditingProduct(product); setFormData({...product, price: product.price.toString()}); setIsModalOpen(true); }}
                               className="p-2 bg-navy text-white rounded-lg hover:bg-orange-500 transition-all flex items-center justify-center shadow-sm"
-                              title="Editar Produto"
                            >
                               <Edit3 size={14} />
                            </button>
 
-                           {/* Botão Opcionais com Texto */}
-                           <button 
-                              onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
-                              className="flex-1 py-2 border-2 border-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
-                           >
-                              <PlusSquare size={12} />
-                              Opcionais
-                           </button>
+                           {isShowcase ? (
+                             <button 
+                                onClick={() => { setEditingProduct(product); setIsVariantModalOpen(true); }}
+                                className="flex-1 py-2 border-2 border-orange-100 text-orange-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
+                             >
+                                <Palette size={12} />
+                                Variações
+                             </button>
+                           ) : (
+                             <button 
+                                onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
+                                className="flex-1 py-2 border-2 border-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
+                             >
+                                <PlusSquare size={12} />
+                                Opcionais
+                             </button>
+                           )}
                         </div>
                       </div>
                     </div>
@@ -334,27 +316,29 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* MODAL PRODUTO */}
+      {/* MODAL PRODUTO (FUNCIONA PARA AMBOS OS TIPOS) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-navy/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <form onSubmit={handleSubmit} className="bg-white w-full max-w-lg rounded-[40px] p-8 lg:p-12 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-start mb-10">
               <div>
-                <h2 className="text-2xl font-bold text-navy">Produto</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Insira os detalhes do item no menu.</p>
+                <h2 className="text-2xl font-bold text-navy">{isShowcase ? "Produto da Vitrine" : "Produto"}</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">
+                  {isShowcase ? "Depois adicione as variações de cor." : "Insira os detalhes do item no menu."}
+                </p>
               </div>
               <button type="button" onClick={() => setIsModalOpen(false)} className="p-2.5 bg-slate-50 rounded-xl text-slate-400"><X size={20}/></button>
             </div>
             
             <div className="space-y-5">
-              <input className="input-field" placeholder="Nome do Item" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+              <input className="input-field" placeholder="Nome do Produto" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
               <div className="grid grid-cols-2 gap-4">
                 <input className="input-field" placeholder="Preço (R$)" type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                 <select className="input-field" value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} required>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <textarea className="input-field h-24 resize-none" placeholder="Descrição curta..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              <textarea className="input-field h-24 resize-none" placeholder="Descrição..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               
               <label className="block border-2 border-dashed border-slate-100 p-6 rounded-2xl text-center hover:bg-slate-50/50 cursor-pointer transition-all">
                 <div className="flex items-center justify-center gap-4">
@@ -362,20 +346,31 @@ export default function ProductsPage() {
                     {formData.imageUrl ? <img src={formData.imageUrl} className="w-full h-full object-cover" /> : <Camera size={20} className="text-slate-200" />}
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-slate-700">{uploading ? "Sincronizando..." : "Escolher foto"}</p>
-                    <p className="text-[10px] text-slate-400">Clique para enviar</p>
+                    <p className="text-xs font-bold text-slate-700">{uploading ? "Sincronizando..." : isShowcase ? "Foto principal do produto" : "Escolher foto"}</p>
+                    <p className="text-[10px] text-slate-400">Convertida automaticamente para WebP</p>
                   </div>
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-4.5 mt-10 rounded-2xl">Confirmar Catalogação</button>
+            <button type="submit" className="w-full btn-primary py-4.5 mt-10 rounded-2xl">
+              {isShowcase ? "Salvar Produto" : "Confirmar Catalogação"}
+            </button>
           </form>
         </div>
       )}
 
-      {/* MODAL ADICIONAIS */}
+      {/* MODAL VARIANTES (VITRINE) */}
+      {isVariantModalOpen && editingProduct && (
+        <VariantEditor
+          productId={editingProduct.id}
+          productName={editingProduct.name}
+          onClose={() => setIsVariantModalOpen(false)}
+        />
+      )}
+
+      {/* MODAL ADICIONAIS (LANCHONETE) */}
       {isOptionsModalOpen && (
         <div className="fixed inset-0 bg-navy/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[48px] shadow-2xl flex flex-col overflow-hidden">
@@ -431,7 +426,7 @@ export default function ProductsPage() {
 
                       <div className="space-y-2">
                          {group.options?.map((opt: any) => (
-                           <div key={opt.id} className="flex justify-between items-center py-2 border-b border-slate-50 group/item">
+                           <div key={opt.id} className="flex justify-between items-center py-2 border-b border-slate-50">
                               <span className="text-xs font-semibold text-slate-600">{opt.name}</span>
                               <div className="flex items-center gap-4">
                                 <span className="text-xs font-black text-orange-500">+ R${opt.price.toFixed(2)}</span>
@@ -462,12 +457,13 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
       <ConfirmModal 
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Excluir Produto?"
-        message="Esta ação não pode ser desfeita. O produto será removido permanentemente do seu cardápio."
+        message="Esta ação não pode ser desfeita."
         confirmText="Excluir Agora"
       />
     </>

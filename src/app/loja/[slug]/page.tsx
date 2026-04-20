@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ShowcaseCatalog from "@/components/ShowcaseCatalog";
 import { useParams } from "next/navigation";
 import {
   ShoppingCart,
@@ -77,13 +78,16 @@ interface StoreData {
   name: string;
   description?: string;
   logo?: string;
+  coverImage?: string;
   banner?: string;
   whatsapp: string;
   deliveryFee: number;
   deliveryTime?: string;
   minOrderValue: number;
   isOpen: boolean;
+  isActive: boolean;
   primaryColor: string;
+  storeType: string;
   category: Category[];
   deliveryarea: DeliveryArea[];
 }
@@ -410,6 +414,26 @@ export default function StorefrontPage() {
       </div>
     </div>
   );
+
+  // MODO VITRINE: Layout completamente diferente para lojas de moda/acessórios
+  if (store.storeType === "SHOWCASE") {
+    const allProducts = store.category.flatMap(c => c.product.map((p: any) => ({ ...p, categoryId: c.id })));
+    const categories = store.category.map(c => ({ id: c.id, name: c.name, emoji: c.emoji }));
+    return (
+      <ShowcaseCatalog
+        store={{
+          name: store.name,
+          logo: store.logo,
+          coverImage: store.coverImage || store.banner,
+          primaryColor: store.primaryColor,
+          whatsapp: store.whatsapp,
+          description: store.description
+        }}
+        products={allProducts}
+        categories={categories}
+      />
+    );
+  }
 
   const cartCount = getItemCount();
   const subtotal = getTotal();

@@ -23,6 +23,9 @@ export async function GET(
                   include: {
                     option: true
                   }
+                },
+                variants: {
+                  orderBy: { createdAt: "asc" }
                 }
               },
               orderBy: { position: "asc" },
@@ -47,9 +50,25 @@ export async function GET(
       }, { status: 403 });
     }
 
-    // Remove dados sensíveis
+    // Remove dados sensíveis e parseia variantes
     const { userId, ...safeStore } = store;
-    return NextResponse.json(safeStore);
+    
+    // Parseia os sizes das variantes de string JSON para array
+    const storeWithParsedVariants = {
+      ...safeStore,
+      category: safeStore.category.map(cat => ({
+        ...cat,
+        product: cat.product.map((p: any) => ({
+          ...p,
+          variants: (p.variants || []).map((v: any) => ({
+            ...v,
+            sizes: (() => { try { return JSON.parse(v.sizes || "[]"); } catch { return []; } })()
+          }))
+        }))
+      }))
+    };
+
+    return NextResponse.json(storeWithParsedVariants);
   } catch (error: any) {
     console.error("PUBLIC_SHOP_DATA_ERROR:", error);
     return NextResponse.json({ error: "Erro interno: " + error.message }, { status: 500 });

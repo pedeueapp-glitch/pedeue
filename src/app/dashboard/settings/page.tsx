@@ -25,7 +25,7 @@ const DAYS_OF_WEEK = [
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("general"); // general, appearance, hours
+  const [activeTab, setActiveTab] = useState("general");
 
   const [formData, setFormData] = useState<any>({
     name: "",
@@ -36,6 +36,7 @@ export default function SettingsPage() {
     primaryColor: "#f97316",
     logo: "",
     coverImage: "",
+    storeType: "RESTAURANT",
     openingHours: DAYS_OF_WEEK.map(day => ({ 
       day, 
       enabled: true, 
@@ -59,6 +60,7 @@ export default function SettingsPage() {
         }
         setFormData({
           ...data,
+          storeType: data.storeType || "RESTAURANT",
           openingHours: parsedHours
         });
       }
@@ -136,7 +138,6 @@ export default function SettingsPage() {
 
       <div className="p-6 lg:p-10 max-w-5xl mx-auto w-full space-y-8">
         
-        {/* Navegação por Abas Premium */}
         <div className="flex bg-white p-2 rounded-[24px] border border-slate-100 shadow-sm w-fit">
            {[
              { id: 'general', label: 'Geral', icon: SettingsIcon },
@@ -200,6 +201,31 @@ export default function SettingsPage() {
                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Descrição Curta</label>
                    <textarea className="input-field h-32 resize-none" value={formData.description || ""} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Fale um pouco sobre sua loja..." />
                 </div>
+
+                {/* SELETOR TIPO DE NEGÓCIO */}
+                <div className="space-y-4 pt-6 border-t border-slate-50">
+                   <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 block mb-1">Tipo do Negócio</label>
+                      <p className="text-[10px] text-slate-400 ml-1">Define o layout do catálogo público e o modo de cadastro de produtos.</p>
+                   </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {[
+                        { value: "RESTAURANT", label: "Lanchonete / Restaurante", icon: "🍔", desc: "Cardápio com adicionais e opcionais de sabor" },
+                        { value: "SHOWCASE", label: "Vitrine (Moda / Acessórios)", icon: "👗", desc: "Catálogo com variações de cor, tamanho e fotos individuais" }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormData({...formData, storeType: opt.value})}
+                          className={`p-6 border-2 text-left transition-all rounded-none ${(formData.storeType || "RESTAURANT") === opt.value ? 'border-orange-500 bg-orange-50' : 'border-slate-100 hover:border-slate-300'}`}
+                        >
+                          <div className="text-3xl mb-3">{opt.icon}</div>
+                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{opt.label}</p>
+                          <p className="text-[10px] text-slate-400 mt-1">{opt.desc}</p>
+                        </button>
+                      ))}
+                   </div>
+                </div>
              </div>
            )}
 
@@ -208,7 +234,6 @@ export default function SettingsPage() {
              <div className="bg-white rounded-[40px] border border-slate-100 p-8 lg:p-12 space-y-12 shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                    
-                   {/* Logo Upload */}
                    <div className="space-y-4">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logotipo Principal</label>
                       <div className="relative w-40 h-40 group">
@@ -227,7 +252,6 @@ export default function SettingsPage() {
                       <p className="text-[10px] text-slate-400 font-medium">PNG ou JPG sugerido (Proporção 1:1)</p>
                    </div>
 
-                   {/* Banner Upload */}
                    <div className="space-y-4">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Banner de Capa</label>
                       <div className="relative w-full h-40 group">
@@ -243,18 +267,17 @@ export default function SettingsPage() {
                             <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'coverImage')} />
                          </label>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium">BANNER panorâmico para o topo do seu cardápio.</p>
+                      <p className="text-[10px] text-slate-400 font-medium">BANNER panorâmico para o topo do seu catálogo.</p>
                    </div>
                 </div>
 
                 <div className="pt-8 border-t border-slate-50 space-y-6">
                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Esquema de Cores do Cardápio</label>
-                      <p className="text-[10px] text-slate-400 font-medium">Esta cor será a base de todos os botões e detalhes do seu site.</p>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Esquema de Cores</label>
+                      <p className="text-[10px] text-slate-400 font-medium">Esta cor será a base de todos os botões e detalhes do catálogo.</p>
                    </div>
 
                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                      {/* Cor Escolhida & Picker */}
                       <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full sm:w-auto">
                          <label className="relative cursor-pointer group">
                            <div 
@@ -282,7 +305,6 @@ export default function SettingsPage() {
                          </div>
                       </div>
 
-                      {/* Sugestões Rápidas */}
                       <div className="flex flex-wrap gap-2.5">
                         {['#f97316', '#0f172a', '#22c55e', '#ef4444', '#8b5cf6', '#e11d48', '#3b82f6'].map(color => (
                           <button 
@@ -345,7 +367,6 @@ export default function SettingsPage() {
              </div>
            )}
 
-           {/* Botão Salvar Global */}
            <div className="flex justify-end pt-4 pb-20">
               <button 
                 type="submit" 
