@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --color-navy: #0f172a;
+  --color-accent: #f97316;
+}
+
+@layer base {
+  * {
+    @apply border-slate-100;
+  }
+  
+  body {
+    @apply bg-slate-50/50 text-slate-800 antialiased;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-sm text-slate-700 placeholder:text-slate-300;
+  }
+
+  .btn-primary {
+    @apply bg-orange-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/10 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply bg-white text-navy border border-slate-200 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all;
+  }
+
+  .card-premium {
+    @apply bg-white border border-slate-100 rounded-[28px] p-6 shadow-sm hover:shadow-md transition-all;
+  }
+  
+  .sidebar-navy {
+     @apply bg-[#0f172a] text-white;
+  }
+}
+
+/* Custom Scrollbar Slim */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}

@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model category {
+  id        String    @id @default(cuid())
+  name      String
+  emoji     String?
+  position  Int       @default(0)
+  isActive  Boolean   @default(true)
+  storeId   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  store     store     @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Category_storeId_fkey")
+  product   product[]
+
+  @@index([storeId], map: "Category_storeId_fkey")
+}
+
+model customer {
+  id           String   @id
+  name         String
+  phone        String
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  reference    String?
+  city         String?
+  state        String?
+  storeId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  store        store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Customer_storeId_fkey")
+  order        order[]
+
+  @@unique([phone, storeId], map: "Customer_phone_storeId_key")
+  @@index([phone], map: "Customer_phone_idx")
+  @@index([storeId], map: "Customer_storeId_fkey")
+}
+
+model deliveryarea {
+  id           String   @id
+  neighborhood String
+  fee          Float    @default(0)
+  storeId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  store        store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "DeliveryArea_storeId_fkey")
+
+  @@index([storeId], map: "DeliveryArea_storeId_fkey")
+}
+
+model driver {
+  id        String   @id
+  name      String
+  phone     String?
+  vehicle   String?
+  isActive  Boolean  @default(true)
+  storeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  store     store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Driver_storeId_fkey")
+  order     order[]
+
+  @@index([storeId], map: "Driver_storeId_fkey")
+}
+
+model option {
+  id            String      @id @default(cuid())
+  name          String
+  price         Float       @default(0)
+  isActive      Boolean     @default(true)
+  optionGroupId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  optiongroup   optiongroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade, map: "Option_optionGroupId_fkey")
+
+  @@index([optionGroupId], map: "Option_optionGroupId_fkey")
+}
+
+model optiongroup {
+  id               String                       @id @default(cuid())
+  name             String
+  minOptions       Int                          @default(0)
+  maxOptions       Int                          @default(1)
+  isRequired       Boolean                      @default(false)
+  productId        String
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime
+  priceCalculation optiongroup_priceCalculation @default(SUM)
+  option           option[]
+  product          product                      @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OptionGroup_productId_fkey")
+
+  @@index([productId], map: "OptionGroup_productId_fkey")
+}
+
+model order {
+  id            String          @id @default(cuid())
+  orderNumber   Int             @unique(map: "Order_orderNumber_key") @default(autoincrement())
+  customerName  String
+  customerPhone String
+  paymentMethod String
+  observations  String?         @db.Text
+  total         Float
+  subtotal      Float?
+  discount      Float?
+  status        order_status    @default(PENDING)
+  storeId       String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  driverId      String?
+  change        Float?
+  complement    String?
+  customerId    String?
+  deliveryFee   Float           @default(0)
+  deliveryType  String          @default("DELIVERY")
+  neighborhood  String?
+  number        String?
+  reference     String?
+  street        String?
+  orderType     order_orderType @default(DELIVERY)
+  tableId       String?
+  waiterId      String?
+  customer      customer?       @relation(fields: [customerId], references: [id], map: "Order_customerId_fkey")
+  driver        driver?         @relation(fields: [driverId], references: [id], map: "Order_driverId_fkey")
+  store         store           @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Order_storeId_fkey")
+  table         table?          @relation(fields: [tableId], references: [id], map: "Order_tableId_fkey")
+  waiter        waiter?         @relation(fields: [waiterId], references: [id], map: "Order_waiterId_fkey")
+  items         orderitem[]
+
+  @@index([customerId], map: "Order_customerId_fkey")
+  @@index([driverId], map: "Order_driverId_fkey")
+  @@index([storeId], map: "Order_storeId_fkey")
+  @@index([tableId], map: "Order_tableId_fkey")
+  @@index([waiterId], map: "Order_waiterId_fkey")
+}
+
+model orderitem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  price     Float
+  notes     String?
+  productId String
+  orderId   String
+  choices   String? @db.LongText
+  order     order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
+  product   product @relation(fields: [productId], references: [id], map: "OrderItem_productId_fkey")
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+}
+
+model plan {
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  maxProducts  Int            @default(20)
+  features     String?        @db.LongText
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  subscription subscription[]
+}
+
+model product {
+  id          String        @id
+  name        String
+  description String?       @db.Text
+  price       Float
+  imageUrl    String?
+  isActive    Boolean       @default(true)
+  inStock     Boolean       @default(true)
+  position    Int           @default(0)
+  categoryId  String
+  storeId     String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  optiongroup optiongroup[]
+  orderitem   orderitem[]
+  category    category      @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Product_categoryId_fkey")
+  store       store         @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Product_storeId_fkey")
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
+  @@index([storeId], map: "Product_storeId_fkey")
+}
+
+model store {
+  id             String           @id @default(cuid())
+  slug           String           @unique(map: "Store_slug_key")
+  name           String
+  description    String?          @db.Text
+  logo           String?
+  coverImage     String?
+  whatsapp       String
+  address        String?
+  city           String?
+  state          String?
+  deliveryFee    Float            @default(0)
+  minOrderValue  Float            @default(0)
+  isOpen         Boolean          @default(true)
+  isActive       Boolean          @default(true)
+  primaryColor   String           @default("#f97316")
+  openingHours   String?          @db.LongText
+  userId         String           @unique(map: "Store_userId_key")
+  createdAt      DateTime         @default(now())
+  updatedAt            DateTime               @updatedAt
+  deliveryTime         String?                @default("30-45")
+  cashiersession       cashiersession[]
+  category             category[]
+  coupon               coupon[]
+  customer             customer[]
+  deliveryarea         deliveryarea[]
+  driver               driver[]
+  order                order[]
+  pdvsettings          pdvsettings?
+  product              product[]
+  platform_transaction platform_transaction[]
+  user                 user                   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Store_userId_fkey")
+  subscription         subscription?
+  table                table[]
+  waiter               waiter[]
+}
+
+model subscription {
+  id            String              @id @default(cuid())
+  status        subscription_status @default(ACTIVE)
+  expiresAt     DateTime            @default(now())
+  lastPaymentAt DateTime?
+  planId    String
+  storeId   String              @unique(map: "Subscription_storeId_key")
+  createdAt DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  plan          plan                @relation(fields: [planId], references: [id], map: "Subscription_planId_fkey")
+  store         store               @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Subscription_storeId_fkey")
+
+  @@index([planId], map: "Subscription_planId_fkey")
+}
+
+model platform_transaction {
+  id            String   @id @default(cuid())
+  storeId       String
+  planId        String
+  amount        Float
+  status        String   @default("pending")
+  paymentMethod String?
+  externalId    String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model table {
+  id        String   @id
+  number    String
+  capacity  Int?
+  isActive  Boolean  @default(true)
+  storeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  order     order[]
+  store     store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Table_storeId_fkey")
+
+  @@unique([number, storeId], map: "Table_number_storeId_key")
+  @@index([storeId], map: "Table_storeId_fkey")
+}
+
+model user {
+  id            String    @id
+  name          String
+  email         String    @unique(map: "User_email_key")
+  password      String
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  role          user_role @default(USER)
+  store         store?
+}
+
+model waiter {
+  id        String   @id
+  name      String
+  phone     String?
+  isActive  Boolean  @default(true)
+  storeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  order     order[]
+  store     store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Waiter_storeId_fkey")
+
+  @@index([storeId], map: "Waiter_storeId_fkey")
+}
+
+model coupon {
+  id            String    @id @default(cuid())
+  code          String
+  type          String
+  value         Float
+  minOrderValue Float     @default(0)
+  maxUses       Int       @default(0)
+  usedCount     Int       @default(0)
+  expiryDate    DateTime?
+  isActive      Boolean   @default(true)
+  storeId       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isCashback    Boolean   @default(false)
+  store         store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([code, storeId])
+  @@index([storeId])
+}
+
+model cashiersession {
+  id             String    @id @default(cuid())
+  storeId        String
+  status         String
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  openingBalance Float     @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  store          store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model pdvsettings {
+  id           String   @id @default(cuid())
+  storeId      String   @unique
+  soundEnabled Boolean  @default(true)
+  autoPrint    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  store        store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+enum subscription_status {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum order_status {
+  PENDING
+  ACCEPTED
+  PREPARING
+  DELIVERING
+  DONE
+  DELIVERED
+  CANCELED
+}
+
+enum optiongroup_priceCalculation {
+  SUM
+  HIGHEST
+  AVERAGE
+}
+
+enum user_role {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum order_orderType {
+  DELIVERY
+  PICKUP
+  DINING_IN
+}
+
+model platformcity {
+  id        String   @id @default(cuid())
+  name      String
+  state     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model platform_expense {
+  id        String   @id @default(cuid())
+  title     String
+  amount    Float
+  type      String   // FIXED, VARIABLE, WITHDRAWAL
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
