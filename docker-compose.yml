@@ -10,9 +10,12 @@ services:
     environment:
       - DATABASE_URL=mysql://root:root@db:3306/saas_delivery
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=sua_secret_aqui
+      - NEXTAUTH_SECRET=pedeue_secret_key_2026
+    # Este comando garante que o banco seja sincronizado ANTES do app subir
+    command: sh -c "npx prisma db push && node server.js"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
@@ -25,6 +28,12 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+    # Verificação de saúde para garantir que o app só suba quando o DB estiver pronto
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db_data:
