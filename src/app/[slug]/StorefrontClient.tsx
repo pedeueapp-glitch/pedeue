@@ -29,7 +29,8 @@ import {
   Navigation,
   ChevronLeft,
   Copy,
-  QrCode
+  QrCode,
+  Star
 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
