@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
 
     const subtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
     const deliveryFee = deliveryType === "DELIVERY" ? (deliveryArea?.fee || 0) : 0;
-    const total = subtotal + deliveryFee;
+    const discount = body.discount || 0;
+    const total = subtotal + deliveryFee - discount;
 
     const store = await prisma.store.findUnique({ where: { id: storeId } });
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
@@ -83,6 +84,8 @@ export async function POST(req: NextRequest) {
         paymentMethod,
         change: (paymentMethod === "dinheiro" && change) ? parseFloat(change) : null,
         observations: observations || null,
+        subtotal,
+        discount,
         total,
         storeId,
         customerId: resolvedCustomerId,

@@ -535,9 +535,10 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     if (!store) return;
     const totalItems = getTotal();
     const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? selectedArea.fee : 0) : 0;
-    const deliveryTotal = totalItems + currentFee;
+    const discount = 0; // Se houver lógica de cupom no futuro, injetar aqui
+    const deliveryTotal = totalItems + currentFee - discount;
 
-    let msg = `*PEDIDO #${orderNumber} - ${store.name.toUpperCase()}*\n\n`;
+    let msg = `*PEDIDO #${orderNumber || 'NOVO'} - ${store.name.toUpperCase()}*\n\n`;
     msg += `*Cliente:* ${registerForm.name}\n`;
     msg += `*Telefone:* ${phoneInput}\n\n`;
 
@@ -549,7 +550,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       msg += `*RETIRADA NO LOCAL*\n`;
     }
 
-    msg += `-------------------------------------\n`;
+    msg += `\n-------------------------------------\n`;
     msg += `*ITENS DO PEDIDO:*\n\n`;
 
     items.forEach((item) => {
@@ -557,7 +558,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       msg += `  R$ ${(item.price * item.quantity).toFixed(2).replace(".", ",")}\n`;
 
       if (item.choices && Array.isArray(item.choices) && item.choices.length > 0) {
-        msg += `  (+) ${item.choices.map((c: any) => c.name).join(", ")}\n`;
+        msg += `  └ ${item.choices.map((c: any) => c.name).join(", ")}\n`;
       } else if (item.notes) {
         msg += `  _Nota: ${item.notes}_\n`;
       }
@@ -565,21 +566,29 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     });
 
     msg += `-------------------------------------\n`;
-    msg += `*Subtotal:* R$ ${totalItems.toFixed(2).replace(".", ",")}\n`;
+    msg += `*RESUMO FINANCEIRO:*\n`;
+    msg += `Subtotal: R$ ${totalItems.toFixed(2).replace(".", ",")}\n`;
     if (deliveryType === "DELIVERY") {
-      msg += `*Taxa:* R$ ${currentFee.toFixed(2).replace(".", ",")}\n`;
+      msg += `Taxa de Entrega: R$ ${currentFee.toFixed(2).replace(".", ",")}\n`;
+    }
+    if (discount > 0) {
+      msg += `Desconto: - R$ ${discount.toFixed(2).replace(".", ",")}\n`;
     }
     msg += `*TOTAL: R$ ${deliveryTotal.toFixed(2).replace(".", ",")}*\n\n`;
 
     msg += `*PAGAMENTO:* ${paymentMethod.toUpperCase()}\n`;
     if (paymentMethod === "dinheiro" && changeAmount) {
       const trocoVal = parseFloat(changeAmount) - deliveryTotal;
-      msg += `*Dinheiro:* R$ ${parseFloat(changeAmount).toFixed(2)}\n`;
-      msg += `*Troco:* R$ ${trocoVal.toFixed(2).replace(".", ",")}\n`;
+      if (trocoVal > 0) {
+        msg += `Levar troco para: R$ ${parseFloat(changeAmount).toFixed(2).replace(".", ",")}\n`;
+        msg += `*Troco:* R$ ${trocoVal.toFixed(2).replace(".", ",")}\n`;
+      } else {
+        msg += `*Troco:* Não necessário\n`;
+      }
     }
 
     if (orderObservations) {
-      msg += `\n*OBS DO PEDIDO:* ${orderObservations}\n`;
+      msg += `\n*OBSERVAÇÕES:* ${orderObservations}\n`;
     }
 
     msg += `\n_Pedido realizado via PedeUe.com Delivery_`;
