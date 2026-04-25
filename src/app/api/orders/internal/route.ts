@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
           storeId: store.id,
           tableId: tableId,
           status: {
-            in: ["PENDING", "PREPARING", "READY", "OUT_FOR_DELIVERY"]
+            in: ["PENDING", "ACCEPTED", "PREPARING", "DELIVERING"]
           }
         }
       });
