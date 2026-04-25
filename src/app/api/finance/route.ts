@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -10,20 +11,25 @@ const paymentMethodMap: Record<string, string> = {
   "CARD": "Cartão de Crédito",
   "CREDIT_CARD": "Cartão de Crédito",
   "CREDITO": "Cartão de Crédito",
+  "CRÉDITO": "Cartão de Crédito",
   "CARTAO_CREDITO": "Cartão de Crédito",
+  "CARTÃO_CRÉDITO": "Cartão de Crédito",
   "PENDING": "Cartão de Crédito",
   "PENDENTE": "Cartão de Crédito",
 
   // Cartão de Débito
   "DEBIT_CARD": "Cartão de Débito",
   "DEBITO": "Cartão de Débito",
+  "DÉBITO": "Cartão de Débito",
   "CARTAO_DEBITO": "Cartão de Débito",
+  "CARTÃO_DÉBITO": "Cartão de Débito",
 
   // Dinheiro (Separado)
   "CASH": "Dinheiro",
   "MONEY": "Dinheiro",
   "DINHEIRO": "Dinheiro",
   "ESPECIE": "Dinheiro",
+  "ESPÉCIE": "Dinheiro",
   "PHYSICAL_MONEY": "Dinheiro",
 
   // Pix
@@ -31,17 +37,16 @@ const paymentMethodMap: Record<string, string> = {
   "INSTANT_PAY": "Pix",
 };
 
+import { getCurrentStore } from "@/lib/get-store";
+
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    const store = await getCurrentStore();
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const { searchParams } = new URL(req.url);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-
-    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
-    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const startDate = from ? startOfDay(parseISO(from)) : startOfDay(new Date());
     const endDate = to ? endOfDay(parseISO(to)) : endOfDay(new Date());
@@ -49,8 +54,7 @@ export async function GET(req: NextRequest) {
     const orders = await (prisma as any).order.findMany({
       where: {
         storeId: store.id,
-        createdAt: { gte: startDate, lte: endDate },
-        status: { in: ["DELIVERED", "DONE"] }
+        createdAt: { gte: startDate, lte: endDate }
       },
       include: {
         items: { include: { product: true } }
@@ -58,6 +62,10 @@ export async function GET(req: NextRequest) {
     });
 
     let totalRevenue = 0;
+    let completedOrderCount = 0;
+    let pendingCount = 0;
+    let processingCount = 0;
+
     const paymentMethods: Record<string, number> = {};
     const productStats: Record<string, { name: string, quantity: number, total: number }> = {};
     const customerStats: Record<string, { name: string, email: string, count: number, total: number }> = {};
@@ -69,59 +77,69 @@ export async function GET(req: NextRequest) {
     });
 
     orders.forEach((order: any) => {
-      totalRevenue += order.total;
-      
-      const dayKey = format(order.createdAt, "yyyy-MM-dd");
-      if (dailyDataMap[dayKey] !== undefined) {
-        dailyDataMap[dayKey] += order.total;
-      }
+      if (order.status === "PENDING") pendingCount++;
+      if (order.status === "PROCESSING") processingCount++;
 
-      // Lógica de Separação Aprimorada
-      const rawMethod = (order.paymentMethod || "").toUpperCase().trim();
-      let methodLabel = "Outros";
+      // Lógica de status para faturamento
+      const isCountableStatus = ["ACCEPTED", "PREPARING", "DELIVERING", "DELIVERED", "DONE"].includes(order.status);
 
-      if (paymentMethodMap[rawMethod]) {
-        methodLabel = paymentMethodMap[rawMethod];
-      } else if (rawMethod.includes("CARTAO") || rawMethod.includes("CARD")) {
-        methodLabel = "Cartão de Crédito";
-      } else if (rawMethod.includes("DINHEIRO") || rawMethod.includes("CASH")) {
-        methodLabel = "Dinheiro";
-      } else if (rawMethod.includes("PIX")) {
-        methodLabel = "Pix";
-      } else {
-        // Se ainda assim não soubermos, e o usuário pediu crédito no lugar do pendente
-        methodLabel = "Cartão de Crédito";
-      }
-      
-      paymentMethods[methodLabel] = (paymentMethods[methodLabel] || 0) + order.total;
-
-      const customerKey = order.customerEmail || order.customerName || "Anônimo";
-      if (!customerStats[customerKey]) {
-        customerStats[customerKey] = { 
-          name: order.customerName || "Cliente", 
-          email: order.customerEmail || "", 
-          count: 0, 
-          total: 0 
-        };
-      }
-      customerStats[customerKey].count += 1;
-      customerStats[customerKey].total += order.total;
-
-      order.items?.forEach((item: any) => {
-        const prodId = item.productId;
-        if (!productStats[prodId]) {
-          productStats[prodId] = { name: item.product?.name || "Desconhecido", quantity: 0, total: 0 };
+      if (isCountableStatus) {
+        totalRevenue += order.total;
+        completedOrderCount++;
+        
+        const dayKey = format(order.createdAt, "yyyy-MM-dd");
+        if (dailyDataMap[dayKey] !== undefined) {
+          dailyDataMap[dayKey] += order.total;
         }
-        productStats[prodId].quantity += item.quantity;
-        productStats[prodId].total += (item.price * item.quantity);
-      });
+
+        // Lógica de Separação Aprimorada
+        const rawMethod = (order.paymentMethod || "").toUpperCase().trim();
+        let methodLabel = "Outros";
+
+        if (paymentMethodMap[rawMethod]) {
+          methodLabel = paymentMethodMap[rawMethod];
+        } else if (rawMethod.includes("CARTAO") || rawMethod.includes("CARD")) {
+          methodLabel = "Cartão de Crédito";
+        } else if (rawMethod.includes("DINHEIRO") || rawMethod.includes("CASH")) {
+          methodLabel = "Dinheiro";
+        } else if (rawMethod.includes("PIX")) {
+          methodLabel = "Pix";
+        } else {
+          methodLabel = "Cartão de Crédito";
+        }
+        
+        paymentMethods[methodLabel] = (paymentMethods[methodLabel] || 0) + order.total;
+
+        const customerKey = order.customerEmail || order.customerName || "Anônimo";
+        if (!customerStats[customerKey]) {
+          customerStats[customerKey] = { 
+            name: order.customerName || "Cliente", 
+            email: order.customerEmail || "", 
+            count: 0, 
+            total: 0 
+          };
+        }
+        customerStats[customerKey].count += 1;
+        customerStats[customerKey].total += order.total;
+
+        order.items?.forEach((item: any) => {
+          const prodId = item.productId;
+          if (!productStats[prodId]) {
+            productStats[prodId] = { name: item.product?.name || "Desconhecido", quantity: 0, total: 0 };
+          }
+          productStats[prodId].quantity += item.quantity;
+          productStats[prodId].total += (item.price * item.quantity);
+        });
+      }
     });
 
     return NextResponse.json({
       summary: {
         totalRevenue,
-        orderCount: orders.length,
-        averageTicket: orders.length > 0 ? totalRevenue / orders.length : 0,
+        orderCount: completedOrderCount,
+        averageTicket: completedOrderCount > 0 ? totalRevenue / completedOrderCount : 0,
+        pendingCount,
+        processingCount
       },
       dailySales: Object.entries(dailyDataMap).map(([date, value]) => ({ 
         date: format(parseISO(date), "dd/MM"), 
@@ -138,3 +156,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Erro financeiro: " + error.message }, { status: 500 });
   }
 }
+

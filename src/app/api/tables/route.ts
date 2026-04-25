@@ -1,23 +1,69 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { verify } from "jsonwebtoken";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    const { searchParams } = new URL(req.url);
+    const queryStoreId = searchParams.get("storeId");
 
-    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
-    if (!store) return NextResponse.json([], { status: 200 });
+    let storeId: string | null = null;
 
-    const tables = await prisma.table.findMany({
-      where: { storeId: store.id },
-      orderBy: { number: 'asc' }
-    });
+    if (queryStoreId) {
+      // Se houver queryStoreId, pode ser um garçom. Validamos o token se não houver sessão.
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        try {
+          const decoded: any = verify(token, process.env.NEXTAUTH_SECRET || "fallback-secret");
+          if (decoded.storeId === queryStoreId) {
+            storeId = queryStoreId;
+          }
+        } catch (err) {
+          return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+        }
+      }
+      
+      if (!storeId) {
+        // Fallback para sessão de lojista se o token falhar ou não existir
+        const session = await getServerSession(authOptions);
+        if (session?.user?.id) {
+          const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+          if (store && store.id === queryStoreId) storeId = store.id;
+        }
+      }
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+      const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+      if (!store) return NextResponse.json({ error: "Loja nao encontrada" }, { status: 404 });
+      storeId = store.id;
+    }
 
-    return NextResponse.json(tables);
-  } catch (error) {
+    if (!storeId) return NextResponse.json({ error: "ID da loja necessário" }, { status: 400 });
+
+    const [tables, settings] = await Promise.all([
+      prisma.table.findMany({
+        where: { storeId },
+        orderBy: { number: 'asc' },
+        include: {
+          order: {
+            where: { status: { notIn: ['DONE', 'CANCELED'] } }
+          }
+        }
+      }),
+      prisma.pdvsettings.findUnique({ where: { storeId } })
+    ]);
+
+    if (queryStoreId) {
+      return NextResponse.json({ tables, settings });
+    } else {
+      return NextResponse.json(tables);
+    }
+  } catch (error: any) {
     console.error("API TABLES GET ERROR:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
@@ -56,7 +102,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(table);
-  } catch (error) {
+  } catch (error: any) {
     console.error("API TABLES POST ERROR:", error);
     return NextResponse.json({ error: "Erro ao criar mesa" }, { status: 500 });
   }
@@ -79,3 +125,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Falha ao excluir mesa" }, { status: 500 });
   }
 }
+

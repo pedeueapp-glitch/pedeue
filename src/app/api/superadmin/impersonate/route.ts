@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -26,6 +27,11 @@ export async function GET(req: NextRequest) {
   });
 
   // Redireciona para o dashboard
-  // O Dashboard precisará ler este cookie caso o usuário seja SUPERADMIN
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+  // Usamos os headers para garantir o domínio correto em produção (evitando redirecionamento para localhost)
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "pedeue.com";
+  const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = `${protocol}://${host}`;
+
+  return NextResponse.redirect(`${origin}/dashboard`);
 }
+

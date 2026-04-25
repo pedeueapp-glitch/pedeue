@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -36,9 +37,11 @@ export async function POST(req: NextRequest) {
 
     const city = await prisma.platformcity.create({
       data: {
+        id: crypto.randomUUID(),
         name: data.name,
         state: data.state,
         isActive: data.isActive ?? true,
+        updatedAt: new Date()
       }
     });
 
@@ -47,3 +50,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

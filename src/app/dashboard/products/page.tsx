@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { 
   Plus, Search, Edit3, Trash2, Loader2, X, PlusSquare,
-  Package, Camera, AlertCircle, CheckCircle2, PlusCircle, Palette
+  Package, Camera, AlertCircle, CheckCircle2, PlusCircle, Palette,
+  Calculator, TrendingUp, Copy
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Header } from "@/components/Header";
@@ -23,10 +24,14 @@ export default function ProductsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "", description: "", price: "", categoryId: "",
-    imageUrl: "", inStock: true, isActive: true
+    name: "", description: "", price: "", salePrice: "", categoryId: "",
+    imageUrl: "", inStock: true, isActive: true, barcode: "",
+    isCombo: false, comboConfig: "[]",
+    purchasePrice: "", profitMargin: "",
+    isBestSeller: false, isFavorite: false
   });
 
   const [uploading, setUploading] = useState(false);
@@ -35,11 +40,49 @@ export default function ProductsPage() {
   const [minSelect, setMinSelect] = useState(0);
   const [maxSelect, setMaxSelect] = useState(1);
   const [isMandatory, setIsMandatory] = useState(false);
+  const [priceCalculation, setPriceCalculation] = useState("SUM");
   const [addingItemToGroup, setAddingItemToGroup] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemPrice, setNewItemPrice] = useState("");
 
-  const isShowcase = storeType === "SHOWCASE";
+  const comboItems = JSON.parse(formData.comboConfig || "[]");
+
+  const toggleComboItem = (productId: string) => {
+    let newItems = [...comboItems];
+    if (newItems.includes(productId)) {
+      newItems = newItems.filter(id => id !== productId);
+    } else {
+      newItems.push(productId);
+    }
+    
+    // Auto-calculate price based on sum of items
+    const selectedProducts = products.filter(p => newItems.includes(p.id));
+    const totalPrice = selectedProducts.reduce((acc, p) => acc + p.price, 0);
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      comboConfig: JSON.stringify(newItems),
+      price: totalPrice.toString() 
+    }));
+  };
+
+  const isShowcase = storeType === "SHOWCASE" || storeType === "SERVICE";
+  const isService = storeType === "SERVICE";
+
+  const calculateSellingPrice = (purchasePrice: string, margin: string) => {
+    const p = parseFloat(purchasePrice || "0");
+    const m = parseFloat(margin || "0");
+    if (isNaN(p) || isNaN(m)) return 0;
+    return p + (p * (m / 100));
+  };
+
+  // Sync price if in Service mode
+  useEffect(() => {
+    if (isService && (formData.purchasePrice || formData.profitMargin)) {
+      const calculated = calculateSellingPrice(formData.purchasePrice, formData.profitMargin);
+      setFormData(prev => ({ ...prev, price: calculated.toFixed(2) }));
+    }
+  }, [formData.purchasePrice, formData.profitMargin, isService]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -88,7 +131,7 @@ export default function ProductsPage() {
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error();
-      toast.success(isShowcase ? "Produto da Vitrine salvo!" : "Salvo com sucesso!");
+      toast.success(isService ? "Serviço salvo!" : (isShowcase ? "Produto da Vitrine salvo!" : "Salvo com sucesso!"));
       setIsModalOpen(false);
       fetchData();
     } catch { toast.error("Erro ao salvar"); }
@@ -123,6 +166,22 @@ export default function ProductsPage() {
     }
   };
 
+  const duplicateProduct = async (id: string) => {
+    setDuplicatingId(id);
+    const toastId = toast.loading("Duplicando produto...");
+    try {
+      const res = await fetch(`/api/products/${id}/duplicate`, { method: "POST" });
+      if (!res.ok) throw new Error("Falha ao duplicar");
+      
+      toast.success("Produto duplicado com sucesso!", { id: toastId });
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao duplicar", { id: toastId });
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   const fetchOptions = async (productId: string) => {
     const res = await fetch(`/api/products/options?productId=${productId}`);
     const data = await res.json();
@@ -134,9 +193,10 @@ export default function ProductsPage() {
     await fetch("/api/products/options", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: editingProduct.id, name: newGroupName, minChoices: isMandatory ? 1 : 0, maxChoices: maxSelect }),
+      body: JSON.stringify({ productId: editingProduct.id, name: newGroupName, minChoices: isMandatory ? 1 : 0, maxChoices: maxSelect, priceCalculation }),
     });
     setNewGroupName("");
+    setPriceCalculation("SUM");
     fetchOptions(editingProduct.id);
   };
 
@@ -169,13 +229,13 @@ export default function ProductsPage() {
 
   return (
     <>
-      <Header title={isShowcase ? "Catálogo da Vitrine" : "Gerenciamento de Cardápio"} />
+      <Header title={isService ? "Gestão de Papelaria & Serviços" : (isShowcase ? "Catálogo da Vitrine" : "Gerenciamento de Cardápio")} />
 
-      {isShowcase && (
-        <div className="mx-6 lg:mx-10 mt-6 p-4 bg-orange-50 border border-orange-200 rounded-none flex items-center gap-3">
-          <Palette size={18} className="text-orange-500 flex-shrink-0" />
-          <p className="text-xs font-bold text-orange-700">
-            Modo Vitrine ativo. Gerencie cores, tamanhos e fotos individuais clicando em Variações em cada produto.
+      {(storeType === "SHOWCASE" || storeType === "SERVICE") && (
+        <div className="mx-6 lg:mx-10 mt-6 p-4 bg-purple-50 border border-purple-200 rounded-none flex items-center gap-3">
+          <Palette size={18} className="text-purple-500 flex-shrink-0" />
+          <p className="text-xs font-bold text-purple-700">
+            Modo {isService ? "Orçamento Papelaria" : "Vitrine Online"} ativo. {isService ? "Seu sistema agora calcula lucros automaticamente com base nos custos." : "Gerencie cores, tamanhos e fotos individuais clicando em Variações."}
           </p>
         </div>
       )}
@@ -184,10 +244,10 @@ export default function ProductsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {isShowcase ? "Produtos da Vitrine" : "Lista de Itens"}
+              {isService ? "Catálogo de Serviços" : (isShowcase ? "Produtos da Vitrine" : "Lista de Itens")}
             </h2>
             <p className="text-slate-400 text-sm mt-1">
-              {isShowcase ? "Configure produtos com cores e tamanhos." : "Configure seus produtos e categorias."}
+              {isService ? "Gerencie seus itens e calcule margens de lucro." : (isShowcase ? "Configure produtos com cores e tamanhos." : "Configure seus produtos e categorias.")}
             </p>
           </div>
           
@@ -205,21 +265,27 @@ export default function ProductsPage() {
             <button 
               onClick={() => {
                 setEditingProduct(null);
-                setFormData({ name: "", description: "", price: "", categoryId: categories[0]?.id || "", imageUrl: "", inStock: true, isActive: true, barcode: "" });
+                setFormData({ 
+                  name: "", description: "", price: "", salePrice: "", categoryId: categories[0]?.id || "", 
+                  imageUrl: "", inStock: true, isActive: true, barcode: "",
+                  isCombo: false, comboConfig: "[]",
+                  purchasePrice: "", profitMargin: "",
+                  isBestSeller: false, isFavorite: false
+                });
                 setIsModalOpen(true);
               }}
               className="btn-primary flex items-center gap-2 !py-3.5 !rounded-2xl"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">{isShowcase ? "Novo Produto" : "Adicionar Produto"}</span>
+              <span className="hidden sm:inline">{isService ? "Novo Serviço" : (isShowcase ? "Novo Produto" : "Adicionar Produto")}</span>
             </button>
           </div>
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500 mb-4" />
-            <span className="font-black uppercase tracking-widest text-[10px] text-slate-400">Sincronizando...</span>
+            <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-4" />
+            <span className="font-black  tracking-widest text-[10px] text-slate-400">Sincronizando...</span>
           </div>
         ) : (
           <div className="space-y-12">
@@ -239,7 +305,7 @@ export default function ProductsPage() {
                       <div className="absolute top-3 left-3 z-10">
                         <button 
                           onClick={() => toggleStatus(product)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight transition-all shadow-sm ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black  tracking-tight transition-all shadow-sm ${
                             product.isActive !== false 
                               ? "bg-green-500 text-white" 
                               : "bg-slate-200 text-slate-500"
@@ -266,8 +332,8 @@ export default function ProductsPage() {
                           </div>
                         )}
                         {isShowcase && (
-                          <div className="absolute bottom-2 right-2 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-none">
-                            VITRINE
+                          <div className="absolute bottom-2 right-2 bg-purple-500 text-white text-[8px] font-black  px-2 py-0.5 rounded-none">
+                            {isService ? "SERVIÇO" : "VITRINE"}
                           </div>
                         )}
                       </div>
@@ -275,35 +341,85 @@ export default function ProductsPage() {
                       <div className="flex-1 flex flex-col">
                         <div className="flex flex-col mb-3">
                            <h4 className="font-bold text-navy text-sm line-clamp-1">{product.name}</h4>
-                           <div className="text-sm font-black text-orange-500 mt-0.5">
-                              R$ {product.price.toFixed(2).replace('.', ',')}
+                           <div className="text-sm font-black text-purple-500 mt-0.5">
+                              {product.salePrice ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400 line-through">R$ {product.price.toFixed(2).replace('.', ',')}</span>
+                                  <span>R$ {product.salePrice.toFixed(2).replace('.', ',')}</span>
+                                </div>
+                              ) : (
+                                <>R$ {product.price.toFixed(2).replace('.', ',')}</>
+                              )}
                            </div>
+                           {isService && product.purchasePrice > 0 && (
+                             <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-black text-green-600  bg-green-50 px-1.5 py-0.5 rounded-md">Margem: {product.profitMargin}%</span>
+                             </div>
+                           )}
                         </div>
 
                         <div className="mt-auto pt-3 border-t border-slate-50 flex items-center gap-2">
                            <button 
-                              onClick={() => { setEditingProduct(product); setFormData({...product, price: product.price.toString(), barcode: product.barcode || "" }); setIsModalOpen(true); }}
-                              className="p-2 bg-navy text-white rounded-lg hover:bg-orange-500 transition-all flex items-center justify-center shadow-sm"
+                              onClick={() => { 
+                                setEditingProduct(product); 
+                                setFormData({
+                                  ...product, 
+                                  price: product.price.toString(), 
+                                  salePrice: product.salePrice ? product.salePrice.toString() : "",
+                                  barcode: product.barcode || "",
+                                  isCombo: product.isCombo || false,
+                                  comboConfig: product.comboConfig || "[]",
+                                  purchasePrice: product.purchasePrice ? product.purchasePrice.toString() : "",
+                                  profitMargin: product.profitMargin ? product.profitMargin.toString() : "",
+                                  isBestSeller: product.isBestSeller || false,
+                                  isFavorite: product.isFavorite || false
+                                }); 
+                                setIsModalOpen(true); 
+                              }}
+                              className="w-full py-2 bg-navy text-white rounded-lg hover:bg-purple-500 transition-all flex items-center justify-center gap-2 shadow-sm text-[10px] font-black  tracking-widest"
                            >
                               <Edit3 size={14} />
+                              Editar
                            </button>
 
-                           {isShowcase ? (
-                             <button 
-                                onClick={() => { setEditingProduct(product); setIsVariantModalOpen(true); }}
-                                className="flex-1 py-2 border-2 border-orange-100 text-orange-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
-                             >
-                                <Palette size={12} />
-                                Variações
-                             </button>
-                           ) : (
-                             <button 
-                                onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
-                                className="flex-1 py-2 border-2 border-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
-                             >
-                                <PlusSquare size={12} />
-                                Opcionais
-                             </button>
+                           {!isService && (
+                             isShowcase ? (
+                               <div className="flex gap-1.5">
+                                 <button 
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
+                                    className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                    title="Duplicar"
+                                 >
+                                    <Copy size={14} />
+                                 </button>
+                                 <button 
+                                    type="button"
+                                    onClick={() => { setEditingProduct(product); setIsVariantModalOpen(true); }}
+                                    className="p-2 border-2 border-purple-100 text-purple-500 rounded-lg hover:bg-purple-50 transition-all"
+                                 >
+                                    <Palette size={14} />
+                                 </button>
+                               </div>
+                             ) : (
+                               <div className="flex gap-1.5">
+                                 <button 
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
+                                    className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                    title="Duplicar"
+                                 >
+                                    <Copy size={14} />
+                                 </button>
+                                 <button 
+                                    type="button"
+                                    onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
+                                    className="p-2 border-2 border-slate-100 text-slate-500 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                 >
+                                    <PlusSquare size={14} />
+                                 </button>
+                               </div>
+                             )
                            )}
                         </div>
                       </div>
@@ -316,32 +432,149 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* MODAL PRODUTO (FUNCIONA PARA AMBOS OS TIPOS) */}
+      {/* MODAL PRODUTO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-navy/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <form onSubmit={handleSubmit} className="bg-white w-full max-w-lg rounded-[40px] p-8 lg:p-12 shadow-2xl animate-in zoom-in-95 duration-200">
+          <form onSubmit={handleSubmit} className="bg-white w-full max-w-lg rounded-[40px] p-8 lg:p-12 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh] no-scrollbar">
             <div className="flex justify-between items-start mb-10">
               <div>
-                <h2 className="text-2xl font-bold text-navy">{isShowcase ? "Produto da Vitrine" : "Produto"}</h2>
+                <h2 className="text-2xl font-bold text-navy">{isService ? "Configurar Serviço" : (isShowcase ? "Produto da Vitrine" : "Produto")}</h2>
                 <p className="text-slate-400 text-xs mt-1 font-medium">
-                  {isShowcase ? "Depois adicione as variações de cor." : "Insira os detalhes do item no menu."}
+                  {isService ? "Calcule custos e lucros automaticamente." : "Preencha as informações do item."}
                 </p>
               </div>
               <button type="button" onClick={() => setIsModalOpen(false)} className="p-2.5 bg-slate-50 rounded-xl text-slate-400"><X size={20}/></button>
             </div>
             
             <div className="space-y-5">
-              <input className="input-field" placeholder="Nome do Produto" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Nome do Item</label>
+                <input className="input-field" placeholder="Ex: Caderno Personalizado" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+              </div>
+
+              {isService && (
+                <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="text-purple-500" size={16} />
+                    <h4 className="text-[10px] font-black text-navy  tracking-widest">Cálculo de Custo e Lucro</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Custo Un. (R$)</label>
+                      <input className="input-field bg-white" type="number" step="0.01" placeholder="0.00" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Margem (%)</label>
+                      <div className="relative">
+                        <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input className="input-field bg-white pl-11" type="number" placeholder="100" value={formData.profitMargin} onChange={e => setFormData({...formData, profitMargin: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-500  tracking-widest">Preço Original Sugerido:</span>
+                    <span className="text-lg font-black text-navy">R$ {calculateSellingPrice(formData.purchasePrice, formData.profitMargin).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
-                <input className="input-field" placeholder="Preço (R$)" type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">{isService ? "Preço Final (Calculado)" : "Preço Original (R$)"}</label>
+                  <input className="input-field" placeholder="0,00" type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Preço de Oferta (Opcional)</label>
+                  <input className="input-field" placeholder="0,00" type="number" step="0.01" value={formData.salePrice} onChange={e => setFormData({...formData, salePrice: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Categoria</label>
                 <select className="input-field" value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} required>
+                  <option value="">Selecione uma categoria</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              {isShowcase && (
-                <input className="input-field" placeholder="Código de Barras (Opcional)" value={formData.barcode || ""} onChange={e => setFormData({...formData, barcode: e.target.value})} />
+
+              {isShowcase && !isService && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Código de Barras / SKU</label>
+                  <input className="input-field" placeholder="Opcional" value={formData.barcode || ""} onChange={e => setFormData({...formData, barcode: e.target.value})} />
+                </div>
               )}
-              <textarea className="input-field h-24 resize-none" placeholder="Descrição..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isBestSeller} 
+                    onChange={e => setFormData({...formData, isBestSeller: e.target.checked})}
+                    className="w-5 h-5 rounded border-slate-200 text-amber-500 focus:ring-amber-500"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-navy uppercase">Mais Pedido</span>
+                    <span className="text-[9px] text-slate-500">Exibe selo de destaque</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isFavorite} 
+                    onChange={e => setFormData({...formData, isFavorite: e.target.checked})}
+                    className="w-5 h-5 rounded border-slate-200 text-pink-500 focus:ring-pink-500"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-navy uppercase">Queridinho</span>
+                    <span className="text-[9px] text-slate-500">Exibe selo de favorito</span>
+                  </div>
+                </label>
+              </div>
+
+              {!isService && storeType === "RESTAURANT" && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <label className="flex items-center gap-3 cursor-pointer mb-3">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.isCombo} 
+                      onChange={e => setFormData({...formData, isCombo: e.target.checked})}
+                      className="w-5 h-5 rounded border-slate-200 text-purple-500 focus:ring-purple-500"
+                    />
+                    <span className="text-xs font-black  text-navy">Este produto é um COMBO?</span>
+                  </label>
+                  
+                  {formData.isCombo && (
+                    <div className="space-y-3">
+                      <p className="text-[9px] font-black  text-slate-400 mb-2">Selecione os itens do combo:</p>
+                      <div className="max-h-40 overflow-y-auto space-y-1 pr-2">
+                        {products.filter(p => !p.isCombo).map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => toggleComboItem(p.id)}
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[10px] font-bold transition-all ${
+                              comboItems.includes(p.id) 
+                                ? "bg-purple-500 text-white shadow-md" 
+                                : "bg-white text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            <span>{p.name}</span>
+                            <span>R$ {p.price.toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Descrição Detalhada</label>
+                <textarea className="input-field h-24 resize-none" placeholder="Fale sobre o produto/serviço..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              </div>
               
               <label className="block border-2 border-dashed border-slate-100 p-6 rounded-2xl text-center hover:bg-slate-50/50 cursor-pointer transition-all">
                 <div className="flex items-center justify-center gap-4">
@@ -349,16 +582,16 @@ export default function ProductsPage() {
                     {formData.imageUrl ? <img src={formData.imageUrl} className="w-full h-full object-cover" /> : <Camera size={20} className="text-slate-200" />}
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-slate-700">{uploading ? "Sincronizando..." : isShowcase ? "Foto principal do produto" : "Escolher foto"}</p>
-                    <p className="text-[10px] text-slate-400">Convertida automaticamente para WebP</p>
+                    <p className="text-xs font-bold text-slate-700">{uploading ? "Sincronizando..." : "Foto do Item"}</p>
+                    <p className="text-[10px] text-slate-400">Clique para alterar</p>
                   </div>
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-4.5 mt-10 rounded-2xl">
-              {isShowcase ? "Salvar Produto" : "Confirmar Catalogação"}
+            <button type="submit" className="w-full btn-primary py-4.5 mt-10 rounded-2xl shadow-xl shadow-purple-500/20">
+              {isService ? "Salvar Serviço" : (isShowcase ? "Salvar Produto" : "Confirmar Catalogação")}
             </button>
           </form>
         </div>
@@ -380,7 +613,7 @@ export default function ProductsPage() {
             <div className="p-8 lg:p-10 border-b border-slate-100 flex justify-between items-center bg-navy text-white">
                <div>
                   <h2 className="text-xl font-bold tracking-tight">Opcionais</h2>
-                  <p className="text-orange-500 text-[10px] font-bold uppercase tracking-widest mt-1">{editingProduct?.name}</p>
+                  <p className="text-purple-500 text-[10px] font-bold  tracking-widest mt-1">{editingProduct?.name}</p>
                </div>
                <button onClick={() => setIsOptionsModalOpen(false)} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white transition-all"><X size={20}/></button>
             </div>
@@ -388,25 +621,39 @@ export default function ProductsPage() {
             <div className="flex-1 overflow-y-auto p-8 lg:p-12 grid grid-cols-1 md:grid-cols-2 gap-12">
                <div className="space-y-8">
                   <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 space-y-6">
-                    <h4 className="text-xs font-bold text-navy uppercase tracking-widest flex items-center gap-2">
-                       <PlusCircle className="text-orange-500" size={16} /> 
+                    <h4 className="text-xs font-bold text-navy  tracking-widest flex items-center gap-2">
+                       <PlusCircle className="text-purple-500" size={16} /> 
                        Novo Grupo
                     </h4>
                     <input placeholder="Ex: Adicionais de Hambúrguer" className="input-field" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
                     <div className="grid grid-cols-2 gap-4">
                        <div className="bg-white p-4 rounded-2xl border border-slate-100">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Mín</span>
+                          <span className="text-[9px] font-bold text-slate-400  block mb-1">Mín</span>
                           <input type="number" className="bg-transparent font-black text-navy w-full outline-none" value={minSelect} onChange={e => setMinSelect(Number(e.target.value))} />
                        </div>
                        <div className="bg-white p-4 rounded-2xl border border-slate-100">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Máx</span>
+                          <span className="text-[9px] font-bold text-slate-400  block mb-1">Máx</span>
                           <input type="number" className="bg-transparent font-black text-navy w-full outline-none" value={maxSelect} onChange={e => setMaxSelect(Number(e.target.value))} />
                        </div>
                     </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                       <span className="text-[9px] font-bold text-slate-400 block mb-2">Formato de Cobrança</span>
+                       <select 
+                         className="bg-transparent font-black text-navy text-xs w-full outline-none"
+                         value={priceCalculation}
+                         onChange={e => setPriceCalculation(e.target.value)}
+                       >
+                         <option value="SUM">Soma dos Valores (Padrão)</option>
+                         <option value="HIGHEST">Cobrar o Maior Valor (Ex: Pizza)</option>
+                         <option value="AVERAGE">Média dos Valores</option>
+                       </select>
+                    </div>
+
                     <label className="flex items-center gap-4 cursor-pointer group">
                       <div 
                         onClick={() => setIsMandatory(!isMandatory)}
-                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isMandatory ? 'bg-orange-500 border-orange-500 shadow-lg shadow-orange-500/20' : 'border-slate-200'}`}
+                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isMandatory ? 'bg-purple-500 border-purple-500 shadow-lg shadow-purple-500/20' : 'border-slate-200'}`}
                       >
                          {isMandatory && <X size={12} className="text-white" />}
                       </div>
@@ -421,7 +668,7 @@ export default function ProductsPage() {
                    <div key={group.id} className="bg-white border border-slate-100 rounded-[32px] p-6 space-y-5 shadow-sm">
                       <div className="flex justify-between items-start">
                          <div>
-                            <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-md">{group.minOptions > 0 ? "Obrigatório" : "Opcional"}</span>
+                            <span className="text-[9px] font-bold text-purple-500  tracking-widest bg-purple-50 px-2 py-1 rounded-md">{group.minOptions > 0 ? "Obrigatório" : "Opcional"}</span>
                             <h5 className="font-bold text-slate-800 text-base mt-2">{group.name}</h5>
                          </div>
                          <button onClick={() => deleteOptionGroup(group.id)} className="text-slate-300 hover:text-red-400 transition-all"><Trash2 size={18}/></button>
@@ -432,7 +679,7 @@ export default function ProductsPage() {
                            <div key={opt.id} className="flex justify-between items-center py-2 border-b border-slate-50">
                               <span className="text-xs font-semibold text-slate-600">{opt.name}</span>
                               <div className="flex items-center gap-4">
-                                <span className="text-xs font-black text-orange-500">+ R${opt.price.toFixed(2)}</span>
+                                <span className="text-xs font-black text-purple-500">+ R${opt.price.toFixed(2)}</span>
                                 <button onClick={() => deleteOptionItem(opt.id)} className="text-slate-200 hover:text-red-400 transition-all"><X size={14}/></button>
                               </div>
                            </div>
@@ -446,12 +693,12 @@ export default function ProductsPage() {
                               <input placeholder="Preço" type="number" className="input-field !py-2 !text-xs" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
                            </div>
                            <div className="flex gap-2">
-                              <button onClick={() => addOptionItem(group.id)} className="flex-1 bg-navy text-white text-[10px] font-bold uppercase py-2.5 rounded-xl">Confirmar</button>
-                              <button onClick={() => setAddingItemToGroup(null)} className="flex-1 bg-white border border-slate-100 text-slate-400 text-[10px] font-bold uppercase py-2.5 rounded-xl">Cancelar</button>
+                              <button onClick={() => addOptionItem(group.id)} className="flex-1 bg-navy text-white text-[10px] font-bold  py-2.5 rounded-xl">Confirmar</button>
+                              <button onClick={() => setAddingItemToGroup(null)} className="flex-1 bg-white border border-slate-100 text-slate-400 text-[10px] font-bold  py-2.5 rounded-xl">Cancelar</button>
                            </div>
                         </div>
                       ) : (
-                        <button onClick={() => setAddingItemToGroup(group.id)} className="w-full py-3 border border-dashed border-slate-200 text-slate-400 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:border-orange-500 hover:text-orange-500 transition-all">+ Adicionar Item</button>
+                        <button onClick={() => setAddingItemToGroup(group.id)} className="w-full py-3 border border-dashed border-slate-200 text-slate-400 rounded-2xl text-[10px] font-bold  tracking-widest hover:border-purple-500 hover:text-purple-500 transition-all">+ Adicionar Item</button>
                       )}
                    </div>
                  ))}
@@ -472,3 +719,4 @@ export default function ProductsPage() {
     </>
   );
 }
+

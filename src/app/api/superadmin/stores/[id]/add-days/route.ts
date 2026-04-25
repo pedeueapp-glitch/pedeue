@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -28,10 +29,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       subscription = await prisma.subscription.create({
         data: {
+          id: crypto.randomUUID(),
           storeId: storeId,
           planId: defaultPlan.id,
           status: "ACTIVE",
           expiresAt: new Date(), // Começa de agora
+          updatedAt: new Date()
         }
       });
     }
@@ -52,7 +55,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       where: { id: subscription.id },
       data: { 
         expiresAt: currentExpiry,
-        status: "ACTIVE"
+        status: "ACTIVE",
+        updatedAt: new Date()
       }
     });
 

@@ -33,7 +33,7 @@ export function ConfirmModal({
       >
         <div className="p-8">
           <div className="flex justify-between items-start mb-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'}`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-purple-50 text-purple-500'}`}>
               <AlertTriangle size={28} />
             </div>
             <button 
@@ -53,7 +53,7 @@ export function ConfirmModal({
         <div className="p-8 bg-slate-50 flex gap-3">
           <button 
             onClick={onClose}
-            className="flex-1 py-4 text-sm font-black uppercase tracking-widest text-slate-400 hover:text-navy transition-all"
+            className="flex-1 py-4 text-sm font-black  tracking-widest text-slate-400 hover:text-navy transition-all"
           >
             {cancelText}
           </button>
@@ -62,8 +62,8 @@ export function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 ${
-              variant === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
+            className={`flex-1 py-4 rounded-2xl text-sm font-black  tracking-widest text-white shadow-lg transition-all active:scale-95 ${
+              variant === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-purple-500 hover:bg-purple-600 shadow-purple-500/20'
             }`}
           >
             {confirmText}

@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
   --color-navy: #0f172a;
-  --color-accent: #f97316;
+  --color-accent: #575799;
+  
+  --color-purple-50: #f9f9fb;
+  --color-purple-100: #f3f3f7;
+  --color-purple-200: #e8e8ee;
+  --color-purple-300: #d1d1de;
+  --color-purple-400: #babbcd;
+  --color-purple-500: #575799;
+  --color-purple-600: #4a4a82;
+  --color-purple-700: #3d3d6b;
+  --color-purple-800: #2f2f54;
+  --color-purple-900: #252542;
+  --color-purple-950: #1c1c32;
 }
 
 @layer base {
@@ -18,11 +30,11 @@
 
 @layer components {
   .input-field {
-    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-sm text-slate-700 placeholder:text-slate-300;
+    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-base md:text-sm text-slate-700 placeholder:text-slate-300;
   }
 
   .btn-primary {
-    @apply bg-orange-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/10 active:scale-[0.98];
+    @apply bg-purple-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/10 active:scale-[0.98];
   }
 
   .btn-secondary {
@@ -34,7 +46,7 @@
   }
   
   .sidebar-navy {
-     @apply bg-[#0f172a] text-white;
+     @apply bg-purple-950 text-white;
   }
 }
 
@@ -51,4 +63,19 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
+}
+
+/* Sidebar Specific Scrollbar */
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+}
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Prevent auto-zoom on mobile inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea, .input-field {
+    font-size: 16px !important;
+  }
 }

@@ -1,42 +1,95 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-       return NextResponse.json([]); // Retorna array vazio em vez de erro 401 para evitar quebras no .map
-    }
+import { getCurrentStore } from "@/lib/get-store";
 
-    const store = await prisma.store.findUnique({
-      where: { userId: session.user.id }
-    });
+export async function GET(req: NextRequest) {
+  try {
+    const store = await getCurrentStore();
 
     if (!store) {
        return NextResponse.json([]); // Retorna array vazio se não houver loja
     }
 
-    const orders = await prisma.order.findMany({
-      where: { storeId: store.id },
-      include: { 
-        items: {
+    const { searchParams } = new URL(req.url);
+    const cashierFrom = searchParams.get("cashierFrom");
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const report = searchParams.get("report"); // "true" = não filtrar por tipo (relatório geral)
+
+    const orderTypesMap: Record<string, any[]> = {
+      RESTAURANT: ["DELIVERY", "PICKUP", "DINING_IN"],
+      SHOWCASE: ["RETAIL"],
+      SERVICE: ["SERVICE"]
+    };
+
+    const allowedTypes = orderTypesMap[store.storeType] || ["DELIVERY", "PICKUP", "DINING_IN"];
+
+    // Montar filtro de datas
+    const dateFilter: any = {};
+    if (cashierFrom) {
+      dateFilter.gte = new Date(cashierFrom);
+    } else if (dateFrom) {
+      dateFilter.gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
+
+    const whereClause: any = {
+      storeId: store.id,
+    };
+
+    if (!report) {
+      whereClause.orderType = { in: allowedTypes };
+    }
+
+    if (Object.keys(dateFilter).length > 0) {
+      whereClause.createdAt = dateFilter;
+    }
+
+    // Para relatório com paginação
+    if (report === "true") {
+      const skip = (page - 1) * limit;
+      const [orders, total] = await Promise.all([
+        prisma.order.findMany({
+          where: whereClause,
           include: {
-            product: true
-          }
-        },
+            items: { include: { product: true } },
+            table: true,
+            waiter: true
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit
+        }),
+        prisma.order.count({ where: whereClause })
+      ]);
+      return NextResponse.json({ orders, total, page, pages: Math.ceil(total / limit) });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: whereClause,
+      include: {
+        items: { include: { product: true } },
         table: true,
         waiter: true
       },
       orderBy: { createdAt: "desc" },
-      take: 50
+      take: 200
     });
 
     return NextResponse.json(orders);
   } catch (error) {
     console.error("Erro ao buscar pedidos:", error);
-    return NextResponse.json([]); 
+    return NextResponse.json([]);
   }
 }
 
@@ -57,7 +110,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "ID do pedido nao fornecido" }, { status: 400 });
     }
 
-    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    const store = await getCurrentStore();
     if (!store) return NextResponse.json({ error: "Loja nao encontrada" }, { status: 404 });
 
     const order = await prisma.order.update({
@@ -65,7 +118,10 @@ export async function PATCH(req: NextRequest) {
         id: orderId, 
         storeId: store.id 
       },
-      data: { status }
+      data: { 
+        status,
+        updatedAt: new Date()
+      }
     });
 
     return NextResponse.json(order);

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     // Agrupar por dia para o gráfico
     const salesByDay: Record<string, number> = {};
 
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       const method = order.paymentMethod as keyof typeof byMethod;
       if (byMethod[method] !== undefined) {
         byMethod[method] += order.total;
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       summary: {
-        totalVendido: orders.reduce((acc, curr) => acc + curr.total, 0),
+        totalVendido: orders.reduce((acc: number, curr: any) => acc + curr.total, 0),
         totalPedidos: orders.length,
         porMetodo: byMethod,
       },

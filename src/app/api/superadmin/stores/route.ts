@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -20,3 +21,21 @@ export async function GET() {
 
   return NextResponse.json(stores);
 }
+
+export async function PATCH(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "SUPERADMIN") {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
+
+  const { id, isActive } = await req.json();
+
+  const store = await prisma.store.update({
+    where: { id },
+    data: { isActive }
+  });
+
+  return NextResponse.json(store);
+}
+
+

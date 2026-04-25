@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,19 +11,24 @@ export async function POST(req: Request) {
 
     const { groupId, name, price } = await req.json();
 
+    if (!groupId || !name) {
+      return NextResponse.json({ error: "Grupo e nome são obrigatórios" }, { status: 400 });
+    }
+
     const option = await (prisma as any).option.create({
       data: {
         id: `opti_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
         optionGroupId: groupId,
         name,
-        price: parseFloat(price),
+        price: parseFloat(String(price)) || 0,
         updatedAt: new Date()
       },
     });
 
     return NextResponse.json(option);
-  } catch (error) {
-    return NextResponse.json({ error: "Erro ao criar item" }, { status: 500 });
+  } catch (error: any) {
+    console.error("ERRO AO CRIAR ITEM DE OPÇÃO:", error.message);
+    return NextResponse.json({ error: "Erro ao criar item: " + error.message }, { status: 500 });
   }
 }
 
@@ -43,3 +49,4 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Erro ao deletar item" }, { status: 500 });
   }
 }
+

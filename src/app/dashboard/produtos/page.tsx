@@ -176,7 +176,7 @@ export default function ProductsPage() {
     setProductForm({...productForm, optionGroups: newGroups});
   };
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-purple-500" /></div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -222,11 +222,11 @@ export default function ProductsPage() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-800">{product.name}</div>
-                        <div className="text-orange-600 font-black">R$ {product.price.toFixed(2)}</div>
+                        <div className="text-purple-600 font-black">R$ {product.price.toFixed(2)}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEditProduct(product)} className="w-10 h-10 bg-gray-50 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl flex items-center justify-center transition-all">
+                      <button onClick={() => openEditProduct(product)} className="w-10 h-10 bg-gray-50 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-xl flex items-center justify-center transition-all">
                         <Edit3 className="w-5 h-5" />
                       </button>
                       <button onClick={() => deleteProduct(product.id)} className="w-10 h-10 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center transition-all">
@@ -287,10 +287,10 @@ export default function ProductsPage() {
                <div className="pt-6 border-t border-gray-100">
                  <div className="flex items-center justify-between mb-6">
                    <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                     <PlusCircle className="w-5 h-5 text-orange-500" />
+                     <PlusCircle className="w-5 h-5 text-purple-500" />
                      Adicionais / Sabores
                    </h4>
-                   <button type="button" onClick={addOptionGroup} className="text-orange-500 font-bold text-sm hover:underline">+ Novo Grupo</button>
+                   <button type="button" onClick={addOptionGroup} className="text-purple-500 font-bold text-sm hover:underline">+ Novo Grupo</button>
                  </div>
 
                  <div className="space-y-6">
@@ -317,16 +317,16 @@ export default function ProductsPage() {
                          </div>
                          <div className="grid grid-cols-2 gap-4">
                            <div>
-                             <label className="text-[10px] font-bold text-gray-400 uppercase">Mínimo</label>
+                             <label className="text-[10px] font-bold text-gray-400 ">Mínimo</label>
                              <input type="number" className="input-field !py-2 !bg-white" value={group.minOptions} onChange={e => updateGroup(gIdx, "minOptions", e.target.value)} />
                            </div>
                            <div>
-                             <label className="text-[10px] font-bold text-gray-400 uppercase">Máximo</label>
+                             <label className="text-[10px] font-bold text-gray-400 ">Máximo</label>
                              <input type="number" className="input-field !py-2 !bg-white" value={group.maxOptions} onChange={e => updateGroup(gIdx, "maxOptions", e.target.value)} />
                            </div>
                          </div>
                          <div>
-                           <label className="text-[10px] font-bold text-gray-400 uppercase">Cálculo de Preço</label>
+                           <label className="text-[10px] font-bold text-gray-400 ">Cálculo de Preço</label>
                            <select 
                             className="input-field !py-2 !bg-white"
                             value={group.priceCalculation}
@@ -338,7 +338,7 @@ export default function ProductsPage() {
                          </div>
                        </div>
 
-                       <div className="space-y-3 pl-4 border-l-2 border-orange-200">
+                       <div className="space-y-3 pl-4 border-l-2 border-purple-200">
                          {group.options.map((opt, oIdx) => (
                            <div key={oIdx} className="flex items-center gap-3">
                              <input 
@@ -363,7 +363,7 @@ export default function ProductsPage() {
                              }} className="text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
                            </div>
                          ))}
-                         <button type="button" onClick={() => addOptionToGroup(gIdx)} className="text-xs font-bold text-orange-500 hover:underline">+ Adicionar Opção</button>
+                         <button type="button" onClick={() => addOptionToGroup(gIdx)} className="text-xs font-bold text-purple-500 hover:underline">+ Adicionar Opção</button>
                        </div>
                      </div>
                    ))}

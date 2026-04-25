@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -14,9 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DeliveryMenu - Cardápio Digital e Pedidos via WhatsApp",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://pedeue.com"),
+  title: "PedeUe - Delivery",
   description:
-    "Crie seu cardápio digital gratuito e receba pedidos direto no seu WhatsApp. Ideal para restaurantes, padarias e mercados.",
+    "Crie seu cardápio digital e receba pedidos no WhatsApp com a PedeUe - Delivery.",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -27,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.className} ${geistMono.variable} antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

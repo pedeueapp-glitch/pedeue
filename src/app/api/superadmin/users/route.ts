@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
         email: data.email,
         password: hashedPassword,
         role: data.role || "USER",
+        updatedAt: new Date()
       }
     });
 
@@ -50,3 +52,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Usuário com este e-mail já existe ou erro nos dados" }, { status: 400 });
   }
 }
+

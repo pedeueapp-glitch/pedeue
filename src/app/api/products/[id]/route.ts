@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -21,17 +22,26 @@ export async function PATCH(
     });
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
-    const product = await prisma.product.update({
+    // Usando cast para 'any' para evitar erros de tipo se o Prisma Client estiver desatualizado
+    const product = await (prisma.product as any).update({
       where: { id, storeId: store.id },
       data: {
         name: data.name,
         description: data.description,
         price: parseFloat(data.price),
+        salePrice: data.salePrice ? parseFloat(data.salePrice) : null,
         imageUrl: data.imageUrl,
-        categoryId: data.categoryId,
+        category: { connect: { id: data.categoryId } },
         isActive: data.isActive,
         inStock: data.inStock,
-        barcode: data.barcode || null
+        barcode: data.barcode || null,
+        isCombo: data.isCombo ?? false,
+        comboConfig: data.comboConfig || null,
+        purchasePrice: data.purchasePrice ? parseFloat(data.purchasePrice) : 0,
+        profitMargin: data.profitMargin ? parseFloat(data.profitMargin) : 0,
+        isBestSeller: data.isBestSeller ?? false,
+        isFavorite: data.isFavorite ?? false,
+        updatedAt: new Date()
       }
     });
 
@@ -59,12 +69,10 @@ export async function DELETE(
     });
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
-    // 1. Verificar se o produto existe e pertence à loja
-    // O Prisma usa os nomes do schema.prisma!
-    const product = await (prisma as any).product.findUnique({
+    const product = await (prisma.product as any).findUnique({
       where: { id, storeId: store.id },
       include: {
-        optiongroup: true, // Corrigido para minúsculo
+        optiongroup: true,
       }
     });
 
@@ -72,23 +80,30 @@ export async function DELETE(
       return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
     }
 
-    // 2. Tentar deletar em uma transação para garantir integridade
-    await prisma.$transaction(async (tx) => {
-      // Deletar itens dos opcionais primeiro
-      if (product.optiongroup && product.optiongroup.length > 0) {
-        for (const group of product.optiongroup) {
-            await (tx as any).optionitem.deleteMany({
-                where: { groupId: group.id }
-            });
-        }
-        
-        // Deletar os grupos de opcionais
-        await (tx as any).optiongroup.deleteMany({
-          where: { productId: id }
+    await prisma.$transaction(async (tx: any) => {
+      // Primeiro deletamos as variantes
+      await tx.product_variant.deleteMany({
+        where: { productId: id }
+      });
+
+      // Como o esquema tem onDelete: Cascade para OptionGroup e Option,
+      // ao deletar o produto, eles seriam removidos automaticamente.
+      // Mas para garantir a ordem correta e evitar erros de FK:
+      
+      const groups = await tx.optiongroup.findMany({
+        where: { productId: id }
+      });
+
+      for (const group of groups) {
+        await tx.option.deleteMany({
+          where: { optionGroupId: group.id }
         });
       }
 
-      // Deletar o produto
+      await tx.optiongroup.deleteMany({
+        where: { productId: id }
+      });
+
       await tx.product.delete({
         where: { id }
       });

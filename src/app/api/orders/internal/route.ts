@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -11,22 +12,34 @@ export async function POST(req: NextRequest) {
     const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
     if (!store) return NextResponse.json({ error: "Loja nao encontrada" }, { status: 404 });
 
-    const { tableId, waiterId, items, paymentMethod, observations } = await req.json();
+    const body = await req.json();
+    const { tableId, waiterId, items, paymentMethod, observations, orderType, customerId, customerName, customerPhone, deliveryDeadline, total, subtotal, discount } = body;
 
-    // Calculo do total
-    const total = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const finalTotal = total || items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+
+    const orderTypeMap: Record<string, any> = {
+      SHOWCASE: "RETAIL",
+      SERVICE: "SERVICE",
+      RESTAURANT: orderType || "DINING_IN"
+    };
+
+    const finalOrderType = orderTypeMap[store.storeType] || "DINING_IN";
 
     const order = await prisma.order.create({
       data: {
         id: `ord_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
-        customerName: "Consumo Local",
-        customerPhone: "00000000000",
-        orderType: "DINING_IN",
+        customerName: customerName || "Consumo Local",
+        customerPhone: customerPhone || "00000000000",
+        customerId,
+        orderType: finalOrderType,
         deliveryType: "PICKUP", // Para compatibilidade com campos obrigatorios antigos
-        status: "PREPARING",
+        status: store.storeType === "SERVICE" ? "PENDING" : "PREPARING",
         tableId,
         waiterId,
-        total,
+        total: finalTotal,
+        subtotal: subtotal || finalTotal,
+        discount: discount || 0,
+        deliveryDeadline: deliveryDeadline ? new Date(deliveryDeadline) : null,
         deliveryFee: 0,
         paymentMethod: paymentMethod || "PENDENTE",
         observations,
@@ -60,3 +73,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

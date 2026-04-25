@@ -8,7 +8,7 @@ import {
   ClipboardList, Calendar, DollarSign, TrendingUp, Eye, ChevronDown, Percent
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useSidebar } from "@/app/dashboard/layout";
+import { useSidebar } from "@/lib/contexts/SidebarContext";
 
 interface RetailPDVProps {
   storeId: string;
@@ -50,6 +50,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   const [salesData, setSalesData] = useState<any>(null);
   const [salesLoading, setSalesLoading] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
+
+  // Mobile
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeReport, setCloseReport] = useState<any>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
 
   useEffect(() => {
     fetchData();
@@ -142,7 +149,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       variantId: variant?.id,
       name: product.name,
       variantText,
-      price: product.price,
+      price: product.salePrice || product.price,
       qty: 1
     }]);
 
@@ -218,34 +225,47 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   }
 
   // --- CONTROLE DE CAIXA ---
-  async function handleCashierAction() {
+  async function handleCashierAction(action?: "OPEN" | "CLOSE" | "PREVIEW") {
+    const currentAction = action || cashierAction;
     setLoading(true);
     try {
       const res = await fetch("/api/pdv/cashier", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: cashierAction,
+          action: currentAction,
           openingBalance: parseFloat(openingBalance || "0")
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      if (cashierAction === "OPEN") {
+      if (currentAction === "PREVIEW") {
+        setCloseReport(data.report);
+        setShowCloseModal(true);
+        return;
+      }
+
+      if (currentAction === "OPEN") {
         setCashier(data.cashier);
         toast.success("Caixa aberto com sucesso!");
+        setIsCashierModalOpen(false);
       } else {
         setCashier(null);
         toast.success("Caixa fechado com sucesso!");
+        setShowCloseConfirm(false);
+        setCloseReport(null);
+        setShowCloseModal(false);
+        setIsCashierModalOpen(false);
       }
-      setIsCashierModalOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Erro ao atualizar caixa");
     } finally {
-      setLoading(false);
+      setLoading(true);
+      fetchData();
     }
   }
+
 
   // --- VENDAS ---
   async function fetchSales(filter: "today" | "all" = "today") {
@@ -269,8 +289,8 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
 
   if (loading && !isCashierModalOpen) return (
     <div className="h-screen bg-slate-50 flex flex-col items-center justify-center">
-      <Loader2 size={40} className="animate-spin text-orange-500 mb-4" />
-      <p className="font-bold uppercase tracking-widest text-slate-400 text-xs">Sincronizando PDV Loja...</p>
+      <Loader2 size={40} className="animate-spin text-purple-500 mb-4" />
+      <p className="font-bold  tracking-widest text-slate-400 text-xs">Sincronizando PDV Loja...</p>
     </div>
   );
 
@@ -278,7 +298,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
     <div className="h-screen flex flex-col lg:flex-row bg-slate-50 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* ===== LADO ESQUERDO: CATALOGO E BUSCA ===== */}
-      <div className="flex-1 flex flex-col h-full bg-white border-r border-slate-100">
+      <div className="flex-1 flex flex-col h-full min-h-0 bg-white border-r border-slate-100">
         
         {/* Header do Caixa */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-[#0f172a] text-white">
@@ -286,14 +306,14 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              <button onClick={toggle} className="lg:hidden p-2 -ml-2 text-slate-300 hover:text-white transition-all">
                <Menu size={24} />
              </button>
-             <div className="bg-orange-500 p-2 rounded-none hidden lg:block">
+             <div className="bg-purple-500 p-2 rounded-none hidden lg:block">
                <Receipt size={20} />
              </div>
              <div>
-               <h1 className="font-black text-lg uppercase tracking-tight">PDV Vitrine</h1>
+               <h1 className="font-black text-lg  tracking-tight">PDV Vitrine</h1>
                <div className="flex items-center gap-2 mt-0.5">
                  <div className={`w-2 h-2 rounded-none ${cashier ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`} />
-                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                 <span className="text-[10px] font-bold  tracking-widest text-slate-300">
                    {cashier ? `Caixa Aberto (ID: ${cashier.id?.substring(0,8) || ''})` : "CAIXA FECHADO"}
                  </span>
                </div>
@@ -303,17 +323,21 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
            <div className="flex items-center gap-2">
              <button 
                onClick={openSalesPanel}
-               className="px-4 py-2 font-black uppercase text-[10px] tracking-widest transition-all rounded-none border-2 border-slate-700 text-slate-300 hover:bg-slate-800 flex items-center gap-2"
+               className="px-4 py-2 font-black  text-[10px] tracking-widest transition-all rounded-none border-2 border-slate-700 text-slate-300 hover:bg-slate-800 flex items-center gap-2"
              >
                <ClipboardList size={14} />
                <span className="hidden sm:inline">Vendas</span>
              </button>
              <button 
                onClick={() => {
-                 setCashierAction(cashier ? "CLOSE" : "OPEN");
-                 setIsCashierModalOpen(true);
+                 if (cashier) {
+                   handleCashierAction("PREVIEW");
+                 } else {
+                   setCashierAction("OPEN");
+                   setIsCashierModalOpen(true);
+                 }
                }}
-               className={`px-4 py-2 font-black uppercase text-[10px] tracking-widest transition-all rounded-none border-2 ${cashier ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-green-500 text-green-400 hover:bg-green-500/10'}`}
+               className={`px-4 py-2 font-black  text-[10px] tracking-widest transition-all rounded-none border-2 ${cashier ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-green-500 text-green-400 hover:bg-green-500/10'}`}
              >
                {cashier ? "Fechar Caixa" : "Abrir Caixa"}
              </button>
@@ -330,7 +354,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                ref={barcodeInputRef}
                type="text"
                placeholder="Leia o Codigo de Barras (SKU) ou busque por Nome e de [ENTER]"
-               className="w-full bg-white border-2 border-slate-200 focus:border-orange-500 px-14 py-5 font-black uppercase text-sm outline-none transition-all rounded-none placeholder-slate-400"
+               className="w-full bg-white border-2 border-slate-200 focus:border-purple-500 px-14 py-5 font-black  text-sm outline-none transition-all rounded-none placeholder-slate-400"
                value={searchQuery}
                onChange={e => setSearchQuery(e.target.value)}
              />
@@ -338,10 +362,10 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
         </div>
 
         {/* Lista de Produtos Manuais (Caso falte codigo de barras) */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
-           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Acesso Rapido - Manual</p>
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 bg-slate-50">
+           <p className="text-[10px] font-black  tracking-widest text-slate-400 mb-4">Acesso Rapido - Manual</p>
            
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
               {products.map(product => {
                 const hasVariants = product.variants && product.variants.length > 0;
                 return (
@@ -354,19 +378,26 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                          addToCart(product);
                        }
                     }}
-                    className="bg-white border text-center border-slate-200 p-4 hover:border-orange-500 transition-all cursor-pointer rounded-none flex flex-col h-full group relative"
+                    className="bg-white border text-center border-slate-100 p-2 hover:border-purple-500 transition-all cursor-pointer rounded-none flex flex-col h-full group relative shadow-sm"
                   >
-                     {product.imageUrl ? (
-                       <img src={product.imageUrl} className="w-16 h-16 object-cover mx-auto mb-3" />
-                     ) : (
-                       <Package size={32} className="text-slate-300 mx-auto mb-3" />
-                     )}
-                     <h3 className="text-xs font-black text-slate-800 uppercase line-clamp-2 leading-tight flex-1">{product.name}</h3>
-                     <p className="text-orange-600 font-black text-sm mt-2">R$ {product.price.toFixed(2).replace('.', ',')}</p>
+                     <div className="w-10 h-10 mx-auto mb-2 flex items-center justify-center bg-slate-50 overflow-hidden">
+                        {product.imageUrl ? (
+                          <img src={product.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                        ) : (
+                          <Package size={20} className="text-slate-300" />
+                        )}
+                     </div>
+                     <h3 className="text-[10px] font-bold text-slate-800  line-clamp-2 leading-tight flex-1 mb-1">{product.name}</h3>
+                     <div className="flex flex-col items-center">
+                        {product.salePrice && product.salePrice < product.price && (
+                          <span className="text-[8px] text-slate-400 line-through font-bold leading-none mb-0.5">R$ {product.price.toFixed(2).replace('.', ',')}</span>
+                        )}
+                        <p className="text-purple-600 font-black text-[11px] leading-none">R$ {(product.salePrice && product.salePrice < product.price ? product.salePrice : product.price).toFixed(2).replace('.', ',')}</p>
+                     </div>
 
                      {hasVariants && (
-                       <div className="absolute top-2 right-2 bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 uppercase tracking-widest rounded-none">
-                         Opcoes
+                       <div className="absolute top-1 right-1 bg-slate-900 text-white text-[7px] font-black px-1 py-0.5  tracking-widest">
+                         +
                        </div>
                      )}
                   </div>
@@ -376,13 +407,29 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
         </div>
       </div>
 
+      {/* OVERLAY PARA O CARRINHO MOBILE */}
+      {isCartOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-[90] lg:hidden backdrop-blur-sm"
+          onClick={() => setIsCartOpen(false)}
+        />
+      )}
+
       {/* ===== LADO DIREITO: CARRINHO E CHECKOUT ===== */}
-      <div className="w-full lg:w-[420px] bg-white flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.05)] border-l border-slate-200 z-10">
+      <div className={`
+        fixed lg:static top-0 right-0 h-full z-[100] lg:z-10
+        w-full sm:w-[420px] bg-white flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.05)] border-l border-slate-200
+        transition-transform duration-300
+        ${isCartOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
+      `}>
          
-         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 text-sm">
-              <ShoppingBag size={15} className="text-orange-500" /> Venda Atual
+         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h2 className="font-black text-slate-800 tracking-tight flex items-center gap-2 text-sm">
+              <ShoppingBag size={15} className="text-purple-500" /> Venda Atual
             </h2>
+            <button className="lg:hidden p-2" onClick={() => setIsCartOpen(false)}>
+               <X size={20} className="text-slate-400" />
+            </button>
          </div>
 
          {/* Cliente */}
@@ -390,7 +437,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              <div className="flex gap-2">
                <div className="p-2 bg-slate-100 text-slate-500 rounded-none"><User size={14} /></div>
                <input 
-                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px] uppercase px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
+                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px]  px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
                  placeholder="Nome do Cliente (Opcional)"
                  value={customerName}
                  onChange={e => setCustomerName(e.target.value)}
@@ -399,7 +446,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              <div className="flex gap-2">
                <div className="p-2 bg-slate-100 text-slate-500 rounded-none"><Smartphone size={14} /></div>
                <input 
-                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px] uppercase px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
+                 className="flex-1 bg-slate-50 border border-slate-200 font-bold text-[10px]  px-3 py-1.5 outline-none focus:border-slate-400 rounded-none" 
                  placeholder="Telefone (Opcional)"
                  value={customerPhone}
                  onChange={e => setCustomerPhone(e.target.value)}
@@ -412,15 +459,15 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              {cart.length === 0 ? (
                <div className="h-full flex flex-col items-center justify-center text-slate-300 text-center px-4">
                  <Barcode size={36} className="mb-3 opacity-50" />
-                 <p className="font-black uppercase text-[10px] tracking-widest leading-relaxed">Leia o codigo de barras ou adicione itens pelo painel.</p>
+                 <p className="font-black  text-[10px] tracking-widest leading-relaxed">Leia o codigo de barras ou adicione itens pelo painel.</p>
                </div>
              ) : (
                cart.map((item) => (
-                 <div key={item.id} className="bg-white border border-slate-200 p-2.5 rounded-none group hover:border-orange-500 transition-all flex items-center gap-3">
+                 <div key={item.id} className="bg-white border border-slate-200 p-2.5 rounded-none group hover:border-purple-500 transition-all flex items-center gap-3">
                     <div className="flex-1 min-w-0">
-                       <h4 className="font-black text-slate-900 uppercase text-[10px] leading-tight line-clamp-1">{item.name}</h4>
-                       {item.variantText && <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{item.variantText}</p>}
-                       <p className="text-orange-600 font-black text-xs mt-0.5">R$ {item.price.toFixed(2).replace('.', ',')}</p>
+                       <h4 className="font-black text-slate-900  text-[10px] leading-tight line-clamp-1">{item.name}</h4>
+                       {item.variantText && <p className="text-[8px] font-bold text-slate-400  mt-0.5">{item.variantText}</p>}
+                       <p className="text-purple-600 font-black text-xs mt-0.5">R$ {item.price.toFixed(2).replace('.', ',')}</p>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -439,22 +486,22 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
          </div>
 
          {/* Pagamento e Fechamento */}
-         <div className="p-4 bg-slate-900 border-t-4 border-orange-500">
+         <div className="p-4 bg-slate-900 border-t-4 border-purple-500">
 
              {/* Desconto */}
              <div className="mb-3">
-               <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Desconto</p>
+               <p className="text-[8px] font-black  tracking-widest text-slate-500 mb-1.5">Desconto</p>
                <div className="flex gap-1.5">
                  <div className="flex border border-slate-800 rounded-none overflow-hidden">
                    <button 
                      onClick={() => setDiscountType("percent")}
-                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'percent' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'percent' ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                    >
                      <Percent size={11} />
                    </button>
                    <button 
                      onClick={() => setDiscountType("fixed")}
-                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'fixed' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                     className={`px-2 py-1.5 text-[9px] font-black transition-all ${discountType === 'fixed' ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                    >
                      R$
                    </button>
@@ -464,13 +511,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                    step="0.01" 
                    min="0"
                    placeholder={discountType === 'percent' ? 'Ex: 10' : 'Ex: 5.00'}
-                   className="flex-1 bg-slate-800 border border-slate-700 text-white font-black text-xs px-3 py-1.5 outline-none focus:border-orange-500 rounded-none placeholder-slate-600"
+                   className="flex-1 bg-slate-800 border border-slate-700 text-white font-black text-xs px-3 py-1.5 outline-none focus:border-purple-500 rounded-none placeholder-slate-600"
                    value={discountValue}
                    onChange={e => setDiscountValue(e.target.value)}
                  />
                </div>
                {discountAmount > 0 && (
-                 <p className="text-green-400 text-[9px] font-black uppercase mt-1">
+                 <p className="text-green-400 text-[9px] font-black  mt-1">
                    -{discountType === 'percent' ? `${discountNum}%` : ''} R$ {discountAmount.toFixed(2).replace('.', ',')}
                  </p>
                )}
@@ -478,17 +525,17 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              
              {/* Total */}
              <div className="flex justify-between items-center mb-1">
-                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
+                 <span className="text-[9px] font-black  tracking-widest text-slate-500">Subtotal</span>
                  <span className="text-xs font-bold text-slate-400">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
              </div>
              {discountAmount > 0 && (
                <div className="flex justify-between items-center mb-1">
-                 <span className="text-[9px] font-black uppercase tracking-widest text-green-500">Desconto</span>
+                 <span className="text-[9px] font-black  tracking-widest text-green-500">Desconto</span>
                  <span className="text-xs font-bold text-green-400">-R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
                </div>
              )}
              <div className="flex justify-between items-end mb-4">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</span>
+                 <span className="text-[10px] font-black  tracking-widest text-slate-400">Total</span>
                  <span className="text-2xl font-black text-white">R$ {totalFinal.toFixed(2).replace('.', ',')}</span>
              </div>
 
@@ -503,10 +550,10 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                   <button 
                     key={method.name}
                     onClick={() => setPaymentMethod(method.name)}
-                    className={`py-2 px-1 flex flex-col items-center gap-1 border transition-all rounded-none ${paymentMethod === method.name ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                    className={`py-2 px-1 flex flex-col items-center gap-1 border transition-all rounded-none ${paymentMethod === method.name ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-slate-800 text-slate-400 hover:border-slate-700'}`}
                   >
-                    <method.icon size={14} className={paymentMethod === method.name ? 'text-orange-500' : ''} />
-                    <span className="font-black uppercase text-[7px] tracking-tight">{method.label}</span>
+                    <method.icon size={14} className={paymentMethod === method.name ? 'text-purple-500' : ''} />
+                    <span className="font-black  text-[7px] tracking-tight">{method.label}</span>
                   </button>
                 ))}
              </div>
@@ -514,7 +561,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              {/* Troco - Apenas quando dinheiro selecionado */}
              {paymentMethod === "DINHEIRO" && (
                <div className="mb-3 p-3 bg-slate-800 border border-slate-700">
-                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Valor Recebido</p>
+                 <p className="text-[8px] font-black  tracking-widest text-slate-500 mb-1.5">Valor Recebido</p>
                  <div className="relative">
                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">R$</span>
                    <input 
@@ -522,14 +569,14 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                      step="0.01" 
                      min="0"
                      placeholder="0,00"
-                     className="w-full bg-slate-900 border border-slate-700 text-white font-black text-sm pl-9 pr-3 py-2 outline-none focus:border-orange-500 rounded-none placeholder-slate-700"
+                     className="w-full bg-slate-900 border border-slate-700 text-white font-black text-sm pl-9 pr-3 py-2 outline-none focus:border-purple-500 rounded-none placeholder-slate-700"
                      value={cashReceived}
                      onChange={e => setCashReceived(e.target.value)}
                    />
                  </div>
                  {cashReceivedNum > 0 && (
                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
-                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Troco</span>
+                     <span className="text-[9px] font-black  tracking-widest text-slate-400">Troco</span>
                      <span className={`text-sm font-black ${changeAmount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                        {changeAmount >= 0 ? `R$ ${changeAmount.toFixed(2).replace('.', ',')}` : `Faltam R$ ${Math.abs(changeAmount).toFixed(2).replace('.', ',')}`}
                      </span>
@@ -542,7 +589,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              <button 
                onClick={handleCheckout}
                disabled={checkoutLoading || cart.length === 0}
-               className="w-full bg-orange-500 hover:brightness-110 text-white py-3 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-[0_0_20px_rgba(249,115,22,0.3)] rounded-none"
+               className="w-full bg-purple-500 hover:brightness-110 text-white py-3 font-black  tracking-widest text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-[0_0_20px_rgba(249,115,22,0.3)] rounded-none"
              >
                {checkoutLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
                {checkoutLoading ? "Processando..." : "Confirmar Recebimento"}
@@ -553,8 +600,8 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       {/* MODAL MAQUINA DE CAIXA */}
       {isCashierModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 min-h-screen">
-          <div className="bg-white w-full max-w-sm rounded-none shadow-2xl p-6 border-t-4 border-orange-500 animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">
+          <div className="bg-white w-full max-w-sm rounded-none shadow-2xl p-6 border-t-4 border-purple-500 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-black text-slate-900  tracking-tight mb-2">
               {cashierAction === "OPEN" ? "Abrir Caixa" : "Fechar Caixa"}
             </h2>
             <p className="text-xs font-bold text-slate-400 mb-6 leading-relaxed">
@@ -565,13 +612,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
 
             {cashierAction === "OPEN" && (
               <div className="mb-6">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Fundo de Caixa Inicial (Opcional)</label>
+                <label className="text-[10px] font-black  tracking-widest text-slate-400 block mb-2">Fundo de Caixa Inicial (Opcional)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">R$</span>
                   <input 
                     type="number"
                     step="0.01"
-                    className="w-full border-2 border-slate-200 pl-10 pr-4 py-3 font-black text-slate-800 outline-none focus:border-orange-500 rounded-none transition-all"
+                    className="w-full border-2 border-slate-200 pl-10 pr-4 py-3 font-black text-slate-800 outline-none focus:border-purple-500 rounded-none transition-all"
                     placeholder="0.00"
                     value={openingBalance}
                     onChange={e => setOpeningBalance(e.target.value)}
@@ -583,14 +630,14 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
             <div className="grid grid-cols-2 gap-3 mt-8">
               <button 
                 onClick={() => setIsCashierModalOpen(false)}
-                className="py-3 font-black uppercase text-[10px] tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all rounded-none"
+                className="py-3 font-black  text-[10px] tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all rounded-none"
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleCashierAction}
                 disabled={loading}
-                className="py-3 font-black uppercase text-[10px] tracking-widest text-white bg-orange-500 hover:brightness-110 transition-all rounded-none flex items-center justify-center gap-2"
+                className="py-3 font-black  text-[10px] tracking-widest text-white bg-purple-500 hover:brightness-110 transition-all rounded-none flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" size={14} /> : null}
                 Confirmar
@@ -606,9 +653,9 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
           <div className="bg-white w-full max-w-lg rounded-none shadow-2xl flex flex-col max-h-[90vh]">
             <div className="p-6 bg-slate-900 flex justify-between items-center text-white shrink-0">
                <div>
-                  <h2 className="font-black uppercase tracking-tight text-lg leading-tight">{selectedProductForVariant.name}</h2>
-                  <p className="text-orange-500 font-black text-sm mt-1 mb-1">R$ {selectedProductForVariant.price.toFixed(2).replace('.', ',')}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selecione uma cor e tamanho</p>
+                  <h2 className="font-black  tracking-tight text-lg leading-tight">{selectedProductForVariant.name}</h2>
+                  <p className="text-purple-500 font-black text-sm mt-1 mb-1">R$ {selectedProductForVariant.price.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-[10px] font-bold text-slate-400  tracking-widest">Selecione uma cor e tamanho</p>
                </div>
                <button onClick={() => setSelectedProductForVariant(null)} className="p-2 bg-white/10 hover:bg-white/20 text-white transition-all">
                   <X size={20} />
@@ -625,15 +672,15 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                         <div className="w-12 h-12 border border-slate-200 flex shrink-0" style={{ backgroundColor: v.colorHex }} />
                       )}
                       <div>
-                        <h4 className="font-black text-slate-800 uppercase text-sm">{v.color}</h4>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                        <h4 className="font-black text-slate-800  text-sm">{v.color}</h4>
+                        <p className="text-[9px] text-slate-400 font-bold  mt-1">
                            Cod Barras: {v.barcode || 'N/A'} &bull; Estoque: {v.stock}
                         </p>
                       </div>
                    </div>
 
                    <div>
-                     <p className="text-[9px] font-black uppercase text-slate-400 mb-2">Tamanhos</p>
+                     <p className="text-[9px] font-black  text-slate-400 mb-2">Tamanhos</p>
                      <div className="flex flex-wrap gap-2">
                         {v.sizes.map((s: string) => (
                           <button
@@ -642,7 +689,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                               addToCart(selectedProductForVariant, v, s);
                               setSelectedProductForVariant(null);
                             }}
-                            className="w-12 h-12 border-2 border-slate-200 font-black uppercase text-sm text-slate-700 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center shrink-0"
+                            className="w-12 h-12 border-2 border-slate-200 font-black  text-sm text-slate-700 hover:border-purple-500 hover:text-purple-500 hover:bg-purple-50 transition-all flex items-center justify-center shrink-0"
                           >
                             {s}
                           </button>
@@ -664,11 +711,11 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
             {/* Header */}
             <div className="p-6 bg-slate-900 text-white flex justify-between items-center shrink-0">
               <div>
-                <h2 className="font-black uppercase tracking-tight text-lg flex items-center gap-3">
-                  <ClipboardList size={22} className="text-orange-500" />
+                <h2 className="font-black  tracking-tight text-lg flex items-center gap-3">
+                  <ClipboardList size={22} className="text-purple-500" />
                   Historico de Vendas
                 </h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                <p className="text-[10px] font-bold text-slate-400  tracking-widest mt-1">
                   Vendas realizadas no modo Vitrine
                 </p>
               </div>
@@ -681,13 +728,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3 shrink-0">
                <button 
                  onClick={() => { setSalesFilter("today"); fetchSales("today"); }}
-                 className={`px-4 py-2 font-black uppercase text-[10px] tracking-widest border-2 transition-all rounded-none flex items-center gap-2 ${salesFilter === "today" ? 'border-orange-500 bg-orange-500 text-white' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}
+                 className={`px-4 py-2 font-black  text-[10px] tracking-widest border-2 transition-all rounded-none flex items-center gap-2 ${salesFilter === "today" ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}
                >
                  <Calendar size={14} /> Vendas de Hoje
                </button>
                <button 
                  onClick={() => { setSalesFilter("all"); fetchSales("all"); }}
-                 className={`px-4 py-2 font-black uppercase text-[10px] tracking-widest border-2 transition-all rounded-none flex items-center gap-2 ${salesFilter === "all" ? 'border-orange-500 bg-orange-500 text-white' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}
+                 className={`px-4 py-2 font-black  text-[10px] tracking-widest border-2 transition-all rounded-none flex items-center gap-2 ${salesFilter === "all" ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}
                >
                  <TrendingUp size={14} /> Todas as Vendas
                </button>
@@ -697,16 +744,16 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
             {salesData && !salesLoading && (
               <div className="grid grid-cols-3 gap-4 p-4 border-b border-slate-100 bg-white shrink-0">
                 <div className="p-4 bg-green-50 border border-green-100">
-                  <p className="text-[9px] font-black uppercase text-green-600 tracking-widest">Faturamento</p>
+                  <p className="text-[9px] font-black  text-green-600 tracking-widest">Faturamento</p>
                   <p className="text-xl font-black text-green-700 mt-1">R$ {salesData.totalRevenue?.toFixed(2).replace('.', ',')}</p>
                 </div>
                 <div className="p-4 bg-blue-50 border border-blue-100">
-                  <p className="text-[9px] font-black uppercase text-blue-600 tracking-widest">Total de Vendas</p>
+                  <p className="text-[9px] font-black  text-blue-600 tracking-widest">Total de Vendas</p>
                   <p className="text-xl font-black text-blue-700 mt-1">{salesData.totalSales}</p>
                 </div>
-                <div className="p-4 bg-orange-50 border border-orange-100">
-                  <p className="text-[9px] font-black uppercase text-orange-600 tracking-widest">Itens Vendidos</p>
-                  <p className="text-xl font-black text-orange-700 mt-1">{salesData.totalItems}</p>
+                <div className="p-4 bg-purple-50 border border-purple-100">
+                  <p className="text-[9px] font-black  text-purple-600 tracking-widest">Itens Vendidos</p>
+                  <p className="text-xl font-black text-purple-700 mt-1">{salesData.totalItems}</p>
                 </div>
               </div>
             )}
@@ -715,13 +762,13 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
             <div className="flex-1 overflow-y-auto">
               {salesLoading ? (
                 <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 size={32} className="animate-spin text-orange-500 mb-4" />
-                  <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Carregando vendas...</p>
+                  <Loader2 size={32} className="animate-spin text-purple-500 mb-4" />
+                  <p className="text-xs font-black  text-slate-400 tracking-widest">Carregando vendas...</p>
                 </div>
               ) : (!salesData || salesData.sales?.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-300">
                   <Receipt size={48} className="mb-4 opacity-50" />
-                  <p className="font-black uppercase text-xs tracking-widest">Nenhuma venda registrada</p>
+                  <p className="font-black  text-xs tracking-widest">Nenhuma venda registrada</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
@@ -731,24 +778,24 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                         onClick={() => setSelectedSale(selectedSale?.id === sale.id ? null : sale)}
                         className="p-5 flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-all"
                       >
-                        <div className="w-10 h-10 bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
-                          <DollarSign size={18} className="text-orange-500" />
+                        <div className="w-10 h-10 bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                          <DollarSign size={18} className="text-purple-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-black text-slate-800 uppercase text-xs">{sale.customerName || "Venda Balcao"}</h4>
-                            <span className="bg-green-100 text-green-700 text-[8px] font-black px-2 py-0.5 uppercase tracking-widest">{sale.status}</span>
+                            <h4 className="font-black text-slate-800  text-xs">{sale.customerName || "Venda Balcao"}</h4>
+                            <span className="bg-green-100 text-green-700 text-[8px] font-black px-2 py-0.5  tracking-widest">{sale.status}</span>
                           </div>
                           <div className="flex items-center gap-3 mt-1">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase">
+                            <p className="text-[9px] text-slate-400 font-bold ">
                               {new Date(sale.createdAt).toLocaleDateString('pt-BR')} as {new Date(sale.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </p>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase">{sale.paymentMethod}</p>
-                            {sale.customerPhone && <p className="text-[9px] text-slate-400 font-bold uppercase">Tel: {sale.customerPhone}</p>}
+                            <p className="text-[9px] text-slate-400 font-bold ">{sale.paymentMethod}</p>
+                            {sale.customerPhone && <p className="text-[9px] text-slate-400 font-bold ">Tel: {sale.customerPhone}</p>}
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex items-center gap-3">
-                          <p className="font-black text-orange-600 text-lg">R$ {sale.total.toFixed(2).replace('.', ',')}</p>
+                          <p className="font-black text-purple-600 text-lg">R$ {sale.total.toFixed(2).replace('.', ',')}</p>
                           <ChevronDown size={16} className={`text-slate-300 transition-transform ${selectedSale?.id === sale.id ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
@@ -756,7 +803,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                       {/* Detalhes dos itens da venda */}
                       {selectedSale?.id === sale.id && (
                         <div className="px-5 pb-5 bg-slate-50 border-t border-slate-100">
-                          <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-4 mb-3">Itens desta venda ({sale.items.length})</p>
+                          <p className="text-[9px] font-black  text-slate-400 tracking-widest mt-4 mb-3">Itens desta venda ({sale.items.length})</p>
                           <div className="space-y-2">
                             {sale.items.map((item: any) => (
                               <div key={item.id} className="bg-white p-3 border border-slate-100 flex items-center gap-3">
@@ -764,16 +811,16 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                                   <Package size={14} className="text-slate-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-black text-slate-800 text-xs uppercase line-clamp-1">{item.product?.name || "Produto"}</p>
+                                  <p className="font-black text-slate-800 text-xs  line-clamp-1">{item.product?.name || "Produto"}</p>
                                   {item.choices && item.choices !== '[""]' && (
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
+                                    <p className="text-[9px] text-slate-400 font-bold  mt-0.5">
                                       {(() => { try { const c = JSON.parse(item.choices); return Array.isArray(c) ? c.filter(Boolean).join(', ') : item.choices; } catch { return item.choices; } })()}
                                     </p>
                                   )}
                                 </div>
                                 <div className="text-right shrink-0">
                                   <p className="text-[10px] font-black text-slate-500">{item.quantity}x R$ {item.price.toFixed(2).replace('.', ',')}</p>
-                                  <p className="font-black text-orange-600 text-xs">R$ {(item.quantity * item.price).toFixed(2).replace('.', ',')}</p>
+                                  <p className="font-black text-purple-600 text-xs">R$ {(item.quantity * item.price).toFixed(2).replace('.', ',')}</p>
                                 </div>
                               </div>
                             ))}
@@ -788,6 +835,143 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
           </div>
         </div>
       )}
+
+      {/* MODAL RELATORIO DE FECHAMENTO */}
+      {showCloseModal && closeReport && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-none shadow-2xl flex flex-col max-h-[90vh] border-t-8 border-slate-900">
+             <div className="p-8 overflow-y-auto no-scrollbar">
+                <div className="text-center mb-8">
+                   <div className="w-16 h-16 bg-slate-100 rounded-none flex items-center justify-center mx-auto mb-4">
+                      <Receipt size={32} className="text-slate-900" />
+                   </div>
+                   <h2 className="text-2xl font-black text-slate-900  tracking-tighter">Relatório de Fechamento</h2>
+                   <p className="text-[10px] font-bold text-slate-400  tracking-widest uppercase mt-2">Resumo de Vendas do Turno</p>
+                </div>
+
+                <div className="space-y-6">
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="p-5 bg-slate-50 border border-slate-100 rounded-none">
+                         <p className="text-[10px] font-black text-slate-400  tracking-widest mb-1 uppercase">Abertura</p>
+                         <p className="text-lg font-black text-slate-900">R$ {closeReport.openingBalance.toFixed(2).replace('.', ',')}</p>
+                      </div>
+                      <div className="p-5 bg-purple-50 border border-purple-100 rounded-none">
+                         <p className="text-[10px] font-black text-purple-400  tracking-widest mb-1 uppercase">Total em Vendas</p>
+                         <p className="text-lg font-black text-purple-600">R$ {closeReport.totalSales.toFixed(2).replace('.', ',')}</p>
+                      </div>
+                   </div>
+
+                   <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-400  tracking-widest uppercase">Meios de Pagamento</p>
+                      <div className="bg-white border border-slate-100 rounded-none divide-y divide-slate-50">
+                         <div className="flex justify-between items-center p-4">
+                            <span className="text-xs font-bold text-slate-600 flex items-center gap-2"><Banknote size={14}/> Dinheiro</span>
+                            <span className="text-sm font-black text-slate-900">R$ {closeReport.cashTotal.toFixed(2).replace('.', ',')}</span>
+                         </div>
+                         <div className="flex justify-between items-center p-4">
+                            <span className="text-xs font-bold text-slate-600 flex items-center gap-2"><CreditCard size={14}/> Cartão</span>
+                            <span className="text-sm font-black text-slate-900">R$ {closeReport.cardTotal.toFixed(2).replace('.', ',')}</span>
+                         </div>
+                         <div className="flex justify-between items-center p-4">
+                            <span className="text-xs font-bold text-slate-600 flex items-center gap-2"><Smartphone size={14}/> PIX</span>
+                            <span className="text-sm font-black text-slate-900">R$ {closeReport.pixTotal.toFixed(2).replace('.', ',')}</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="p-5 bg-slate-900 text-white rounded-none flex justify-between items-center">
+                      <div>
+                         <p className="text-[10px] font-black text-slate-400  tracking-widest uppercase">Saldo Final em Caixa</p>
+                         <p className="text-xs font-bold text-slate-500">Abertura + Dinheiro</p>
+                      </div>
+                      <p className="text-2xl font-black text-white">R$ {(closeReport.openingBalance + closeReport.cashTotal).toFixed(2).replace('.', ',')}</p>
+                   </div>
+                </div>
+
+                <div className="mt-8 space-y-3">
+                   <button 
+                    onClick={() => {
+                        const win = window.open('', '_blank');
+                        if (win) {
+                            win.document.write(`
+                                <html>
+                                    <head>
+                                        <title>Relatorio de Fechamento</title>
+                                        <style>
+                                            body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 14px; line-height: 1.4; color: #000; }
+                                            .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                                            .row { display: flex; justify-content: space-between; margin: 5px 0; }
+                                            .total { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 16px; }
+                                            @media print { .no-print { display: none; } }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class="header">
+                                            <h3>RELATORIO DE FECHAMENTO</h3>
+                                            <p>Data: ${new Date().toLocaleString()}</p>
+                                        </div>
+                                        <div class="row"><span>Abertura:</span> <span>R$ ${closeReport.openingBalance.toFixed(2)}</span></div>
+                                        <div class="row"><span>Vendas Totais:</span> <span>R$ ${closeReport.totalSales.toFixed(2)}</span></div>
+                                        <div class="row"><span>Vendas Dinheiro:</span> <span>R$ ${closeReport.cashTotal.toFixed(2)}</span></div>
+                                        <div class="row"><span>Vendas Cartao:</span> <span>R$ ${closeReport.cardTotal.toFixed(2)}</span></div>
+                                        <div class="row"><span>Vendas PIX:</span> <span>R$ ${closeReport.pixTotal.toFixed(2)}</span></div>
+                                        <div class="total">
+                                            <div class="row"><span>SALDO FINAL CAIXA:</span> <span>R$ ${(closeReport.openingBalance + closeReport.cashTotal).toFixed(2)}</span></div>
+                                        </div>
+                                        <script>window.print();</script>
+                                    </body>
+                                </html>
+                            `);
+                        }
+                    }}
+                    className="w-full py-4 bg-slate-100 text-slate-900 rounded-none font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-200 transition-all"
+                   >
+                      <Printer size={16} /> Imprimir Relatório
+                   </button>
+                   <button 
+                    onClick={() => {
+                        setShowCloseModal(false);
+                        setShowCloseConfirm(true);
+                    }}
+                    className="w-full py-4 bg-red-600 text-white rounded-none font-black text-xs flex items-center justify-center gap-2 hover:bg-red-500 transition-all"
+                   >
+                      Confirmar Fechamento de Caixa <ChevronRight size={16} />
+                   </button>
+                   <button onClick={() => setShowCloseModal(false)} className="w-full py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600">Voltar ao PDV</button>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAÇÃO DE FECHAMENTO */}
+      {showCloseConfirm && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-sm rounded-none shadow-2xl p-8 text-center border-t-8 border-red-600">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-none flex items-center justify-center mx-auto mb-6">
+                 <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900  tracking-tighter mb-2">Encerrar Turno?</h3>
+              <p className="text-xs font-bold text-slate-400 leading-relaxed mb-8">Esta ação irá finalizar o caixa atual e todas as vendas serão enviadas para o histórico definitivo. Esta ação não pode ser desfeita.</p>
+              
+              <div className="grid grid-cols-1 gap-3">
+                 <button 
+                  onClick={() => handleCashierAction("CLOSE")}
+                  className="w-full py-4 bg-red-600 text-white rounded-none font-black text-xs hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
+                 >
+                    Sim, Fechar Agora
+                 </button>
+                 <button 
+                  onClick={() => setShowCloseConfirm(false)}
+                  className="w-full py-4 bg-slate-100 text-slate-500 rounded-none font-black text-xs hover:bg-slate-200 transition-all"
+                 >
+                    Cancelar
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
 
     </div>
   );

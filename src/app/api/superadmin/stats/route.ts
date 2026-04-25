@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -19,6 +20,7 @@ export async function GET() {
     });
 
     const revenueData = await prisma.platform_transaction.aggregate({
+      where: { status: "paid" },
       _sum: { amount: true },
       _avg: { amount: true }
     });
@@ -48,6 +50,7 @@ export async function GET() {
 
     // 3. Transações Recentes
     const recentTransactions = await prisma.platform_transaction.findMany({
+      where: { status: "paid" },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: { store: { select: { name: true } } }
@@ -61,7 +64,10 @@ export async function GET() {
       const end = endOfMonth(date);
 
       const monthRevenue = await prisma.platform_transaction.aggregate({
-        where: { createdAt: { gte: start, lte: end } },
+        where: { 
+          status: "paid",
+          createdAt: { gte: start, lte: end } 
+        },
         _sum: { amount: true }
       });
 
@@ -95,7 +101,7 @@ export async function GET() {
       chartData,
       netProfit: totalRevenue - totalExpenses
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("STATS_API_ERROR:", error);
     return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
   }
@@ -105,3 +111,4 @@ function formatMonth(date: Date) {
   const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
   return months[date.getMonth()];
 }
+

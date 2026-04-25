@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -65,6 +66,36 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+
+    const body = await req.json();
+    const { id, name, phone, vehicle } = body;
+
+    if (!id) return NextResponse.json({ error: "ID necessário" }, { status: 400 });
+
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const driver = await (prisma as any).driver.update({
+      where: { id, storeId: store.id },
+      data: {
+        name: name?.trim(),
+        phone: phone || "",
+        vehicle: vehicle || "",
+        updatedAt: new Date()
+      }
+    });
+
+    return NextResponse.json(driver);
+  } catch (error: any) {
+    console.error("PATCH DRIVER ERROR:", error);
+    return NextResponse.json({ error: "Erro ao atualizar: " + error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -81,3 +112,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Falha ao excluir" }, { status: 500 });
   }
 }
+

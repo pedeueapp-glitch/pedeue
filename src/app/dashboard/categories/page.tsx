@@ -26,19 +26,46 @@ export default function CategoriesPage() {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [storeType, setStoreType] = useState("RESTAURANT");
 
-  const EMOJI_LIST = [
-    "🍔", "🍕", "🌭", "🍟", "🥗", "🍣", "🥟", "🍦", "🍩", "🍪", 
-    "🥤", "☕", "🍺", "🍷", "🥩", "🍗", "🥪", "🍳", "🥘", "🍱",
-    "🥐", "🥨", "🍫", "🍓", "🍍", "🥑", "🥕", "🌶️", "🥦", "🌽"
+  const RESTAURANT_EMOJIS = [
+    "🍔", "🍕", "🌭", "🍟", "🥗", "🍣", "🥟", "🍗", "🥣", "🍧",
+    "🍦", "🍩", "🍪", "🥤", "☕", "🍺", "🍷", "🥩", "🥪", "🍳",
+    "🥘", "🍱", "🥐", "🥨", "🍫", "🍓", "🍍", "🥑", "🥕", "🌶️",
+    "🥦", "🌽"
   ];
+
+  const SHOWCASE_EMOJIS = [
+    "👕", "👗", "👠", "👜", "🕶️", "⌚", "💍", "👒", "🧥", "👖",
+    "👔", "👙", "👞", "👢", "👛", "💎", "🧶", "💄", "🧴", "🌂",
+    "🎁", "🎀", "🧸", "🎒", "🧳", "👟", "🧢", "🔥", "✨", "🌟"
+  ];
+
+  const SERVICE_EMOJIS = [
+    "📄", "🛠️", "🎨", "🖊️", "📷", "🎹", "🎓", "✂️", "🧺", "📦",
+    "🧹", "📐", "🖥️", "📠", "🔧", "🔩", "🧱", "🏮", "📜", "📂",
+    "📅", "📌", "⚖️", "💳", "💰", "✉️", "📫", "📱", "🔨", "🪚"
+  ];
+
+  const getEmojiList = () => {
+    if (storeType === "SHOWCASE") return SHOWCASE_EMOJIS;
+    if (storeType === "SERVICE") return SERVICE_EMOJIS;
+    return RESTAURANT_EMOJIS;
+  };
+
+  const EMOJI_LIST = getEmojiList();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/categories");
-      const data = await res.json();
+      const [catRes, storeRes] = await Promise.all([
+        fetch("/api/categories"),
+        fetch("/api/store")
+      ]);
+      const data = await catRes.json();
+      const storeData = await storeRes.json();
       setCategories(Array.isArray(data) ? data : []);
+      setStoreType(storeData?.storeType || "RESTAURANT");
     } catch {
       toast.error("Erro ao carregar categorias");
     } finally {
@@ -89,7 +116,7 @@ export default function CategoriesPage() {
         body: JSON.stringify({ 
             id: editingCategory?.id,
             name, 
-            icon: emoji 
+            emoji: emoji 
         }),
       });
 
@@ -126,13 +153,17 @@ export default function CategoriesPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <Header title="Categorias do Cardápio" />
+      <Header title={storeType === "SHOWCASE" ? "Categorias da Vitrine" : storeType === "SERVICE" ? "Categorias de Serviços" : "Categorias do Cardápio"} />
 
       <div className="p-8 max-w-4xl mx-auto w-full">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-2xl font-black text-gray-800 tracking-tight">Organize seu Menu</h2>
-            <p className="text-gray-400 text-sm">Crie seções como 'Hambúrgueres', 'Bebidas' ou 'Sobremesas'.</p>
+            <h2 className="text-2xl font-black text-gray-800 tracking-tight">
+                {storeType === "SHOWCASE" ? "Organize sua Vitrine" : storeType === "SERVICE" ? "Organize seus Serviços" : "Organize seu Menu"}
+            </h2>
+            <p className="text-gray-400 text-sm">
+                {storeType === "SHOWCASE" ? "Crie seções como 'Vestidos', 'Acessórios' ou 'Sale'." : storeType === "SERVICE" ? "Crie seções como 'Impressões', 'Criação' ou 'Materiais'." : "Crie seções como 'Hambúrgueres', 'Bebidas' ou 'Sobremesas'."}
+            </p>
           </div>
           <button 
             onClick={() => {
@@ -150,23 +181,23 @@ export default function CategoriesPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-gray-400 font-bold">
-            <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-4" />
+            <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-4" />
             Carregando categorias...
           </div>
         ) : (
           <div className="space-y-4">
             {categories.map((category, index) => (
-              <div key={category.id} className="bg-white p-5 rounded-3xl shadow-card border border-gray-50 flex items-center justify-between group hover:border-orange-200 transition-all">
+              <div key={category.id} className="bg-white p-5 rounded-3xl shadow-card border border-gray-50 flex items-center justify-between group hover:border-purple-200 transition-all">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 text-gray-200 flex items-center justify-center">
                     <GripVertical className="w-5 h-5" />
                   </div>
-                  <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-2xl">
+                  <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-2xl">
                     {category.emoji || "🍔"}
                   </div>
                   <div>
                     <h3 className="font-black text-gray-800">{category.name}</h3>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    <p className="text-[10px] font-black  tracking-widest text-gray-400">
                       {category._count?.products || 0} PRODUTOS
                     </p>
                   </div>
@@ -199,7 +230,7 @@ export default function CategoriesPage() {
                             setEmoji(category.emoji || "");
                             setIsModalOpen(true);
                         }}
-                        className="p-3 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all"
+                        className="p-3 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-xl transition-all"
                     >
                         <Edit3 size={20} />
                     </button>
@@ -235,7 +266,7 @@ export default function CategoriesPage() {
             <div className="space-y-6 mb-10">
               <div className="flex gap-4">
                 <div className="space-y-2 relative">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ícone</label>
+                   <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Ícone</label>
                    <div className="relative">
                       <button 
                          type="button"
@@ -249,7 +280,7 @@ export default function CategoriesPage() {
                       {showEmojiPicker && (
                          <div className="absolute top-full left-0 mt-2 p-4 bg-white rounded-3xl border border-slate-100 shadow-2xl z-50 w-64">
                             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
-                               <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Escolha um ícone</span>
+                               <span className="text-[9px] font-black  text-slate-400 tracking-widest">Escolha um ícone</span>
                                <button type="button" onClick={() => setShowEmojiPicker(false)} className="text-slate-300 hover:text-slate-600">
                                   <X size={14} />
                                </button>
@@ -263,7 +294,7 @@ export default function CategoriesPage() {
                                       setEmoji(e);
                                       setShowEmojiPicker(false);
                                    }}
-                                   className="text-xl p-2 hover:bg-orange-50 rounded-xl transition-all hover:scale-110 active:scale-90"
+                                   className="text-xl p-2 hover:bg-purple-50 rounded-xl transition-all hover:scale-110 active:scale-90"
                                  >
                                     {e}
                                  </button>
@@ -274,7 +305,7 @@ export default function CategoriesPage() {
                    </div>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Nome</label>
+                  <label className="block text-xs font-black  tracking-widest text-gray-400 mb-2 ml-4">Nome</label>
                   <input 
                     type="text" 
                     placeholder="Ex: Pizzas"

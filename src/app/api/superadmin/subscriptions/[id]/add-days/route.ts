@@ -1,15 +1,16 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "SUPERADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { days } = await req.json();
-    const subId = params.id;
+    const { id: subId } = await params;
 
     const subscription = await prisma.subscription.findUnique({
       where: { id: subId }
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { id: subId },
       data: { 
         expiresAt: currentExpiry,
-        status: "ACTIVE"
+        status: "ACTIVE",
+        updatedAt: new Date()
       }
     });
 

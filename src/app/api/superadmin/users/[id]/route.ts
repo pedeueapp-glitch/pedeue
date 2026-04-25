@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -21,6 +22,7 @@ export async function PATCH(
       name: data.name,
       email: data.email,
       role: data.role,
+      updatedAt: new Date()
     };
 
     if (data.password) {

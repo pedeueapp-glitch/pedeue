@@ -1,53 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import path from "path";
-import fs from "fs/promises";
-import sharp from "sharp";
-import { v4 as uuidv4 } from "uuid";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
-
+    const { searchParams } = new URL(req.url);
+    const isRaw = searchParams.get("raw") === "true";
+    
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: "Arquivo nao fornecido" }, { status: 400 });
+      return NextResponse.json({ error: "Nenhum arquivo enviado" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Definir caminhos
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+    // Gerar nome único
+    // Se for RAW, mantemos a extensão original para garantir 100% de integridade se necessário
+    // Caso contrário, usamos .webp
+    const originalExtension = file.name.split(".").pop() || "png";
+    const fileName = `${crypto.randomUUID()}.${isRaw ? originalExtension : 'webp'}`;
     
-    // Garantir que a pasta existe
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
+    // Caminho absoluto para a pasta public/uploads/support
+    const uploadDir = join(process.cwd(), "public", "uploads", "support");
+    await mkdir(uploadDir, { recursive: true });
+
+    let finalBuffer = buffer;
+
+    if (!isRaw) {
+      // Processamento de imagem com Sharp apenas se NÃO for RAW
+      const sharp = (await import("sharp")).default;
+      
+      finalBuffer = await sharp(buffer)
+        .resize(1920, 1920, { 
+          fit: "inside", 
+          withoutEnlargement: true 
+        })
+        .webp({ quality: 90, effort: 6 })
+        .toBuffer();
     }
 
-    const filename = `${uuidv4()}.webp`;
-    const filepath = path.join(uploadDir, filename);
+    const path = join(uploadDir, fileName);
+    await writeFile(path, finalBuffer);
 
-    // PROCESSAMENTO COM SHARP:
-    // 1. Redimensionar para max 800x800 (preservando aspecto)
-    // 2. Converter para WebP com qualidade 80
-    // 3. Remover metadados inúteis (EXIF)
-    await sharp(buffer)
-      .resize(800, 800, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toFile(filepath);
+    // Retornar a URL pública via API de imagens
+    const url = `/api/images?file=support/${fileName}`;
 
-    const relativePath = `/uploads/products/${filename}`;
-
-    return NextResponse.json({ url: relativePath });
-  } catch (error: any) {
-    console.error("ERRO UPLOAD:", error);
-    return NextResponse.json({ error: "Falha ao processar imagem" }, { status: 500 });
+    return NextResponse.json({ url });
+  } catch (error) {
+    console.error("UPLOAD ERROR:", error);
+    return NextResponse.json({ error: "Erro ao fazer upload do arquivo" }, { status: 500 });
   }
 }

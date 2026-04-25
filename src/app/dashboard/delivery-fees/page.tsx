@@ -107,10 +107,10 @@ export default function DeliveryFeesPage() {
 
         {/* Formulário de Adição */}
         {isAdding && (
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[32px] border border-orange-100 shadow-xl shadow-orange-500/5 animate-in slide-in-from-top-4 duration-300">
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[32px] border border-purple-100 shadow-xl shadow-purple-500/5 animate-in slide-in-from-top-4 duration-300">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nome do Bairro / Região</label>
+                   <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Nome do Bairro / Região</label>
                    <input 
                       placeholder="Ex: Centro, Barra da Tijuca..." 
                       className="input-field"
@@ -120,7 +120,7 @@ export default function DeliveryFeesPage() {
                    />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Valor da Taxa (R$)</label>
+                   <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Valor da Taxa (R$)</label>
                    <div className="relative">
                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                       <input 
@@ -134,7 +134,7 @@ export default function DeliveryFeesPage() {
                       />
                    </div>
                 </div>
-                <button type="submit" className="btn-primary !h-[48px] !rounded-xl !bg-navy hover:!bg-orange-500">
+                <button type="submit" className="btn-primary !h-[48px] !rounded-xl !bg-navy hover:!bg-purple-500">
                    Salvar Configuração
                 </button>
              </div>
@@ -164,7 +164,7 @@ export default function DeliveryFeesPage() {
            {loading ? (
              <div className="flex flex-col items-center justify-center p-20 opacity-30">
                 <Loader2 className="animate-spin mb-4" />
-                <p className="text-[10px] font-bold uppercase tracking-widest">Carregando Logística...</p>
+                <p className="text-[10px] font-bold  tracking-widest">Carregando Logística...</p>
              </div>
            ) : (
              <div className="divide-y divide-slate-50">
@@ -177,7 +177,7 @@ export default function DeliveryFeesPage() {
                   filteredAreas.map((area) => (
                     <div key={area.id} className="p-6 lg:px-8 flex justify-between items-center hover:bg-slate-50/80 transition-all group">
                        <div className="flex items-center gap-6">
-                          <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 group-hover:text-orange-500 transition-colors">
+                          <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 group-hover:text-purple-500 transition-colors">
                              <MapPin size={22} />
                           </div>
                           <div>
@@ -188,7 +188,7 @@ export default function DeliveryFeesPage() {
                        
                        <div className="flex items-center gap-10">
                           <div className="text-right">
-                             <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Taxa de Frete</p>
+                             <p className="text-[9px] font-black text-slate-300  tracking-widest mb-1">Taxa de Frete</p>
                              <span className="text-lg font-black text-navy">R$ {area.fee.toFixed(2)}</span>
                           </div>
                           <button 
@@ -205,13 +205,13 @@ export default function DeliveryFeesPage() {
            )}
         </div>
 
-        <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100 flex items-start gap-4">
-           <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+        <div className="bg-purple-50/50 p-6 rounded-3xl border border-purple-100 flex items-start gap-4">
+           <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
               <PlusCircle size={20} className="inline rotate-45" />
            </div>
            <div>
-              <h5 className="font-bold text-orange-800 text-sm italic-none">Atenção!</h5>
-              <p className="text-xs text-orange-700/70 mt-1 font-medium italic-none">
+              <h5 className="font-bold text-purple-800 text-sm italic-none">Atenção!</h5>
+              <p className="text-xs text-purple-700/70 mt-1 font-medium italic-none">
                  Caso o cliente escolha um bairro que não esteja nesta lista no checkout, o sistema usará a **taxa padrão** definida nas configurações da loja.
               </p>
            </div>

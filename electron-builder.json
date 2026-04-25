@@ -1,0 +1,53 @@
+{
+  "appId": "com.pedeue.pdv",
+  "productName": "PedeUe PDV",
+  "copyright": "Copyright © 2025 PedeUe",
+  "directories": {
+    "output": "dist",
+    "buildResources": "build",
+    "app": "electron"
+  },
+  "files": [
+    "**/*",
+    "!node_modules"
+  ],
+  "extraMetadata": {
+    "main": "main.js"
+  },
+  "compression": "maximum",
+  "asar": true,
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "build/icon.png",
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "PedeUe PDV",
+    "deleteAppDataOnUninstall": false
+  },
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "icon": "build/icon.icns",
+    "category": "public.app-category.business"
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ],
+    "icon": "build/icon.png",
+    "category": "Office"
+  }
+}

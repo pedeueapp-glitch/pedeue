@@ -65,7 +65,7 @@ export default function MetricsPage() {
       label: "Vaturamento Total", 
       value: `R$ ${data?.summary.totalVendido.toFixed(2) || "0.00"}`, 
       icon: DollarSign, 
-      color: "bg-orange-500",
+      color: "bg-purple-500",
       description: "Líquido faturado no período"
     },
     { 
@@ -98,7 +98,7 @@ export default function MetricsPage() {
               </div>
               <div>
                  <h2 className="text-lg font-bold text-slate-800 tracking-tight">Período do Relatório</h2>
-                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(new Date(dateRange.start), "dd 'de' MMMM", { locale: ptBR })} - {format(new Date(dateRange.end), "dd 'de' MMMM", { locale: ptBR })}</p>
+                 <p className="text-[10px] text-slate-400 font-bold  tracking-widest">{format(new Date(dateRange.start), "dd 'de' MMMM", { locale: ptBR })} - {format(new Date(dateRange.end), "dd 'de' MMMM", { locale: ptBR })}</p>
               </div>
            </div>
 
@@ -118,7 +118,7 @@ export default function MetricsPage() {
               />
               <button 
                 onClick={fetchMetrics}
-                className="p-3 bg-navy text-white rounded-2xl hover:bg-orange-500 transition-all shadow-lg shadow-navy/10"
+                className="p-3 bg-navy text-white rounded-2xl hover:bg-purple-500 transition-all shadow-lg shadow-navy/10"
               >
                 <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
               </button>
@@ -127,8 +127,8 @@ export default function MetricsPage() {
 
         {loading ? (
           <div className="h-96 flex flex-col items-center justify-center text-slate-400">
-             <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-4" />
-             <p className="text-xs font-black uppercase tracking-[0.3em]">Gerando Insights...</p>
+             <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-4" />
+             <p className="text-xs font-black  tracking-[0.3em]">Gerando Insights...</p>
           </div>
         ) : (
           <>
@@ -141,11 +141,11 @@ export default function MetricsPage() {
                     <div className={`${stat.color} p-4 rounded-3xl text-white shadow-lg`}>
                        <stat.icon size={24} />
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full">
+                    <div className="text-[10px] font-black  tracking-widest text-emerald-500 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full">
                        <ArrowUpRight size={12} /> Live
                     </div>
                   </div>
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</h3>
+                  <h3 className="text-[10px] font-black text-slate-400  tracking-[0.2em] mb-1">{stat.label}</h3>
                   <p className="text-3xl font-black text-navy">{stat.value}</p>
                   <p className="text-[10px] text-slate-400 font-medium mt-3">{stat.description}</p>
                 </div>
@@ -159,12 +159,12 @@ export default function MetricsPage() {
               <div className="lg:col-span-2 bg-white p-8 lg:p-10 rounded-[48px] border border-slate-100 shadow-sm space-y-8">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
                        <BarChart3 size={18} />
                     </div>
                     <h4 className="font-bold text-slate-800">Faturamento Diário</h4>
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$/Dia</div>
+                  <div className="text-[10px] font-bold text-slate-400  tracking-widest">R$/Dia</div>
                 </div>
 
                 <div className="h-[350px] w-full">
@@ -182,7 +182,13 @@ export default function MetricsPage() {
                         axisLine={false} 
                         tickLine={false} 
                         tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}}
-                        format={(val) => format(new Date(val), "dd/MM")}
+                        tickFormatter={(val: string) => {
+                          try {
+                            return format(new Date(val), "dd/MM");
+                          } catch {
+                            return val;
+                          }
+                        }}
                       />
                       <YAxis 
                         axisLine={false} 
@@ -242,9 +248,9 @@ export default function MetricsPage() {
                        <div key={i} className="flex justify-between items-center">
                           <div className="flex items-center gap-3">
                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: method.fill }} />
-                             <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">{method.name}</span>
+                             <span className="text-xs font-bold text-slate-600  tracking-widest">{method.name}</span>
                           </div>
-                          <span className="text-xs font-black text-navy uppercase tracking-widest">
+                          <span className="text-xs font-black text-navy  tracking-widest">
                             R$ {method.value.toFixed(2)}
                           </span>
                        </div>

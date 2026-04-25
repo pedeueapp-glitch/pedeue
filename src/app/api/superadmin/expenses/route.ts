@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const expenses = await prisma.platform_expense.findMany({
+  const expenses = await (prisma as any).platform_expense.findMany({
     orderBy: { date: 'desc' }
   });
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = await req.json();
-    const expense = await prisma.platform_expense.create({
+    const expense = await (prisma as any).platform_expense.create({
       data: {
         title: data.title,
         amount: parseFloat(data.amount),
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(expense, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Erro ao salvar despesa" }, { status: 500 });
   }
 }
+

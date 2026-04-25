@@ -14,6 +14,7 @@ model category {
   position  Int       @default(0)
   isActive  Boolean   @default(true)
   storeId   String
+  storeType String    @default("RESTAURANT")
   createdAt DateTime  @default(now())
   updatedAt DateTime
   store     store     @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Category_storeId_fkey")
@@ -132,7 +133,13 @@ model order {
   store         store           @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Order_storeId_fkey")
   table         table?          @relation(fields: [tableId], references: [id], map: "Order_tableId_fkey")
   waiter        waiter?         @relation(fields: [waiterId], references: [id], map: "Order_waiterId_fkey")
+  affiliateId   String?
+  affiliate     affiliate?      @relation(fields: [affiliateId], references: [id])
+  isUpsell      Boolean         @default(false)
+  upsellRuleId  String?
+  deliveryDeadline DateTime?
   items         orderitem[]
+
 
   @@index([customerId], map: "Order_customerId_fkey")
   @@index([driverId], map: "Order_driverId_fkey")
@@ -149,6 +156,7 @@ model orderitem {
   productId String
   orderId   String
   choices   String? @db.LongText
+  isCanceled Boolean @default(false)
   order     order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
   product   product @relation(fields: [productId], references: [id], map: "OrderItem_productId_fkey")
 
@@ -174,12 +182,19 @@ model product {
   name        String
   description String?           @db.Text
   price       Float
+  salePrice   Float?
   imageUrl    String?
   isActive    Boolean           @default(true)
   inStock     Boolean           @default(true)
   barcode     String?
+  purchasePrice Float           @default(0)
+  profitMargin  Float           @default(0)
+  isCombo     Boolean           @default(false)
+  comboConfig String?           @db.LongText
   productType String            @default("RESTAURANT")
   position    Int               @default(0)
+  isBestSeller Boolean          @default(false)
+  isFavorite   Boolean          @default(false)
   categoryId  String
   storeId     String
   createdAt   DateTime          @default(now())
@@ -197,11 +212,13 @@ model product {
 model store {
   id                   String                 @id @default(cuid())
   slug                 String                 @unique(map: "Store_slug_key")
+  customDomain         String?                @unique
   name                 String
   description          String?                @db.Text
   logo                 String?
   coverImage           String?
   whatsapp             String
+  cpf                  String?                @db.VarChar(14)
   address              String?
   city                 String?
   state                String?
@@ -211,11 +228,23 @@ model store {
   isActive             Boolean                @default(true)
   primaryColor         String                 @default("#f97316")
   openingHours         String?                @db.LongText
+  showcaseBanners      String?                @db.LongText
+  restaurantBanners    String?                @db.LongText
+  serviceBanners       String?                @db.LongText
+  facebookPixelId      String?
+  googleAnalyticsId    String?
+  googleTagManagerId   String?
+  tiktokPixelId        String?
   userId               String                 @unique(map: "Store_userId_key")
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   deliveryTime         String?                @default("30-45")
   storeType            String                 @default("RESTAURANT")
+  pixKey               String?
+  pixEnabled           Boolean                @default(false)
+  pixMerchantName      String?
+  pixMerchantCity      String?
+  freeDeliveryThreshold Float     @default(0)
   cashiersession       cashiersession[]
   category             category[]
   coupon               coupon[]
@@ -230,13 +259,20 @@ model store {
   subscription         subscription?
   table                table[]
   waiter               waiter[]
+  material             material[]
+  support_tickets      support_ticket[]
+  affiliates           affiliate[]
+  upsell_rules         upsell_rule[]
 }
+
 
 model subscription {
   id            String              @id @default(cuid())
   status        subscription_status @default(ACTIVE)
   expiresAt     DateTime            @default(now())
   lastPaymentAt DateTime?
+  lastPaymentId String?
+  pendingPlanId String?
   planId        String
   storeId       String              @unique(map: "Subscription_storeId_key")
   createdAt     DateTime            @default(now())
@@ -252,6 +288,7 @@ model platform_transaction {
   storeId       String
   planId        String
   amount        Float
+  months        Int      @default(1)
   status        String   @default("pending")
   paymentMethod String?
   externalId    String?  @unique
@@ -284,8 +321,10 @@ model user {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime
-  role          user_role @default(USER)
-  store         store?
+  role             user_role         @default(USER)
+  store            store?
+  support_tickets  support_ticket[]
+  support_messages support_message[]
 }
 
 model waiter {
@@ -294,8 +333,9 @@ model waiter {
   phone     String?
   isActive  Boolean  @default(true)
   storeId   String
+  password  String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   order     order[]
   store     store    @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Waiter_storeId_fkey")
 
@@ -329,6 +369,8 @@ model cashiersession {
   openedAt       DateTime  @default(now())
   closedAt       DateTime?
   openingBalance Float     @default(0)
+  withdrawals    String?   @db.LongText // JSON: [{reason, amount, at}]
+  closingNotes   String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   store          store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -337,13 +379,29 @@ model cashiersession {
 }
 
 model pdvsettings {
-  id           String   @id @default(cuid())
-  storeId      String   @unique
-  soundEnabled Boolean  @default(true)
-  autoPrint    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  store        store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  storeId           String   @unique
+  soundEnabled      Boolean  @default(true)
+  notificationSound String   @default("notification.mp3")
+  autoPrint         Boolean  @default(false)
+  tableOccupiedColor String  @default("#ef4444")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  store             store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model material {
+  id            String   @id @default(cuid())
+  name          String
+  quantity      Int      @default(0)
+  purchasePrice Float    @default(0)
+  profitMargin  Float    @default(0)
+  storeId       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
 }
 
 enum subscription_status {
@@ -380,6 +438,7 @@ enum order_orderType {
   PICKUP
   DINING_IN
   RETAIL
+  SERVICE
 }
 
 model platformcity {
@@ -415,4 +474,110 @@ model product_variant {
   product   product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+}
+
+model support_ticket {
+  id        String            @id @default(cuid())
+  subject   String
+  status    ticket_status     @default(OPEN)
+  priority  ticket_priority   @default(MEDIUM)
+  userId    String
+  storeId   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      user              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     store?            @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  messages  support_message[]
+
+  @@index([userId])
+  @@index([storeId])
+}
+
+model support_message {
+  id            String         @id @default(cuid())
+  ticketId      String
+  senderId      String
+  content       String         @db.Text
+  attachmentUrl String?
+  createdAt     DateTime       @default(now())
+  ticket        support_ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender        user           @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([senderId])
+}
+
+enum ticket_status {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ticket_priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model system_announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  type      String   @default("INFO") // INFO, WARNING, CRITICAL
+  isActive  Boolean  @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model audit_log {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  details   String?  @db.LongText
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+model webhook_log {
+  id        String   @id @default(cuid())
+  provider  String   // ex: efi, evolution
+  event     String
+  payload   String   @db.LongText
+  status    Int      @default(200)
+  createdAt DateTime @default(now())
+}
+
+model affiliate {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   
+  commission   Float    @default(0)
+  storeId      String
+  isActive     Boolean  @default(true)
+  lastResetAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  store        store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orders       order[]
+
+  @@unique([code, storeId])
+  @@index([storeId])
+}
+
+
+model upsell_rule {
+  id               String   @id @default(cuid())
+  name             String
+  triggerProductId String
+  suggestProductId String
+  discountPrice    Float?
+  timesAccepted    Int      @default(0)
+  storeId          String
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  store            store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
 }

@@ -1,0 +1,10 @@
+{
+  "name": "pedeue-pdv",
+  "version": "1.0.0",
+  "description": "PedeUe PDV - Sistema de Ponto de Venda",
+  "main": "main.js",
+  "private": true,
+  "dependencies": {
+    "electron-is-dev": "^3.0.1"
+  }
+}

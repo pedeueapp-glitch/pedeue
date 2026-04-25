@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -41,9 +42,9 @@ export async function GET(req: NextRequest) {
     });
 
     // Calcular totais
-    const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
+    const totalRevenue = sales.reduce((sum: number, s: any) => sum + s.total, 0);
     const totalSales = sales.length;
-    const totalItems = sales.reduce((sum, s) => sum + s.items.reduce((si, i) => si + i.quantity, 0), 0);
+    const totalItems = sales.reduce((sum: number, s: any) => sum + s.items.reduce((si: number, i: any) => si + i.quantity, 0), 0);
 
     return NextResponse.json({ sales, totalRevenue, totalSales, totalItems });
   } catch (error: any) {
@@ -51,3 +52,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -14,7 +15,14 @@ export async function GET(req: NextRequest) {
       include: { option: true },
       orderBy: { createdAt: "asc" }
     });
-    return NextResponse.json(groups || []);
+    
+    // Mapeia para "options" para facilitar o uso no frontend
+    const mappedGroups = groups.map((g: any) => ({
+      ...g,
+      options: g.option || []
+    }));
+
+    return NextResponse.json(mappedGroups);
   } catch (error: any) {
     console.error("ERRO GET OPTIONS:", error.message);
     return NextResponse.json([]);
@@ -27,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
 
     const body = await req.json();
-    const { productId, name, minChoices, maxChoices } = body;
+    const { productId, name, minChoices, maxChoices, priceCalculation } = body;
 
     const product = await (prisma as any).product.findUnique({ where: { id: productId } });
     if (!product) return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest) {
         maxOptions: Number(maxChoices) || 1,
         isRequired: (Number(minChoices) || 0) > 0,
         productId,
-        priceCalculation: "SUM",
+        priceCalculation: priceCalculation || "SUM",
         updatedAt: new Date()
       }
     });
@@ -76,9 +84,9 @@ export async function DELETE(req: NextRequest) {
     if (!group) return NextResponse.json({ error: "Grupo não encontrado" }, { status: 404 });
 
     // Excluir em transação: Primeiro os itens, depois o grupo
-    await prisma.$transaction(async (tx) => {
-      await (tx as any).optionitem.deleteMany({
-        where: { groupId: id }
+    await prisma.$transaction(async (tx: any) => {
+      await (tx as any).option.deleteMany({
+        where: { optionGroupId: id }
       });
 
       await (tx as any).optiongroup.delete({
@@ -92,3 +100,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao deletar grupo e seus itens" }, { status: 500 });
   }
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -14,7 +15,11 @@ export async function GET(
         subscription: true,
         deliveryarea: true,
         category: {
-          where: { isActive: true },
+          where: { 
+            isActive: true,
+            // Isolamento: Carrega apenas categorias do tipo atual da loja
+            // Se a loja não tiver storeType definido, assume RESTAURANT
+          },
           include: {
             product: {
               where: { isActive: true },
@@ -40,6 +45,15 @@ export async function GET(
       return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
     }
 
+    // Aplicar filtro de isolamento de storeType dinamicamente se necessário
+    const currentStoreType = store.storeType || "RESTAURANT";
+    
+    // Filtramos as categorias que pertencem ao tipo de loja ativo
+    const filteredCategories = store.category.filter(cat => 
+       // @ts-ignore
+       cat.storeType === currentStoreType
+    );
+
     // VERIFICAÇÃO DE ASSINATURA
     const isExpired = store.subscription ? new Date(store.subscription.expiresAt) < new Date() : true;
     if (isExpired) {
@@ -51,12 +65,12 @@ export async function GET(
     }
 
     // Remove dados sensíveis e parseia variantes
-    const { userId, ...safeStore } = store;
+    const { userId: _, ...safeStore } = store as any;
     
-    // Parseia os sizes das variantes de string JSON para array
+    // Parseia os sizes das variantes de string JSON para array e monta objeto final
     const storeWithParsedVariants = {
       ...safeStore,
-      category: safeStore.category.map(cat => ({
+      category: filteredCategories.map((cat: any) => ({
         ...cat,
         product: cat.product.map((p: any) => ({
           ...p,

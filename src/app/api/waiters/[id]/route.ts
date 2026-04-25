@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -12,11 +13,11 @@ export async function PATCH(
     if (!session?.user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const { id } = await params;
-    const { name, phone, isActive } = await req.json();
+    const { name, phone, isActive, password } = await req.json();
 
     const waiter = await prisma.waiter.update({
       where: { id },
-      data: { name, phone, isActive }
+      data: { name, phone, isActive, password }
     });
 
     return NextResponse.json(waiter);

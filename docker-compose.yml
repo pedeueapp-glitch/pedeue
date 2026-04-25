@@ -1,39 +1,76 @@
-version: '3.8'
-
 services:
   app:
-    build: .
-    container_name: saas-app
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
+
+    container_name: delivery-saas
     restart: always
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=mysql://root:root@db:3306/saas_delivery
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=pedeue_secret_key_2026
-    # Este comando garante que o banco seja sincronizado ANTES do app subir
-    command: sh -c "npx prisma db push && node server.js"
-    depends_on:
-      db:
-        condition: service_healthy
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
 
-  db:
-    image: mysql:8.0
-    container_name: saas-db
+      - EFI_SANDBOX=${EFI_SANDBOX}
+      - EFI_CLIENT_ID=${EFI_CLIENT_ID}
+      - EFI_CLIENT_SECRET=${EFI_CLIENT_SECRET}
+      - EFI_CERTIFICATE_BASE64=${EFI_CERTIFICATE_BASE64}
+      - EFI_PIX_KEY=${EFI_PIX_KEY}
+      - WS_SERVER_URL=http://websocket-saas:3010
+    volumes:
+      - uploads_data:/app/public/uploads
+      - backups_data:/app/backups
+      - logs_data:/app/logs
+
+    depends_on:
+      - db-saas-prod
+      - websocket
+    networks:
+      - proxy-network
+
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    container_name: websocket-saas
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=saas_delivery
+      - PORT=3010
     ports:
-      - "3307:3306"
+      - "3020:3010"
+    command: sh -c "mkdir -p logs && node socket-server.js 2>&1 | tee -a logs/socket.log"
     volumes:
-      - db_data:/var/lib/mysql
-    # Verificação de saúde para garantir que o app só suba quando o DB estiver pronto
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - logs_data:/app/logs
+    networks:
+      - proxy-network
+
+
+  db-saas-prod:
+    image: mysql:8.0
+    container_name: db-saas
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: saas_secure_pedeue_2026
+      MYSQL_DATABASE: saas_delivery
+    command: --default-authentication-plugin=mysql_native_password
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - proxy-network
+
+
+networks:
+  proxy-network:
+    external: true
 
 volumes:
-  db_data:
+  mysql_data:
+  uploads_data:
+  backups_data:
+  logs_data:
+

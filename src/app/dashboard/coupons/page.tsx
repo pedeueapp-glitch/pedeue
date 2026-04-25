@@ -111,16 +111,16 @@ export default function CouponsPage() {
         {/* HEADER DA PÁGINA */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex gap-1 p-1 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <button onClick={() => setActiveTab("COUPONS")} className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === "COUPONS" ? "bg-orange-500 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+            <button onClick={() => setActiveTab("COUPONS")} className={`px-5 py-2.5 rounded-lg text-xs font-black  tracking-widest transition-all flex items-center gap-2 ${activeTab === "COUPONS" ? "bg-purple-500 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
               <Tag size={14} /> Cupons
             </button>
-            <button onClick={() => setActiveTab("CASHBACK")} className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === "CASHBACK" ? "bg-orange-500 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+            <button onClick={() => setActiveTab("CASHBACK")} className={`px-5 py-2.5 rounded-lg text-xs font-black  tracking-widest transition-all flex items-center gap-2 ${activeTab === "CASHBACK" ? "bg-purple-500 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
               <RefreshCw size={14} /> Cashback
             </button>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="px-6 py-3 bg-orange-500 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-all flex items-center gap-2"
+            className="px-6 py-3 bg-purple-500 text-white rounded-xl font-black  tracking-widest text-xs shadow-lg shadow-purple-500/20 hover:bg-purple-600 transition-all flex items-center gap-2"
           >
             <Plus size={16} /> Novo {activeTab === "CASHBACK" ? "Cashback" : "Cupom"}
           </button>
@@ -129,7 +129,7 @@ export default function CouponsPage() {
         {/* MÉTRICAS RÁPIDAS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Total de Cupons", value: filtered.length, icon: Tag, color: "text-orange-500", bg: "bg-orange-50" },
+            { label: "Total de Cupons", value: filtered.length, icon: Tag, color: "text-purple-500", bg: "bg-purple-50" },
             { label: "Cupons Ativos", value: filtered.filter(c => c.isActive).length, icon: Check, color: "text-green-500", bg: "bg-green-50" },
             { label: "Total de Usos", value: filtered.reduce((s, c) => s + c.usedCount, 0), icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
           ].map((stat, i) => (
@@ -138,7 +138,7 @@ export default function CouponsPage() {
                 <stat.icon size={20} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{stat.label}</p>
+                <p className="text-[10px] font-black text-slate-400  tracking-tight">{stat.label}</p>
                 <p className="text-xl font-black text-slate-800">{stat.value}</p>
               </div>
             </div>
@@ -148,24 +148,24 @@ export default function CouponsPage() {
         {/* TABELA DE CUPONS */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-            {activeTab === "CASHBACK" ? <RefreshCw size={16} className="text-orange-500" /> : <Tag size={16} className="text-orange-500" />}
-            <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">
+            {activeTab === "CASHBACK" ? <RefreshCw size={16} className="text-purple-500" /> : <Tag size={16} className="text-purple-500" />}
+            <h3 className="text-xs font-black text-slate-700  tracking-widest">
               {activeTab === "CASHBACK" ? "Regras de Cashback" : "Lista de Cupons"}
             </h3>
           </div>
 
           {loading ? (
-            <div className="py-16 text-center"><Loader2 className="animate-spin text-orange-500 mx-auto" size={24} /></div>
+            <div className="py-16 text-center"><Loader2 className="animate-spin text-purple-500 mx-auto" size={24} /></div>
           ) : filtered.length === 0 ? (
             <div className="py-16 text-center space-y-3">
               <Tag className="mx-auto text-slate-200" size={40} />
-              <p className="text-slate-400 text-xs font-bold uppercase">Nenhum {activeTab === "CASHBACK" ? "cashback" : "cupom"} cadastrado</p>
+              <p className="text-slate-400 text-xs font-bold ">Nenhum {activeTab === "CASHBACK" ? "cashback" : "cupom"} cadastrado</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 border-b border-slate-100">
+                  <tr className="text-[10px] font-black text-slate-400  tracking-widest bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4">Código</th>
                     <th className="px-6 py-4">Desconto</th>
                     <th className="px-6 py-4">Pedido Mín.</th>
@@ -184,14 +184,14 @@ export default function CouponsPage() {
                             {coupon.code}
                           </div>
                           {coupon.isCashback && (
-                            <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-[9px] font-black uppercase rounded border border-purple-100">Cashback</span>
+                            <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-[9px] font-black  rounded border border-purple-100">Cashback</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1 text-xs font-black text-slate-700">
                           {coupon.type === "PERCENT" ? (
-                            <><Percent size={12} className="text-orange-500" /> {coupon.value}%</>
+                            <><Percent size={12} className="text-purple-500" /> {coupon.value}%</>
                           ) : (
                             <><DollarSign size={12} className="text-green-500" /> R$ {coupon.value.toFixed(2)}</>
                           )}
@@ -210,9 +210,9 @@ export default function CouponsPage() {
                       <td className="px-6 py-4">
                         <button onClick={() => toggleCoupon(coupon.id, coupon.isActive)} className="flex items-center gap-1.5 transition-all">
                           {coupon.isActive ? (
-                            <><ToggleRight size={22} className="text-green-500" /><span className="text-[9px] font-black text-green-600 uppercase">Ativo</span></>
+                            <><ToggleRight size={22} className="text-green-500" /><span className="text-[9px] font-black text-green-600 ">Ativo</span></>
                           ) : (
-                            <><ToggleLeft size={22} className="text-slate-400" /><span className="text-[9px] font-black text-slate-400 uppercase">Inativo</span></>
+                            <><ToggleLeft size={22} className="text-slate-400" /><span className="text-[9px] font-black text-slate-400 ">Inativo</span></>
                           )}
                         </button>
                       </td>
@@ -236,10 +236,10 @@ export default function CouponsPage() {
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center">
+                <div className="w-9 h-9 bg-purple-500 rounded-xl flex items-center justify-center">
                   <Tag size={16} className="text-white" />
                 </div>
-                <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">
+                <h3 className="font-black text-slate-800 text-sm  tracking-widest">
                   Criar {activeTab === "CASHBACK" ? "Cashback" : "Cupom"}
                 </h3>
               </div>
@@ -248,16 +248,16 @@ export default function CouponsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* CÓDIGO */}
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Código do Cupom *</label>
+                <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">Código do Cupom *</label>
                 <div className="flex gap-2">
                   <input
                     required
                     value={form.code}
                     onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
                     placeholder="Ex: PROMO20"
-                    className="flex-1 input-field font-mono uppercase font-black tracking-widest"
+                    className="flex-1 input-field font-mono  font-black tracking-widest"
                   />
-                  <button type="button" onClick={generateCode} className="px-3 py-2.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-all border border-slate-200 text-[10px] font-black uppercase">
+                  <button type="button" onClick={generateCode} className="px-3 py-2.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-all border border-slate-200 text-[10px] font-black ">
                     <RefreshCw size={14} />
                   </button>
                 </div>
@@ -266,7 +266,7 @@ export default function CouponsPage() {
               {/* TIPO + VALOR */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tipo *</label>
+                  <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">Tipo *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm(p => ({ ...p, type: e.target.value as any }))}
@@ -277,7 +277,7 @@ export default function CouponsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">
                     Valor * {form.type === "PERCENT" ? "(%)" : "(R$)"}
                   </label>
                   <input
@@ -296,7 +296,7 @@ export default function CouponsPage() {
               {/* PEDIDO MÍNIMO + LIMITE DE USOS */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Pedido Mínimo (R$)</label>
+                  <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">Pedido Mínimo (R$)</label>
                   <input
                     type="number"
                     min="0"
@@ -307,7 +307,7 @@ export default function CouponsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Limite de Usos</label>
+                  <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">Limite de Usos</label>
                   <input
                     type="number"
                     min="0"
@@ -321,7 +321,7 @@ export default function CouponsPage() {
 
               {/* VALIDADE */}
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Data de Validade</label>
+                <label className="text-[10px] font-black text-slate-400  tracking-widest block mb-2">Data de Validade</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input
@@ -335,10 +335,10 @@ export default function CouponsPage() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-slate-50 text-slate-400 rounded-xl font-black text-xs uppercase border border-slate-200 hover:bg-slate-100 transition-all">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-slate-50 text-slate-400 rounded-xl font-black text-xs  border border-slate-200 hover:bg-slate-100 transition-all">
                   Cancelar
                 </button>
-                <button type="submit" disabled={saving} className="flex-[2] py-3 bg-orange-500 text-white rounded-xl font-black text-xs uppercase shadow hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="submit" disabled={saving} className="flex-[2] py-3 bg-purple-500 text-white rounded-xl font-black text-xs  shadow hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <Tag size={14} />}
                   Criar Cupom
                 </button>

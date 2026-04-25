@@ -1,26 +1,18 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+import { getCurrentStore } from "@/lib/get-store";
+
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const store = await prisma.store.findUnique({
-      where: { userId: session.user.id },
-      include: {
-        subscription: {
-          include: {
-            plan: true
-          }
-        }
-      }
-    });
+    const store = await getCurrentStore();
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     return NextResponse.json(store);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: "Erro ao buscar loja" }, { status: 500 });
   }
 }
@@ -43,7 +35,21 @@ export async function PATCH(req: NextRequest) {
       primaryColor,
       openingHours,
       isOpen,
-      storeType
+      storeType,
+      showcaseBanners,
+      restaurantBanners,
+      serviceBanners,
+      facebookPixelId,
+      googleAnalyticsId,
+      googleTagManagerId,
+      tiktokPixelId,
+      cpf,
+      customDomain,
+      pixKey,
+      pixEnabled,
+      pixMerchantName,
+      pixMerchantCity,
+      freeDeliveryThreshold
     } = body;
 
     // 1. Validar Slug (se mudou)
@@ -71,25 +77,52 @@ export async function PATCH(req: NextRequest) {
       primaryColor: primaryColor || undefined,
       isOpen: isOpen !== undefined ? Boolean(isOpen) : undefined,
       storeType: storeType || undefined,
+      showcaseBanners: showcaseBanners !== undefined ? (typeof showcaseBanners === 'string' ? showcaseBanners : JSON.stringify(showcaseBanners)) : undefined,
+      restaurantBanners: restaurantBanners !== undefined ? (typeof restaurantBanners === 'string' ? restaurantBanners : JSON.stringify(restaurantBanners)) : undefined,
+      serviceBanners: serviceBanners !== undefined ? (typeof serviceBanners === 'string' ? serviceBanners : JSON.stringify(serviceBanners)) : undefined,
+      openingHours: openingHours !== undefined ? (typeof openingHours === 'string' ? openingHours : JSON.stringify(openingHours)) : undefined,
+      facebookPixelId: facebookPixelId !== undefined ? facebookPixelId : undefined,
+      googleAnalyticsId: googleAnalyticsId !== undefined ? googleAnalyticsId : undefined,
+      googleTagManagerId: googleTagManagerId !== undefined ? googleTagManagerId : undefined,
+      tiktokPixelId: tiktokPixelId !== undefined ? tiktokPixelId : undefined,
+      cpf: cpf !== undefined ? cpf : undefined,
+      customDomain: (customDomain && typeof customDomain === 'string') ? customDomain.trim().toLowerCase() : undefined,
+      pixKey: pixKey !== undefined ? pixKey : undefined,
+      pixEnabled: pixEnabled !== undefined ? Boolean(pixEnabled) : undefined,
+      pixMerchantName: pixMerchantName !== undefined ? pixMerchantName : undefined,
+      pixMerchantCity: pixMerchantCity !== undefined ? pixMerchantCity : undefined,
+      freeDeliveryThreshold: freeDeliveryThreshold !== undefined ? parseFloat(freeDeliveryThreshold) : undefined,
     };
 
     if (slug) {
         dataToUpdate.slug = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
     }
 
-    // Corrigindo o erro de tipo para openingHours
-    if (openingHours !== undefined) {
-       // Se for objeto, vira string JSON. Se for string, mantém.
-       dataToUpdate.openingHours = typeof openingHours === 'string' 
-        ? openingHours 
-        : JSON.stringify(openingHours);
-    }
+    // 3. Update - Usando uma abordagem mais resiliente
+    let updatedStore;
+    try {
+      updatedStore = await prisma.store.update({
+        where: { userId: session.user.id },
+        data: dataToUpdate
+      });
+    } catch (prismaError: any) {
+      console.warn("Retrying update without new fields due to type mismatch/pending migration:", prismaError.message);
+      
+      // Fallback: remove campos novos se o Prisma Client estiver desatualizado
+      const { 
+        showcaseBanners: _, 
+        facebookPixelId: __, 
+        googleAnalyticsId: ___, 
+        googleTagManagerId: ____, 
+        tiktokPixelId: _____, 
+        ...fallbackData 
+      } = dataToUpdate;
 
-    // 3. Update
-    const updatedStore = await prisma.store.update({
-      where: { userId: session.user.id },
-      data: dataToUpdate
-    });
+      updatedStore = await prisma.store.update({
+        where: { userId: session.user.id },
+        data: fallbackData as any
+      });
+    }
 
     return NextResponse.json(updatedStore);
   } catch (error: any) {
@@ -100,3 +133,8 @@ export async function PATCH(req: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  return PATCH(req);
+}
+

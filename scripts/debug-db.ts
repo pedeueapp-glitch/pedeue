@@ -20,7 +20,7 @@ async function main() {
     include: { store: true }
   });
   
-  cats.forEach(c => {
+  cats.forEach((c: any) => {
     console.log(`Categoria: ${c.name} | Loja: ${c.store?.name} (Slug: ${c.store?.slug})`);
   });
 

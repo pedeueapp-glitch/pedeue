@@ -67,7 +67,7 @@ export default function CategoriesPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-purple-500" /></div>;
 
   return (
     <div className="space-y-6">
@@ -100,7 +100,7 @@ export default function CategoriesPage() {
                   setForm({ name: cat.name, emoji: cat.emoji || "" });
                   setModalOpen(true);
                 }} 
-                className="text-gray-400 hover:text-orange-500 transition-colors"
+                className="text-gray-400 hover:text-purple-500 transition-colors"
               >
                 <Edit3 className="w-4 h-4" />
               </button>

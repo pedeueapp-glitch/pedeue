@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -17,7 +18,11 @@ export async function GET(req: NextRequest) {
     // Buscar produtos com variantes e sessões de caixa abertas
     const [products, cashier] = await Promise.all([
       prisma.product.findMany({
-        where: { storeId: store.id, isActive: true },
+        where: { 
+          storeId: store.id, 
+          isActive: true,
+          productType: store.storeType 
+        },
         include: {
           variants: true,
           category: { select: { name: true } }
@@ -29,7 +34,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Parseando os arrays de tamanhos
-    const parsedProducts = products.map(p => ({
+    const parsedProducts = products.map((p: any) => ({
       ...p,
       variants: p.variants.map((v: any) => ({
         ...v,
@@ -89,6 +94,7 @@ export async function POST(req: NextRequest) {
     // Subtrair estoque das variantes
     for (const item of cart) {
       if (item.variantId) {
+        // @ts-ignore
         await prisma.product_variant.update({
           where: { id: item.variantId },
           data: { stock: { decrement: item.qty } }
@@ -104,3 +110,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao processar venda", details: error.message }, { status: 500 });
   }
 }
+

@@ -2,8 +2,12 @@ node_modules
 .next
 .git
 .env
-*.log
-npm-debug.log*
-.DS_Store
+dist
+build
+npm-debug.log
+README.md
 Dockerfile
 docker-compose.yml
+.dockerignore
+deploy.ps1
+# scripts

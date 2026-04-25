@@ -1,242 +1,278 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  ShoppingBag,
-  MessageCircle,
-  Store,
-  ChefHat,
-  Zap,
-  Shield,
-  Star,
-  ArrowRight,
-  CheckCircle2,
+   ShoppingBag,
+   ArrowRight,
+   Store,
+   CheckCircle2,
+   ShieldCheck,
+   Zap,
+   Smartphone,
+   BarChart3,
+   X,
+   Play
 } from "lucide-react";
+import { RegisterWizard } from "@/components/RegisterWizard";
+import { LoginModal } from "@/components/LoginModal";
 
 export default function HomePage() {
-  return (
-    <main className="min-h-screen bg-[#0f0f0f] text-white overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-white" />
+   const [isWizardOpen, setIsWizardOpen] = useState(false);
+   const [isLoginOpen, setIsLoginOpen] = useState(false);
+   const [plans, setPlans] = useState<any[]>([]);
+   const [scrolled, setScrolled] = useState(false);
+
+   useEffect(() => {
+      fetch("/api/plans").then(res => res.json()).then(setPlans);
+
+      const handleScroll = () => setScrolled(window.scrollY > 50);
+      window.addEventListener("scroll", handleScroll);
+      
+      if (typeof window !== "undefined") {
+         const urlParams = new URLSearchParams(window.location.search);
+         if (urlParams.get("register") === "true") {
+            setIsWizardOpen(true);
+            // Optionally, clean the URL
+            window.history.replaceState({}, document.title, "/");
+         }
+      }
+      
+      return () => window.removeEventListener("scroll", handleScroll);
+   }, []);
+
+   const openRegister = () => {
+      setIsLoginOpen(false);
+      setIsWizardOpen(true);
+   };
+
+   return (
+      <main className="min-h-screen bg-white text-gray-900 selection:bg-purple-500 selection:text-white">
+         {/* GLOW BACKGROUNDS */}
+         <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+         <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+
+         {/* NAVBAR */}
+         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-4 bg-white/80 backdrop-blur-xl border-b border-purple-500/10" : "py-8 bg-transparent"}`}>
+            <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+               <div className="flex items-center gap-2 group cursor-pointer">
+                  <div className="h-12 w-auto flex items-center justify-center transition-transform group-hover:scale-105">
+                     <img src="/logo.png" alt="Logo" className="h-full w-auto object-contain" />
+                  </div>
+               </div>
+
+               <div className="hidden md:flex items-center gap-10">
+                  <a href="#funcionalidades" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Funcionalidades</a>
+                  <a href="#planos" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Preços</a>
+                  <Link href="/pedeue-burguer" className="text-xs font-black  tracking-widest text-purple-500 hover:text-purple-400 transition-colors flex items-center gap-2">
+                     VER DEMO <Play size={12} fill="currentColor" />
+                  </Link>
+               </div>
+
+               <div className="flex items-center gap-4">
+                  <button
+                     onClick={() => setIsLoginOpen(true)}
+                     className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors"
+                  >
+                     Entrar
+                  </button>
+                  <button
+                     onClick={() => setIsWizardOpen(true)}
+                     className="px-6 py-3 bg-gray-900 text-white text-[10px] font-black  tracking-widest rounded-full hover:bg-purple-500 transition-all shadow-xl"
+                  >
+                     Começar Agora
+                  </button>
+               </div>
             </div>
-            <span className="font-bold text-lg tracking-tight">DeliveryMenu</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/entrar"
-              className="text-gray-300 hover:text-white text-sm font-medium transition-colors px-4 py-2"
-            >
-              Entrar
-            </Link>
-            <Link
-              href="/cadastrar"
-              className="btn-primary text-sm !py-2.5 !px-5"
-            >
-              Comece gratis
-            </Link>
-          </div>
-        </div>
-      </nav>
+         </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-24 px-6 relative">
-        {/* Background glow */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
+         {/* HERO SECTION */}
+         <section className="relative pt-44 pb-32 px-6 overflow-hidden">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+               <div className="space-y-8 relative z-10">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-500 animate-pulse">
+                     <Zap size={14} />
+                     <span className="text-[10px] font-black  tracking-widest">Plataforma 100% Brasileira</span>
+                  </div>
 
-        <div className="max-w-4xl mx-auto text-center relative">
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full px-4 py-2 text-sm font-medium mb-8 animate-fade-in">
-            <Zap className="w-4 h-4" />
-            Cardapio digital + Pedidos no WhatsApp
-          </div>
+                  <h1 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter italic-not-really">
+                     VENDA MAIS <br />
+                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600">SEM COMISSÃO.</span>
+                  </h1>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 animate-fade-in">
-            Seu cardapio online
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-              em 5 minutos
-            </span>
-          </h1>
+                  <p className="text-lg text-gray-600 max-w-lg leading-relaxed font-medium">
+                     Escolha seu modo de venda: Vitrine de Produtos, Cardápio Digital ou Catálogo de Serviços. Teste grátis por 3 dias e receba pedidos no seu WhatsApp, usando nosso aplicativo de computador com impressão automática!
+                  </p>
 
-          <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in">
-            Crie sua loja digital gratuita, cadastre seus produtos e receba
-            pedidos formatados direto no seu WhatsApp. Sem comissoes, sem
-            mensalidade inicial.
-          </p>
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                     <button
+                        onClick={() => setIsWizardOpen(true)}
+                        className="px-10 py-5 bg-purple-500 text-white font-black  tracking-widest text-xs rounded-2xl hover:bg-purple-600 transition-all shadow-2xl shadow-purple-500/30 flex items-center justify-center gap-3"
+                     >
+                        CRIAR MINHA LOJA AGORA <ArrowRight size={18} />
+                     </button>
+                     <Link
+                        href="/pedeue-burguer"
+                        className="px-10 py-5 bg-purple-50 text-purple-700 border border-purple-100 font-black  tracking-widest text-xs rounded-2xl hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
+                     >
+                        VER EXEMPLO <Store size={18} />
+                     </Link>
+                  </div>
+               </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
-            <Link href="/cadastrar" className="btn-primary text-base !py-4 !px-8 shadow-brand">
-              Criar minha loja gratis
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/loja/shallom-supermercado"
-              className="btn-secondary text-base !py-4 !px-8 !bg-white/5 !text-white !border-white/10 hover:!bg-white/10"
-            >
-              Ver demo ao vivo
-              <Store className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Tudo que voce precisa
-          </h2>
-          <p className="text-gray-400 text-center mb-16 max-w-xl mx-auto">
-            Uma plataforma completa para restaurantes, padarias e mercados
-            gerenciarem seus pedidos.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Store,
-                title: "Cardapio digital bonito",
-                desc: "Interface mobile-first que encanta seus clientes. Categorias organizadas, fotos dos produtos, busca rapida.",
-                color: "from-orange-500/20 to-orange-600/10",
-                iconColor: "text-orange-400",
-              },
-              {
-                icon: MessageCircle,
-                title: "Pedido no WhatsApp",
-                desc: "O cliente faz o pedido no seu cardapio digital e o resumo completo cai direto no seu WhatsApp. Simples assim.",
-                color: "from-green-500/20 to-green-600/10",
-                iconColor: "text-green-400",
-              },
-              {
-                icon: ChefHat,
-                title: "Dashboard completo",
-                desc: "Gerencie produtos, categorias, horarios e configuracoes da sua loja de um so lugar.",
-                color: "from-blue-500/20 to-blue-600/10",
-                iconColor: "text-blue-400",
-              },
-              {
-                icon: Zap,
-                title: "Ultra rapido",
-                desc: "Carregamento instantaneo. Seus clientes nao ficam esperando, voce nao perde vendas.",
-                color: "from-yellow-500/20 to-yellow-600/10",
-                iconColor: "text-yellow-400",
-              },
-              {
-                icon: Shield,
-                title: "Dados isolados",
-                desc: "Cada loja e completamente independente. Seus dados sao seus, com total privacidade e seguranca.",
-                color: "from-purple-500/20 to-purple-600/10",
-                iconColor: "text-purple-400",
-              },
-              {
-                icon: Star,
-                title: "Link personalizado",
-                desc: "Sua loja tem um link unico ex: /loja/seu-restaurante. Compartilhe no Instagram, stories e grupos.",
-                color: "from-pink-500/20 to-pink-600/10",
-                iconColor: "text-pink-400",
-              },
-            ].map((feat, i) => (
-              <div
-                key={i}
-                className={`p-6 rounded-2xl bg-gradient-to-br ${feat.color} border border-white/5 hover:border-white/10 transition-all duration-300 hover:-translate-y-1`}
-              >
-                <div className={`w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4`}>
-                  <feat.icon className={`w-6 h-6 ${feat.iconColor}`} />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{feat.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{feat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Planos simples e transparentes
-          </h2>
-          <p className="text-gray-400 text-center mb-12">
-            Sem taxas escondidas. Sem comissao por pedido.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-8 rounded-2xl border border-white/10 bg-white/5">
-              <div className="text-gray-400 text-sm font-medium mb-2">GRATIS</div>
-              <div className="text-4xl font-bold mb-1">R$ 0</div>
-              <div className="text-gray-500 text-sm mb-6">Para sempre</div>
-              {["1 loja", "Ate 20 produtos", "Link personalizado", "Pedidos via WhatsApp"].map((item) => (
-                <div key={item} className="flex items-center gap-2 text-gray-300 text-sm mb-3">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  {item}
-                </div>
-              ))}
-              <Link href="/cadastrar" className="btn-secondary w-full mt-6 !bg-white/5 !text-white !border-white/10">
-                Comecar gratis
-              </Link>
+               <div className="relative group">
+                  <div className="absolute inset-0 bg-purple-500/10 blur-[100px] rounded-full group-hover:bg-purple-500/20 transition-all duration-700" />
+                  <div className="relative aspect-square rounded-[40px] bg-gradient-to-tr from-purple-500/5 to-purple-500/10 border border-purple-500/20 p-4 transform rotate-3 hover:rotate-0 transition-transform duration-700 overflow-hidden shadow-2xl backdrop-blur-3xl">
+                     <div className="w-full h-full rounded-[24px] bg-white border border-purple-500/10 p-8 flex flex-col gap-6">
+                        <div className="h-4 w-1/3 bg-purple-500/10 rounded-full" />
+                        <div className="h-32 w-full bg-gradient-to-br from-purple-500/20 to-purple-500/5 rounded-2xl border border-purple-500/10" />
+                        <div className="space-y-3">
+                           <div className="h-4 w-full bg-purple-500/10 rounded-full" />
+                           <div className="h-4 w-2/3 bg-purple-500/10 rounded-full" />
+                        </div>
+                        <div className="mt-auto flex justify-between items-center">
+                           <div className="h-10 w-24 bg-purple-500 rounded-xl" />
+                           <div className="h-10 w-10 bg-purple-500/10 rounded-full" />
+                        </div>
+                     </div>
+                  </div>
+               </div>
             </div>
+         </section>
 
-            <div className="p-8 rounded-2xl border border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-orange-600/5 relative">
-              <div className="absolute top-4 right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                POPULAR
-              </div>
-              <div className="text-orange-400 text-sm font-medium mb-2">PRO</div>
-              <div className="text-4xl font-bold mb-1">R$ 49</div>
-              <div className="text-gray-500 text-sm mb-6">por mes</div>
-              {[
-                "Lojas ilimitadas",
-                "Produtos ilimitados",
-                "Upload de imagens",
-                "Painel de pedidos",
-                "Horario de funcionamento",
-                "Suporte prioritario",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-2 text-gray-300 text-sm mb-3">
-                  <CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                  {item}
-                </div>
-              ))}
-              <Link href="/cadastrar" className="btn-primary w-full mt-6">
-                Assinar agora
-              </Link>
+         {/* FUNCIONALIDADES */}
+         <section id="funcionalidades" className="py-32 px-6 border-t border-purple-500/10">
+            <div className="max-w-7xl mx-auto space-y-20">
+               <div className="text-center space-y-4">
+                  <h2 className="text-xs font-black  tracking-[0.3em] text-purple-500">Recursos Premium</h2>
+                  <p className="text-4xl md:text-5xl font-black tracking-tighter">O PODER DA SUA LOJA EM UM SÓ LUGAR.</p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {[
+                     { title: "WhatsApp Direto", desc: "Receba pedidos organizados no seu número, sem complicação.", icon: Smartphone },
+                     { title: "Impressão Automática", desc: "Nosso aplicativo de computador imprime seus pedidos sozinho.", icon: Zap },
+                     { title: "3 Modos de Loja", desc: "Venda com Vitrine, Catálogo de Serviços ou Cardápio Digital.", icon: Store },
+                     { title: "3 Dias Grátis", desc: "Teste o sistema inteiro sem pagar nada por 3 dias.", icon: ShieldCheck },
+                  ].map((item, i) => (
+                     <div key={i} className="p-10 rounded-[32px] bg-white border border-purple-500/10 shadow-sm hover:border-purple-500/30 transition-all group">
+                        <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center mb-6 group-hover:bg-purple-500 group-hover:text-white transition-all text-purple-500">
+                           <item.icon size={24} />
+                        </div>
+                        <h3 className="text-lg font-black  mb-3">{item.title}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed font-medium">{item.desc}</p>
+                     </div>
+                  ))}
+               </div>
             </div>
-          </div>
-        </div>
-      </section>
+         </section>
 
-      {/* CTA Final */}
-      <section className="py-24 px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/5 to-transparent pointer-events-none" />
-        <div className="max-w-2xl mx-auto text-center relative">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
-            Pronto para comecar?
-          </h2>
-          <p className="text-gray-400 mb-10 text-lg">
-            Mais de 1.200 lojas ja usam o DeliveryMenu para vender mais.
-            Crie a sua em menos de 5 minutos.
-          </p>
-          <Link href="/cadastrar" className="btn-primary text-lg !py-5 !px-10 shadow-brand">
-            Criar minha loja agora
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
-      </section>
+         {/* PLANOS */}
+         <section id="planos" className="py-32 px-6 bg-gradient-to-b from-transparent to-purple-500/5">
+            <div className="max-w-5xl mx-auto space-y-20">
+               <div className="text-center space-y-4">
+                  <h2 className="text-xs font-black  tracking-[0.3em] text-purple-500">Nossos Planos</h2>
+                  <p className="text-4xl md:text-5xl font-black tracking-tighter">OS RECURSOS REAIS QUE SEU NEGÓCIO PRECISA.</p>
+               </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4 text-white" />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {plans.length > 0 ? plans.map((plan, i) => (
+                     <div key={plan.id} className={`p-12 rounded-[40px] border flex flex-col gap-8 transition-all hover:-translate-y-2 ${i === 1 ? "bg-purple-950 text-white border-purple-800 shadow-2xl shadow-purple-900/20" : "bg-white border-purple-500/10 text-gray-900 shadow-sm"}`}>
+                        <div className="space-y-4">
+                           <span className={`text-[10px] font-black  tracking-widest px-3 py-1 rounded-full ${i === 1 ? "bg-purple-500 text-white" : "bg-purple-50 text-purple-500"}`}>{plan.name}</span>
+                           <div className="flex items-baseline gap-2">
+                              <span className="text-6xl font-black tracking-tighter">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(plan.price)}</span>
+                              <span className={`text-xs font-black  opacity-60`}>/mês</span>
+                           </div>
+                           <p className={`text-sm font-medium ${i === 1 ? "text-purple-200" : "text-gray-500"}`}>{plan.description || "Tudo que seu negócio precisa para escalar."}</p>
+                        </div>
+
+                        <div className="space-y-4 flex-1">
+                           {[
+                              "Zero taxas sobre vendas", 
+                              "Pedidos ilimitados", 
+                              "App para Computador", 
+                              "PDV c/ Impressão"
+                           ].concat(
+                              Array.isArray(plan.features) ? plan.features.map((f: string) => 
+                                 f === "PDV_SYSTEM" ? "Gestão de Caixa PDV" :
+                                 f === "TABLE_MANAGEMENT" ? "Controle de Mesas" :
+                                 f === "COUPON_SYSTEM" ? "Cupons de Desconto" : f
+                              ) : ["Suporte humanizado"]
+                           ).slice(0, 5).map((feat, index) => (
+                              <div key={index} className="flex items-center gap-3">
+                                 <CheckCircle2 size={18} className={`${i === 1 ? 'text-purple-400' : 'text-purple-500'}`} />
+                                 <span className="text-xs font-black  tracking-wider">{feat}</span>
+                              </div>
+                           ))}
+                        </div>
+
+                        <button
+                           onClick={() => setIsWizardOpen(true)}
+                           className={`w-full py-5 rounded-2xl font-black  tracking-widest text-xs transition-all ${i === 1 ? "bg-purple-500 text-white hover:bg-white hover:text-purple-950" : "bg-purple-50 text-purple-700 hover:bg-purple-500 hover:text-white"}`}
+                        >
+                           EU QUERO ESTE PLANO
+                        </button>
+                     </div>
+                  )) : (
+                     <div className="col-span-2 py-20 text-center animate-pulse">
+                        <span className="text-xs font-black text-gray-600  tracking-[0.5em]">Carregando pacotes de escala...</span>
+                     </div>
+                  )}
+               </div>
             </div>
-            <span className="font-bold">DeliveryMenu</span>
-          </div>
-          <p className="text-gray-500 text-sm">
-            2024 DeliveryMenu. Todos os direitos reservados.
-          </p>
-        </div>
-      </footer>
-    </main>
-  );
+         </section>
+
+         {/* CTA SECTION */}
+         <section className="py-32 px-6">
+            <div className="max-w-7xl mx-auto rounded-[60px] bg-purple-600 p-12 md:p-24 relative overflow-hidden flex flex-col items-center text-center gap-8">
+               <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
+               <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter max-w-3xl relative z-10 italic-not-really">
+                  A REVOLUÇÃO DO SEU <br /> VAREJO COMEÇA AQUI.
+               </h2>
+               <button
+                  onClick={() => setIsWizardOpen(true)}
+                  className="relative z-10 px-12 py-6 bg-white text-black font-black  tracking-[0.2em] text-xs rounded-full hover:scale-110 active:scale-95 transition-all shadow-2xl"
+               >
+                  CRIAR MINHA LOJA GRATUITAMENTE
+               </button>
+               <p className="text-white/60 text-xs font-black  tracking-widest relative z-10">Não pedimos cartão de crédito agora.</p>
+            </div>
+         </section>
+
+         {/* FOOTER */}
+         <footer className="py-12 px-6 border-t border-purple-500/10">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+               <div className="flex items-center gap-2">
+                  <div className="h-10 w-auto flex items-center justify-center">
+                     <img src="/logo.png" alt="Logo" className="h-full w-auto object-contain" />
+                  </div>
+               </div>
+
+               <p className="text-[10px] font-black  text-gray-600 tracking-widest">© 2026 PedeUe. Feito com orgulho no Brasil.</p>
+
+               <div className="flex gap-8">
+                  <a href="#" className="text-xs font-black text-gray-500 hover:text-white transition-colors">POLÍTICA</a>
+                  <a href="#" className="text-xs font-black text-gray-500 hover:text-white transition-colors">TERMOS</a>
+                  <a href="#" className="text-xs font-black text-gray-500 hover:text-white transition-colors">AJUDA</a>
+               </div>
+            </div>
+         </footer>
+
+         {/* MODALS OVERLAY */}
+         {(isWizardOpen || isLoginOpen) && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
+               <button
+                  onClick={() => { setIsWizardOpen(false); setIsLoginOpen(false); }}
+                  className="absolute top-8 right-8 text-gray-400 hover:text-white transition-colors"
+               >
+                  <X size={32} />
+               </button>
+
+               {isWizardOpen && <RegisterWizard onClose={() => setIsWizardOpen(false)} />}
+               {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} onRegisterClick={openRegister} />}
+            </div>
+         )}
+      </main>
+   );
 }

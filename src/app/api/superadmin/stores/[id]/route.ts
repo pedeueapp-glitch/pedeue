@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -27,6 +28,7 @@ export async function PATCH(
         primaryColor: body.primaryColor,
         deliveryFee: body.deliveryFee !== undefined ? parseFloat(body.deliveryFee) : undefined,
         minOrderValue: body.minOrderValue !== undefined ? parseFloat(body.minOrderValue) : undefined,
+        updatedAt: new Date()
       }
     });
 

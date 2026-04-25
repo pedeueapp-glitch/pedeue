@@ -6,11 +6,24 @@ import { prisma } from "./prisma";
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 dias de persistência
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "temp-secret-for-build-only",
   pages: {
     signIn: "/entrar",
     signOut: "/entrar",
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.pedeue.com' : 'localhost',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   providers: [
     CredentialsProvider({
@@ -75,8 +88,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        console.log("DEBUG - Auth Callback Session: Token found", token.id);
+      if (token) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role; // Passando role para a sessão
         (session.user as any).storeSlug = token.storeSlug;

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -31,13 +32,16 @@ export async function POST(
       where: { storeId: id },
       update: {
         planId: planId,
-        status: "ACTIVE"
+        status: "ACTIVE",
+        updatedAt: new Date()
       },
       create: {
+        id: crypto.randomUUID(),
         storeId: id,
         planId: planId,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias se for nova
-        status: "ACTIVE"
+        status: "ACTIVE",
+        updatedAt: new Date()
       }
     });
 
