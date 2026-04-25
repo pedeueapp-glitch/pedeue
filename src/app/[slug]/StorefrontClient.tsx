@@ -30,7 +30,8 @@ import {
   ChevronLeft,
   Copy,
   QrCode,
-  Star
+  Star,
+  Heart
 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
