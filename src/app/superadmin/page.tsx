@@ -1632,8 +1632,8 @@ function SuperAdminContent() {
                            </button>
                         ))}
                      </div>
+                     <button onClick={handleSavePlan} className="w-full bg-[#0f172a] text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-purple-500 transition-all border-none">Gravar Configurações</button>
                   </div>
-                  <button onClick={handleSavePlan} className="w-full bg-[#0f172a] text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-purple-500 transition-all border-none">Gravar Configurações</button>
                </div>
             </div>
          </div>
