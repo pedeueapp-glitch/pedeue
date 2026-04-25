@@ -889,7 +889,10 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
             items: internalCart
           }),
         });
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Erro ao processar");
+        }
         toast.success(storeType === "RESTAURANT" ? "Mesa aberta!" : "Venda registrada!");
       }
       setIsCommandModalOpen(false);
