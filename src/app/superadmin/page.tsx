@@ -64,6 +64,13 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Suspense } from "react";
 
+interface Plan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  maxProducts: number;
+  isActive: boolean;
   features?: string;
   allowedStoreTypes: string;
 }
@@ -94,6 +101,7 @@ interface PlatformStats {
   chartData: any[];
 }
 
+const initialPlanForm = { 
   name: "", 
   price: "", 
   maxProducts: "100", 
