@@ -18,7 +18,8 @@ import {
   Clock,
   Sparkles,
   ScrollText,
-  Download
+  Download,
+  Box
 } from "lucide-react";
 import { format, subDays, differenceInDays } from "date-fns";
 import { 
