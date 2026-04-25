@@ -31,7 +31,8 @@ import {
   Copy,
   QrCode,
   Star,
-  Heart
+  Heart,
+  Truck
 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
