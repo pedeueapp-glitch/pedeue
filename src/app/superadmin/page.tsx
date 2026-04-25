@@ -1598,8 +1598,8 @@ function SuperAdminContent() {
                      <p className="text-[10px] font-black text-slate-400">LIMITE DE PRODUTOS</p>
                      <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-[#0f172a]" placeholder="100" value={planForm.maxProducts} onChange={e => setPlanForm({...planForm, maxProducts: e.target.value})} />
                   </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="col-span-2 space-y-4 mb-4 pb-4 border-b border-slate-50">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-3 space-y-4 mb-4 pb-4 border-b border-slate-50">
                             <p className="text-[10px] font-black text-slate-400">DISPONÍVEL PARA QUAIS MODELOS?</p>
                             <div className="flex gap-4">
                                 {[
