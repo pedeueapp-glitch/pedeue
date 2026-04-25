@@ -1610,7 +1610,7 @@ function SuperAdminContent() {
                                     <label key={type.id} className="flex items-center gap-2 cursor-pointer group">
                                         <input 
                                             type="checkbox" 
-                                            className="w-4 h-4 rounded-none border-2 border-slate-200 text-purple-500 focus:ring-0 cursor-pointer"
+                                            className="w-3 h-3 rounded-none border-2 border-slate-200 text-purple-500 focus:ring-0 cursor-pointer"
                                             checked={(planForm.allowedStoreTypes as any).includes(type.id)}
                                             onChange={(e) => {
                                                 const current = [...(planForm.allowedStoreTypes as any)];
