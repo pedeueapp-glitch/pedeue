@@ -546,16 +546,16 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
 
       <table>
         <tr><td>SUBTOTAL</td><td align="right">${formatCurrency(subtotal)}</td></tr>
-        ${order.deliveryFee > 0 ? `<tr><td>TAXA DE ENTREGA</td><td align="right">${formatCurrency(order.deliveryFee)}</td></tr>` : ""}
+        ${(order.orderType === "DELIVERY" || order.deliveryFee > 0) ? `<tr><td>TAXA DE ENTREGA</td><td align="right">${order.deliveryFee > 0 ? formatCurrency(order.deliveryFee) : "GRÁTIS"}</td></tr>` : ""}
         ${discount > 0 ? `<tr><td>DESCONTO</td><td align="right">-${formatCurrency(discount)}</td></tr>` : ""}
         <tr class="total-row"><td>TOTAL</td><td align="right">${formatCurrency(total)}</td></tr>
       </table>
 
-      ${(order.paymentMethod?.toUpperCase() === "DINHEIRO" || order.paymentMethod?.toUpperCase() === "CASH") && order.change > order.total ? `
+      ${(order.paymentMethod?.toUpperCase() === "DINHEIRO" || order.paymentMethod?.toUpperCase() === "CASH") && order.change > 0 ? `
         <div class="divisor"></div>
         <div class="bold">INFORMAÇÃO DE TROCO:</div>
-        <div>Levar troco para: ${formatCurrency(order.change)}</div>
-        <div class="bold">Valor do troco: ${formatCurrency(order.change - order.total)}</div>
+        <div>Pago com: ${formatCurrency(order.change)}</div>
+        <div class="bold">Troco a devolver: ${formatCurrency(Math.max(0, order.change - order.total))}</div>
       ` : ""}
 
       <div class="divisor"></div>
@@ -1622,10 +1622,10 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                             <span className="text-xs font-black">{formatCurrency(subtotal)}</span>
                           </div>
 
-                          {deliveryFee > 0 && (
+                          {(detailOrder.orderType === "DELIVERY" || deliveryFee > 0) && (
                             <div className="flex justify-between items-center text-slate-500">
-                              <span className="text-[10px] font-bold uppercase tracking-wider">Taxa de Entrega ({detailOrder.neighborhood})</span>
-                              <span className="text-xs font-black">{formatCurrency(deliveryFee)}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider">Taxa de Entrega {detailOrder.neighborhood ? `(${detailOrder.neighborhood})` : ""}</span>
+                              <span className="text-xs font-black">{deliveryFee > 0 ? formatCurrency(deliveryFee) : "GRÁTIS"}</span>
                             </div>
                           )}
 
@@ -1646,15 +1646,15 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                             </span>
                           </div>
 
-                          {(detailOrder.paymentMethod?.toUpperCase() === "DINHEIRO" || detailOrder.paymentMethod?.toUpperCase() === "CASH") && detailOrder.change > detailOrder.total && (
+                          {(detailOrder.paymentMethod?.toUpperCase() === "DINHEIRO" || detailOrder.paymentMethod?.toUpperCase() === "CASH") && detailOrder.change > 0 && (
                             <div className="mt-2 p-3 bg-purple-50 rounded-xl border border-purple-100 flex justify-between items-center">
                               <div>
-                                <span className="text-[9px] font-black text-purple-400 block leading-none mb-1 uppercase">Troco para</span>
+                                <span className="text-[9px] font-black text-purple-400 block leading-none mb-1 uppercase">Pago com</span>
                                 <span className="text-sm font-black text-slate-700">{formatCurrency(detailOrder.change)}</span>
                               </div>
                               <div className="text-right">
                                 <span className="text-[9px] font-black text-purple-400 block leading-none mb-1 uppercase">Valor a Devolver</span>
-                                <span className="text-lg font-black text-purple-600">{formatCurrency(detailOrder.change - detailOrder.total)}</span>
+                                <span className="text-lg font-black text-purple-600">{formatCurrency(Math.max(0, detailOrder.change - detailOrder.total))}</span>
                               </div>
                             </div>
                           )}
