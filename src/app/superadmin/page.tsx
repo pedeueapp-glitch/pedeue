@@ -1627,7 +1627,7 @@ function SuperAdminContent() {
                             </div>
                         </div>
                         {Object.entries(planForm.features).map(([key, e]) => (
-                           <button key={key} type="button" onClick={() => setPlanForm({...planForm, features: {...planForm.features, [key]: !e}})} className={`text-[10px] font-black p-5 border-2 rounded-none transition-all ${e ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-slate-400 border-slate-100'}`}>
+                           <button key={key} type="button" onClick={() => setPlanForm({...planForm, features: {...planForm.features, [key]: !e}})} className={`text-[10px] font-black p-2 border-2 rounded-none transition-all ${e ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-slate-400 border-slate-100'}`}>
                               {featureLabels[key] || key}
                            </button>
                         ))}
