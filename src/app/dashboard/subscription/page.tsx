@@ -49,14 +49,20 @@ export default function SubscriptionPage() {
       const paymentsData = await resPayments.json();
       
       setStore(storeData);
-      setPlans(plansData);
+      
+      // Filtra planos compatíveis com o tipo de loja
+      const filteredPlans = Array.isArray(plansData) ? plansData.filter((p: any) => {
+        if (!p.allowedStoreTypes) return true;
+        const allowed = p.allowedStoreTypes.split(',');
+        return allowed.includes(storeData.storeType || 'RESTAURANT');
+      }) : [];
+
+      setPlans(filteredPlans);
       setPayments(Array.isArray(paymentsData) ? paymentsData : []);
 
       // Initialize selected months for each plan
       const initialMonths: { [key: string]: number } = {};
-      if (Array.isArray(plansData)) {
-        plansData.forEach((p: any) => initialMonths[p.id] = 1);
-      }
+      filteredPlans.forEach((p: any) => initialMonths[p.id] = 1);
       setSelectedMonths(initialMonths);
 
     } catch (error) {

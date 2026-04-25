@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         maxProducts: parseInt(data.maxProducts),
         description: data.description,
         isActive: true,
+        allowedStoreTypes: Array.isArray(data.allowedStoreTypes) ? data.allowedStoreTypes.join(',') : data.allowedStoreTypes,
         features: JSON.stringify(data.features),
         updatedAt: new Date()
       }
@@ -61,6 +62,7 @@ export async function PUT(req: NextRequest) {
         price: parseFloat(updateData.price),
         maxProducts: parseInt(updateData.maxProducts),
         description: updateData.description,
+        allowedStoreTypes: Array.isArray(updateData.allowedStoreTypes) ? updateData.allowedStoreTypes.join(',') : updateData.allowedStoreTypes,
         features: JSON.stringify(updateData.features),
         updatedAt: new Date()
       }

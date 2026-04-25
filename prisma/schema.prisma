@@ -165,16 +165,17 @@ model orderitem {
 }
 
 model plan {
-  id           String         @id @default(cuid())
-  name         String
-  description  String?
-  price        Float
-  maxProducts  Int            @default(20)
-  features     String?        @db.LongText
-  isActive     Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  subscription subscription[]
+  id                String         @id @default(cuid())
+  name              String
+  description       String?
+  price             Float
+  maxProducts       Int            @default(20)
+  features          String?        @db.LongText
+  allowedStoreTypes String         @default("RESTAURANT,SHOWCASE,SERVICE")
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  subscription      subscription[]
 }
 
 model product {

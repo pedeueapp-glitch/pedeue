@@ -64,14 +64,8 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Suspense } from "react";
 
-interface Plan {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  maxProducts: number;
-  isActive: boolean;
   features?: string;
+  allowedStoreTypes: string;
 }
 
 interface StoreData {
@@ -100,11 +94,11 @@ interface PlatformStats {
   chartData: any[];
 }
 
-const initialPlanForm = { 
   name: "", 
   price: "", 
   maxProducts: "100", 
   description: "",
+  allowedStoreTypes: ["RESTAURANT", "SHOWCASE", "SERVICE"],
   features: {
     PDV_SYSTEM: true,
     TABLE_MANAGEMENT: false,
@@ -476,6 +470,7 @@ function SuperAdminContent() {
        price: plan.price.toString(),
        maxProducts: plan.maxProducts.toString(),
        description: plan.description || "",
+       allowedStoreTypes: plan.allowedStoreTypes ? plan.allowedStoreTypes.split(',') : ["RESTAURANT", "SHOWCASE", "SERVICE"],
        features: { ...initialPlanForm.features, ...features }
     });
     setEditingPlanId(plan.id);
@@ -1595,9 +1590,34 @@ function SuperAdminContent() {
                      <p className="text-[10px] font-black text-slate-400">LIMITE DE PRODUTOS</p>
                      <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-[#0f172a]" placeholder="100" value={planForm.maxProducts} onChange={e => setPlanForm({...planForm, maxProducts: e.target.value})} />
                   </div>
-                  <div className="space-y-4 pt-2">
-                     <p className="text-xs font-black text-slate-400 tracking-widest">Recursos Disponíveis</p>
-                     <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2 space-y-4 mb-4 pb-4 border-b border-slate-50">
+                            <p className="text-[10px] font-black text-slate-400">DISPONÍVEL PARA QUAIS MODELOS?</p>
+                            <div className="flex gap-4">
+                                {[
+                                    { id: 'RESTAURANT', label: 'Restaurantes' },
+                                    { id: 'SHOWCASE', label: 'Vitrine' },
+                                    { id: 'SERVICE', label: 'Serviços' }
+                                ].map(type => (
+                                    <label key={type.id} className="flex items-center gap-2 cursor-pointer group">
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-4 h-4 rounded-none border-2 border-slate-200 text-purple-500 focus:ring-0 cursor-pointer"
+                                            checked={(planForm.allowedStoreTypes as any).includes(type.id)}
+                                            onChange={(e) => {
+                                                const current = [...(planForm.allowedStoreTypes as any)];
+                                                if (e.target.checked) {
+                                                    setPlanForm({ ...planForm, allowedStoreTypes: [...current, type.id] });
+                                                } else {
+                                                    setPlanForm({ ...planForm, allowedStoreTypes: current.filter(t => t !== type.id) });
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-600 group-hover:text-slate-900">{type.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                         {Object.entries(planForm.features).map(([key, e]) => (
                            <button key={key} type="button" onClick={() => setPlanForm({...planForm, features: {...planForm.features, [key]: !e}})} className={`text-[10px] font-black p-5 border-2 rounded-none transition-all ${e ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-slate-400 border-slate-100'}`}>
                               {featureLabels[key] || key}
