@@ -111,6 +111,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
   const [checkoutOrder, setCheckoutOrder] = useState<any>(null);
   const [discountValue, setDiscountValue] = useState("0");
   const [discountType, setDiscountType] = useState<"FIXED" | "PERCENT">("FIXED");
+  const [closingChangeValue, setClosingChangeValue] = useState("0");
 
   // Opcionais de Produtos
   const [selectedProductForOptions, setSelectedProductForOptions] = useState<any>(null);
@@ -694,7 +695,8 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
           paymentMethod: closingPaymentMethod,
           total: finalTotal,
           subtotal: checkoutOrder.total,
-          discount: discountAmount
+          discount: discountAmount,
+          change: closingPaymentMethod === "DINHEIRO" ? parseFloat(closingChangeValue) || 0 : null
         }),
       });
       if (closingPaymentMethod === "DINHEIRO") {
@@ -1314,19 +1316,19 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                        <span className="text-2xl font-black text-purple-500">{formatCurrency(selectedOrder.total)}</span>
                     </div>
 
-                    {(selectedOrder.paymentMethod?.toUpperCase() === "DINHEIRO" || selectedOrder.paymentMethod?.toUpperCase() === "CASH") && selectedOrder.change > selectedOrder.total && (
+                    {(selectedOrder.paymentMethod?.toUpperCase() === "DINHEIRO" || selectedOrder.paymentMethod?.toUpperCase() === "CASH") && selectedOrder.change > 0 && (
                       <div className="mt-4 pt-4 border-t-2 border-dashed border-slate-100 bg-slate-50/50 p-3 rounded-lg">
                         <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                            <span>Pagamento em Dinheiro</span>
                            <Banknote size={12} />
                         </div>
                         <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                           <span>Levar troco para</span>
+                           <span>Pago com</span>
                            <span>{formatCurrency(selectedOrder.change)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm font-black text-purple-600 mt-1">
                            <span>Troco a devolver</span>
-                           <span>{formatCurrency(selectedOrder.change - selectedOrder.total)}</span>
+                           <span>{formatCurrency(Math.max(0, selectedOrder.change - selectedOrder.total))}</span>
                         </div>
                       </div>
                     )}
@@ -1351,7 +1353,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                       {selectedOrder.status === "PREPARING" && selectedOrder.orderType === "DINING_IN" && (
                         <div className="space-y-2">
                           <button
-                            onClick={() => { setCheckoutOrder(selectedOrder); setDiscountValue("0"); }}
+                            onClick={() => { setCheckoutOrder(selectedOrder); setDiscountValue("0"); setClosingChangeValue("0"); }}
                             className="w-full p-4 bg-emerald-600 text-white rounded-lg font-black text-[10px]  shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                           >
                             <CheckCircle2 size={16} /> Finalizar e Fechar Comanda
@@ -2501,6 +2503,30 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                     ))}
                   </div>
                 </div>
+
+                {closingPaymentMethod === "DINHEIRO" && (
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 space-y-3 animate-in slide-in-from-top duration-300">
+                    <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest ml-1">Valor Pago pelo Cliente</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-purple-400 text-sm">R$</span>
+                      <input 
+                        type="number"
+                        value={closingChangeValue}
+                        onChange={e => setClosingChangeValue(e.target.value)}
+                        className="w-full p-4 pl-12 bg-white border-2 border-purple-200 rounded-xl text-lg font-black text-purple-900 outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
+                        placeholder="0,00"
+                      />
+                    </div>
+                    {parseFloat(closingChangeValue) > 0 && (
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-[10px] font-bold text-purple-400 uppercase">Troco a Devolver</span>
+                        <span className="text-sm font-black text-purple-600">
+                          {formatCurrency(Math.max(0, parseFloat(closingChangeValue) - ((checkoutOrder.total + (checkoutOrder.deliveryFee || 0)) - (discountType === "FIXED" ? (parseFloat(discountValue) || 0) : (checkoutOrder.total * (parseFloat(discountValue) || 0)) / 100))))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-8 pt-8 border-t border-slate-100">
