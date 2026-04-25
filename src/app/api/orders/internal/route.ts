@@ -25,6 +25,23 @@ export async function POST(req: NextRequest) {
 
     const finalOrderType = orderTypeMap[store.storeType] || "DINING_IN";
 
+    // Validação: Impedir abertura de nova comanda se a mesa já estiver ocupada
+    if (tableId) {
+      const existingActiveOrder = await prisma.order.findFirst({
+        where: {
+          storeId: store.id,
+          tableId: tableId,
+          status: {
+            in: ["PENDING", "PREPARING", "READY", "OUT_FOR_DELIVERY"]
+          }
+        }
+      });
+
+      if (existingActiveOrder) {
+        return NextResponse.json({ error: "Já existe uma comanda aberta para esta mesa." }, { status: 400 });
+      }
+    }
+
     const order = await prisma.order.create({
       data: {
         id: `ord_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,

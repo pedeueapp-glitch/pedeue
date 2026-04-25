@@ -337,10 +337,10 @@ export default function WaiterTablesPage() {
                   <button 
                     key={table.id}
                     onClick={() => openTable(table)}
-                    className={`aspect-square rounded-[32px] border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-95 shadow-sm hover:shadow-md ${isOccupied ? 'border-none' : 'border-slate-100 bg-white text-slate-400'}`}
+                    className={`aspect-square rounded-[32px] border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-95 shadow-sm hover:shadow-md ${isOccupied ? 'border-none' : 'border-slate-200 bg-slate-100 text-slate-400'}`}
                     style={{ backgroundColor: isOccupied ? (pdvSettings?.tableOccupiedColor || "#ef4444") : undefined }}
                   >
-                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isOccupied ? 'bg-white/20 text-white' : 'bg-slate-50 text-slate-300'}`}>
+                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isOccupied ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-400'}`}>
                         <Utensils size={24} />
                      </div>
                      <span className={`text-xl font-black ${isOccupied ? 'text-white' : 'text-slate-800'}`}>Mesa {table.number}</span>

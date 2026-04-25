@@ -378,23 +378,40 @@ export default function SettingsPage() {
                           { id: 'RESTAURANT', label: 'Cardápio Digital', icon: UtensilsCrossed, desc: 'Pedidos online com entrega' },
                           { id: 'SHOWCASE', label: 'Vitrine Online', icon: ShoppingBag, desc: 'Catálogo sem pedidos diretos' },
                           { id: 'SERVICE', label: 'Prestação de Serviços', icon: Box, desc: 'Orçamentos e agendamentos' },
-                        ].map(type => (
-                          <button
-                             key={type.id}
-                             type="button"
-                             disabled={isExpired}
-                             onClick={() => setFormData({...formData, storeType: type.id})}
-                             className={`flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 transition-all text-left ${formData.storeType === type.id ? 'border-purple-500 bg-purple-500/5 shadow-md' : 'border-slate-100 hover:border-slate-200 bg-white'} ${isExpired ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${formData.storeType === type.id ? 'bg-purple-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
-                                <type.icon size={24} />
-                             </div>
-                             <div className="text-center">
-                                <p className={`text-xs font-black  tracking-tight ${formData.storeType === type.id ? 'text-purple-600' : 'text-slate-800'}`}>{type.label}</p>
-                                <p className="text-[10px] text-slate-400 font-medium mt-1 leading-tight">{type.desc}</p>
-                             </div>
-                          </button>
-                        ))}
+                        ].map(type => {
+                           const allowedTypesStr = formData?.subscription?.plan?.allowedStoreTypes || "RESTAURANT,SHOWCASE,SERVICE";
+                           const isAllowed = allowedTypesStr.includes(type.id);
+                           const isLocked = isExpired || !isAllowed;
+
+                           return (
+                             <button
+                                key={type.id}
+                                type="button"
+                                disabled={isLocked}
+                                onClick={() => {
+                                  if (isAllowed) setFormData({...formData, storeType: type.id});
+                                }}
+                                className={`flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 transition-all text-left relative overflow-hidden ${formData.storeType === type.id ? 'border-purple-500 bg-purple-500/5 shadow-md' : 'border-slate-100 hover:border-slate-200 bg-white'} ${isLocked ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                             >
+                                {!isAllowed && (
+                                   <div className="absolute top-4 right-4 text-slate-300">
+                                      <Lock size={14} />
+                                   </div>
+                                )}
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${formData.storeType === type.id ? 'bg-purple-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                                   <type.icon size={24} />
+                                </div>
+                                <div className="text-center">
+                                   <p className={`text-xs font-black  tracking-tight ${formData.storeType === type.id ? 'text-purple-600' : 'text-slate-800'}`}>
+                                     {type.label}
+                                   </p>
+                                   <p className="text-[10px] text-slate-400 font-medium mt-1 leading-tight">
+                                     {!isAllowed ? "Não incluso no plano atual" : type.desc}
+                                   </p>
+                                </div>
+                             </button>
+                           );
+                        })}
                      </div>
                   </div>
                </div>
