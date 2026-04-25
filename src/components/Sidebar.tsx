@@ -38,6 +38,7 @@ import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { hasFeature } from "@/lib/permissions";
 import toast from "react-hot-toast";
+import { APP_VERSION } from "@/lib/version";
 
 interface SidebarProps {
   mode?: "MERCHANT" | "SUPERADMIN";
@@ -341,7 +342,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
         </nav>
 
         {mode === "MERCHANT" && (
-          <div className="px-6 py-2">
+          <div className="px-6 py-4 flex flex-col items-center justify-center border-t border-white/5">
               <a 
                 href="/downloads/pedeue-setup.exe" 
                 download 
@@ -350,6 +351,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
                 <Download size={12} />
                 Baixar PDV Desktop
               </a>
+              <span className="text-[9px] font-black text-slate-600 mt-2 tracking-widest uppercase">PedeUe v{APP_VERSION}</span>
           </div>
         )}
 
