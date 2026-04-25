@@ -822,20 +822,21 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                           <span className="text-[10px] text-white tracking-widest border border-white/20 px-3 py-1">Esgotado</span>
                         </div>
                       )}
-                      <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+
+                    </div>
+                    <div className="flex-1 p-5 min-w-0 flex flex-col justify-between relative">
+                      <div className="absolute top-0 right-0 flex flex-col items-end gap-1">
                         {(product as any).isBestSeller && (
-                          <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-sm flex items-center gap-1 uppercase tracking-tighter animate-in fade-in zoom-in duration-300">
+                          <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-bl shadow-sm flex items-center gap-1 uppercase tracking-tighter">
                             <Star size={8} fill="currentColor" /> Mais Pedidos
                           </span>
                         )}
                         {(product as any).isFavorite && (
-                          <span className="bg-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-sm flex items-center gap-1 uppercase tracking-tighter animate-in fade-in zoom-in duration-300">
-                            <Heart size={8} fill="currentColor" /> Queridinho da Casa
+                          <span className="bg-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-bl shadow-sm flex items-center gap-1 uppercase tracking-tighter">
+                            <Heart size={8} fill="currentColor" /> Queridinho
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex-1 p-5 min-w-0 flex flex-col justify-between">
                       <div>
                         <h3 className="font-semibold text-slate-900 text-base truncate tracking-tight">{product.name}</h3>
                         <p className="text-slate-400 text-xs mt-1 line-clamp-2 leading-relaxed font-medium">{product.description}</p>
