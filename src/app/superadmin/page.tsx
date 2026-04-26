@@ -372,7 +372,7 @@ function SuperAdminContent() {
   }
 
   async function handleApproveWithdrawal(affiliateId: string) {
-    if (!confirm("Confirmar que o PIX foi realizado e o saque está pago?")) return;
+    if (!confirm("ATENÇÃO: Você está prestes a realizar uma transferência PIX REAL da sua conta Efí para este afiliado. Deseja continuar?")) return;
     try {
       const res = await fetch(`/api/superadmin/afiliados/${affiliateId}`, {
         method: "PATCH",
@@ -380,10 +380,14 @@ function SuperAdminContent() {
         body: JSON.stringify({ action: "approve_withdrawal" })
       });
       if (res.ok) {
-        toast.success("Saques aprovados!");
+        const data = await res.json();
+        toast.success(data.message || "Saques aprovados!");
         fetchAffiliates();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Erro ao aprovar saques");
       }
-    } catch { toast.error("Erro ao aprovar saques"); }
+    } catch { toast.error("Erro de conexão ao processar saque"); }
   }
 
   async function fetchExpiration() {

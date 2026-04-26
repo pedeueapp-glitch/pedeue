@@ -93,3 +93,31 @@ export async function getPixChargeStatus(txid: string) {
   }
 }
 
+/**
+ * Envia um PIX da conta Efí para uma chave PIX de destino (Outbound)
+ */
+export async function sendPixOutbound(data: {
+  amount: number;
+  pixKey: string;
+  description?: string;
+}) {
+  console.log(`DEBUG EFI - Iniciando transferência PIX para: ${data.pixKey}, Valor: R$ ${data.amount.toFixed(2)}`);
+
+  const body = {
+    valor: data.amount.toFixed(2),
+    chave: data.pixKey,
+    // No PIX Envio da Efí v2, o campo de descrição pode variar conforme a versão ou conta. 
+    // Geralmente é passado como 'mensagem' ou em campos específicos.
+  };
+
+  try {
+    // Nota: O método pixSend requer que a aplicação tenha o escopo 'pix.write' e 'pix.send' habilitados na Efí.
+    const response = await efi.pixSend({}, body);
+    return response;
+  } catch (error) {
+    console.error('EFI PIX SEND ERROR:', error);
+    throw error;
+  }
+}
+
+
