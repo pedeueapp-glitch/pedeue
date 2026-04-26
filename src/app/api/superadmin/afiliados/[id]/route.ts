@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // PATCH — marcar comissão como paga / atualizar dados do afiliado
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "SUPERADMIN") {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const { action, ...data } = await req.json();
-    const { id } = params;
+    const { id } = await params;
 
     if (action === "toggle") {
       const affiliate = await prisma.platform_affiliate.update({
