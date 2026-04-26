@@ -356,7 +356,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
                 <span>{group.name}</span>
               </Link>
             );
-          }) : superAdminLinks.map((link: any) => {
+          }) : (mode === "AFFILIATE" ? affiliateLinks : superAdminLinks).map((link: any) => {
              const Icon = link.icon;
              const isActive = pathname === link.href || (link.href.includes('?') && pathname === link.href.split('?')[0] && searchParams.get('tab') === new URLSearchParams(link.href.split('?')[1]).get('tab'));
              
