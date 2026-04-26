@@ -116,7 +116,9 @@ export async function sendPixOutbound(data: {
 
   const body = {
     valor: data.amount.toFixed(2),
-    chave: cleanPixKey
+    favorecido: {
+      chave: cleanPixKey
+    }
   };
 
   try {
