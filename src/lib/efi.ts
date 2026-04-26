@@ -173,12 +173,13 @@ export async function sendPixOutbound(data: {
     return response.data;
 
   } catch (error: any) {
-    console.error('DEBUG EFI MANUAL - ERRO CAPTURADO:', error);
+    console.error('DEBUG EFI MANUAL - ERRO CAPTURADO:', JSON.stringify(error?.response?.data || error.message, null, 2));
     const errorData = error.response?.data || { 
       mensagem: error.message || "Erro desconhecido na comunicação com a Efí.",
       code: error.code,
       stack: error.stack
     };
+    console.dir(errorData, { depth: null });
     console.error('EFI PIX SEND MANUAL ERROR:', JSON.stringify(errorData));
     throw errorData;
   }
