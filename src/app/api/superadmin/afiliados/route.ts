@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
       activeStores: a.stores.filter(s => s.isActive && s.subscription?.status === "ACTIVE").length,
       totalPaid: a.commissions.filter(c => c.status === "PAID").reduce((acc, c) => acc + c.amount, 0),
       totalPending: a.commissions.filter(c => c.status === "PENDING").reduce((acc, c) => acc + c.amount, 0),
+      totalRequested: a.commissions.filter(c => c.status === "REQUESTED").reduce((acc, c) => acc + c.amount, 0),
     }));
 
     return NextResponse.json({ affiliates: enriched });

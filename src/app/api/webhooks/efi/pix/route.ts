@@ -61,6 +61,10 @@ export async function POST(req: NextRequest) {
             });
 
             console.log(`PAGAMENTO CONFIRMADO: TxID ${txid} - Assinatura renovada por ${monthsToAdd} meses.`);
+
+            // Gerar comissão para o afiliado, se existir
+            const { generateAffiliateCommission } = await import("@/lib/affiliateCommission");
+            await generateAffiliateCommission(transaction.id, transaction.storeId, transaction.amount);
           }
         }
       }

@@ -158,6 +158,7 @@ function SuperAdminContent() {
   const [expiringSoon, setExpiringSoon] = useState<any[]>([]);
   const [affiliates, setAffiliates] = useState<any[]>([]);
   const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
+  const [editingAffiliateId, setEditingAffiliateId] = useState<string | null>(null);
   const [affiliateForm, setAffiliateForm] = useState({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" });
   
   // Modais Adicionais
@@ -316,10 +317,15 @@ function SuperAdminContent() {
 
   async function handleSaveAffiliate() {
     try {
-      const res = await fetch("/api/superadmin/afiliados", {
-        method: "POST",
+      const isEditing = !!editingAffiliateId;
+      const res = await fetch(isEditing ? `/api/superadmin/afiliados/${editingAffiliateId}` : "/api/superadmin/afiliados", {
+        method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(isEditing ? {
+          action: "update",
+          pixKey: affiliateForm.pixKey,
+          commissionRate: parseFloat(affiliateForm.commissionRate) / 100
+        } : {
           ...affiliateForm,
           commissionRate: parseFloat(affiliateForm.commissionRate) / 100
         })
@@ -362,6 +368,21 @@ function SuperAdminContent() {
         fetchAffiliates();
       }
     } catch { toast.error("Erro ao marcar comissão"); }
+  }
+
+  async function handleApproveWithdrawal(affiliateId: string) {
+    if (!confirm("Confirmar que o PIX foi realizado e o saque está pago?")) return;
+    try {
+      const res = await fetch(`/api/superadmin/afiliados/${affiliateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve_withdrawal" })
+      });
+      if (res.ok) {
+        toast.success("Saques aprovados!");
+        fetchAffiliates();
+      }
+    } catch { toast.error("Erro ao aprovar saques"); }
   }
 
   async function fetchExpiration() {
@@ -1579,7 +1600,7 @@ function SuperAdminContent() {
                     <th className="p-6">Chave PIX</th>
                     <th className="p-6">Comissão</th>
                     <th className="p-6">Lojas (Total/Ativas)</th>
-                    <th className="p-6">Pendente</th>
+                    <th className="p-6">Pendente / Solicitado</th>
                     <th className="p-6">Total Recebido</th>
                     <th className="p-6 text-center">Status</th>
                     <th className="p-6 text-center">Ações</th>
@@ -1603,7 +1624,10 @@ function SuperAdminContent() {
                         </span>
                       </td>
                       <td className="p-6 text-slate-700">{aff.totalStores} / {aff.activeStores} ativas</td>
-                      <td className="p-6 text-amber-600 font-black">R$ {(aff.totalPending ?? 0).toFixed(2)}</td>
+                      <td className="p-6 font-black">
+                        <div className="text-amber-600">Disp: R$ {(aff.totalPending ?? 0).toFixed(2)}</div>
+                        <div className="text-blue-600">Saque: R$ {(aff.totalRequested ?? 0).toFixed(2)}</div>
+                      </td>
                       <td className="p-6 text-green-600 font-black">R$ {(aff.totalPaid ?? 0).toFixed(2)}</td>
                       <td className="p-6 text-center">
                         <span className={`px-3 py-1 text-[9px] font-black border ${
@@ -1613,16 +1637,42 @@ function SuperAdminContent() {
                         </span>
                       </td>
                       <td className="p-6 text-center">
-                        <button
-                          onClick={() => handleToggleAffiliate(aff.id, aff.isActive)}
-                          className={`px-4 py-2 text-[10px] font-black tracking-widest border-none transition-all ${
-                            aff.isActive
-                              ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
-                              : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'
-                          }`}
-                        >
-                          {aff.isActive ? 'Desativar' : 'Ativar'}
-                        </button>
+                        <div className="flex items-center justify-center gap-2 flex-wrap max-w-[150px] mx-auto">
+                           <button
+                             onClick={() => {
+                               setEditingAffiliateId(aff.id);
+                               setAffiliateForm({
+                                 name: aff.name,
+                                 email: aff.email,
+                                 password: "",
+                                 pixKey: aff.pixKey || "",
+                                 commissionRate: (aff.commissionRate * 100).toString()
+                               });
+                               setIsAddingAffiliate(true);
+                             }}
+                             className="px-3 py-1.5 text-[9px] font-black tracking-widest bg-slate-100 text-slate-700 hover:bg-slate-200"
+                           >
+                             Editar
+                           </button>
+                           <button
+                             onClick={() => handleToggleAffiliate(aff.id, aff.isActive)}
+                             className={`px-3 py-1.5 text-[9px] font-black tracking-widest border-none transition-all ${
+                               aff.isActive
+                                 ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
+                                 : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'
+                             }`}
+                           >
+                             {aff.isActive ? 'Desativar' : 'Ativar'}
+                           </button>
+                           {aff.totalRequested > 0 && (
+                             <button
+                               onClick={() => handleApproveWithdrawal(aff.id)}
+                               className="px-3 py-1.5 text-[9px] font-black tracking-widest bg-blue-500 text-white hover:bg-blue-600 w-full mt-1"
+                             >
+                               Pagar PIX
+                             </button>
+                           )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1639,20 +1689,26 @@ function SuperAdminContent() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-lg rounded-none p-12 relative shadow-2xl border-t-[12px] border-purple-500">
             <button onClick={() => setIsAddingAffiliate(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 border-none outline-none"><X size={28}/></button>
-            <h3 className="text-3xl font-black text-slate-900 text-center mb-10 tracking-tighter">Cadastrar Afiliado</h3>
+            <h3 className="text-3xl font-black text-slate-900 text-center mb-10 tracking-tighter">
+              {editingAffiliateId ? "Editar Afiliado" : "Cadastrar Afiliado"}
+            </h3>
             <div className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-xs font-black text-slate-400">Nome Completo</p>
-                <input className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="NOME DO AFILIADO" value={affiliateForm.name} onChange={e => setAffiliateForm({...affiliateForm, name: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-black text-slate-400">Email de Acesso</p>
-                <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="email@exemplo.com" value={affiliateForm.email} onChange={e => setAffiliateForm({...affiliateForm, email: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-black text-slate-400">Senha de Acesso</p>
-                <input type="password" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="Mínimo 8 caracteres" value={affiliateForm.password} onChange={e => setAffiliateForm({...affiliateForm, password: e.target.value})} />
-              </div>
+              {!editingAffiliateId && (
+                <>
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-slate-400">Nome Completo</p>
+                    <input className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="NOME DO AFILIADO" value={affiliateForm.name} onChange={e => setAffiliateForm({...affiliateForm, name: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-slate-400">Email de Acesso</p>
+                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="email@exemplo.com" value={affiliateForm.email} onChange={e => setAffiliateForm({...affiliateForm, email: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-slate-400">Senha de Acesso</p>
+                    <input type="password" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="Mínimo 8 caracteres" value={affiliateForm.password} onChange={e => setAffiliateForm({...affiliateForm, password: e.target.value})} />
+                  </div>
+                </>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <p className="text-xs font-black text-slate-400">Chave PIX (para repasses)</p>
@@ -1664,7 +1720,7 @@ function SuperAdminContent() {
                 </div>
               </div>
               <button onClick={handleSaveAffiliate} className="w-full bg-purple-500 text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-[#0f172a] transition-all border-none">
-                Cadastrar Afiliado
+                {editingAffiliateId ? "Salvar Alterações" : "Cadastrar Afiliado"}
               </button>
             </div>
           </div>

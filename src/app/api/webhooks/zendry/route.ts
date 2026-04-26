@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
         });
 
         console.log(`ZENDRY WEBHOOK: Assinatura da loja ${transaction.storeId} renovada até ${newExpiresAt.toISOString()}`);
+
+        // Gerar comissão para o afiliado, se existir
+        const { generateAffiliateCommission } = await import("@/lib/affiliateCommission");
+        await generateAffiliateCommission(transaction.id, transaction.storeId, transaction.amount);
       }
     }
 

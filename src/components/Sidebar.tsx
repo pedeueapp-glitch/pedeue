@@ -198,8 +198,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Meus Clientes", href: "/painel-afiliado/clientes", icon: Users },
     { name: "Minhas Comissões", href: "/painel-afiliado/financeiro", icon: CreditCard },
     { name: "Prospectar Lojista", href: "/painel-afiliado/prospectar", icon: ShoppingBag },
-    { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
-    { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+    { name: "Configurações", href: "/painel-afiliado/configuracoes", icon: Settings },
   ];
 
   const [openGroups, setOpenGroups] = useState<string[]>([]);

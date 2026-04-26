@@ -17,7 +17,7 @@ interface Commission {
   storeName: string;
   platformTransactionId: string;
   amount: number;
-  status: "PENDING" | "PAID";
+  status: "PENDING" | "PAID" | "REQUESTED";
   paidAt: string | null;
   createdAt: string;
 }
@@ -26,12 +26,14 @@ interface FinanceData {
   commissions: Commission[];
   totalPaid: number;
   totalPending: number;
+  totalRequested: number;
 }
 
 export default function FinanceiroPage() {
   const [data, setData] = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "PAID">("ALL");
+  const [requesting, setRequesting] = useState(false);
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "REQUESTED" | "PAID">("ALL");
 
   useEffect(() => {
     fetch("/api/afiliado/financeiro")
@@ -47,6 +49,25 @@ export default function FinanceiroPage() {
     filter === "ALL"
       ? data?.commissions ?? []
       : (data?.commissions ?? []).filter((c) => c.status === filter);
+
+  async function handleRequestWithdrawal() {
+    if (!confirm("Tem certeza que deseja solicitar o saque de todo o seu saldo disponível?")) return;
+    setRequesting(true);
+    try {
+      const res = await fetch("/api/afiliado/saque", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || "Erro ao solicitar saque");
+        return;
+      }
+      alert(json.message);
+      window.location.reload();
+    } catch (e) {
+      alert("Erro ao solicitar saque");
+    } finally {
+      setRequesting(false);
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -67,6 +88,16 @@ export default function FinanceiroPage() {
         <p className="text-slate-500 mt-1 text-sm font-medium">
           Extrato de todas as comissões geradas pelas suas lojas indicadas.
         </p>
+        
+        {data && data.totalPending > 0 && (
+          <button
+            onClick={handleRequestWithdrawal}
+            disabled={requesting}
+            className="mt-4 bg-emerald-600 text-white text-xs font-bold px-6 py-3 rounded-lg shadow hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {requesting ? "Solicitando..." : `Solicitar Saque (${fmt(data.totalPending)})`}
+          </button>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -76,9 +107,20 @@ export default function FinanceiroPage() {
             <Clock className="w-6 h-6 text-amber-500" />
           </div>
           <div>
-            <p className="text-amber-900/60 text-[10px] font-black uppercase tracking-widest mb-1">Saldo Pendente</p>
+            <p className="text-amber-900/60 text-[10px] font-black uppercase tracking-widest mb-1">Saldo Disponível</p>
             <p className="text-amber-900 text-2xl font-black">{fmt(data?.totalPending ?? 0)}</p>
-            <p className="text-amber-700/60 text-[10px] font-bold mt-1 uppercase tracking-tighter">Aguardando repasse</p>
+            <p className="text-amber-700/60 text-[10px] font-bold mt-1 uppercase tracking-tighter">Pronto para saque</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+            <Clock className="w-6 h-6 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-blue-900/60 text-[10px] font-black uppercase tracking-widest mb-1">Saque Solicitado</p>
+            <p className="text-blue-900 text-2xl font-black">{fmt(data?.totalRequested ?? 0)}</p>
+            <p className="text-blue-700/60 text-[10px] font-bold mt-1 uppercase tracking-tighter">Aguardando repasse</p>
           </div>
         </div>
 
@@ -96,7 +138,7 @@ export default function FinanceiroPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2">
-        {(["ALL", "PENDING", "PAID"] as const).map((f) => (
+        {(["ALL", "PENDING", "REQUESTED", "PAID"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -106,7 +148,7 @@ export default function FinanceiroPage() {
                 : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             }`}
           >
-            {f === "ALL" ? "Todos" : f === "PENDING" ? "Pendentes" : "Pagos"}
+            {f === "ALL" ? "Todos" : f === "PENDING" ? "Disponíveis" : f === "REQUESTED" ? "Solicitados" : "Pagos"}
           </button>
         ))}
       </div>
@@ -163,16 +205,21 @@ export default function FinanceiroPage() {
                       <CheckCircle2 className="w-3 h-3" />
                       Pago
                     </span>
+                  ) : commission.status === "REQUESTED" ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border text-blue-600 bg-blue-50 border-blue-100 uppercase tracking-widest">
+                      <Clock className="w-3 h-3" />
+                      Solicitado
+                    </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border text-amber-600 bg-amber-50 border-amber-100 uppercase tracking-widest">
                       <Clock className="w-3 h-3" />
-                      Pendente
+                      Disponível
                     </span>
                   )}
                 </div>
 
                 <div className="col-span-3 text-right">
-                  <p className={`text-lg font-black ${commission.status === "PAID" ? "text-emerald-600" : "text-amber-500"}`}>
+                  <p className={`text-lg font-black ${commission.status === "PAID" ? "text-emerald-600" : commission.status === "REQUESTED" ? "text-blue-500" : "text-amber-500"}`}>
                     {fmt(commission.amount)}
                   </p>
                   <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tighter">10% da mensalidade</p>

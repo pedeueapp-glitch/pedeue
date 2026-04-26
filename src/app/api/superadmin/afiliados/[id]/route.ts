@@ -35,6 +35,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ affiliate });
     }
 
+    if (action === "approve_withdrawal") {
+      // Pega todas com status REQUESTED e marca como PAID
+      const updated = await prisma.affiliate_commission.updateMany({
+        where: { platformAffiliateId: id, status: "REQUESTED" },
+        data: { status: "PAID", paidAt: new Date(), updatedAt: new Date() }
+      });
+      return NextResponse.json({ success: true, count: updated.count });
+    }
+
     return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
   } catch (error) {
     console.error("[SUPERADMIN/AFILIADOS PATCH]", error);

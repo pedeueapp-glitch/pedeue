@@ -37,8 +37,9 @@ export async function GET(_req: NextRequest) {
 
     const totalPaid = enriched.filter(c => c.status === "PAID").reduce((a: number, c: { amount: number }) => a + c.amount, 0);
     const totalPending = enriched.filter(c => c.status === "PENDING").reduce((a: number, c: { amount: number }) => a + c.amount, 0);
+    const totalRequested = enriched.filter(c => c.status === "REQUESTED").reduce((a: number, c: { amount: number }) => a + c.amount, 0);
 
-    return NextResponse.json({ commissions: enriched, totalPaid, totalPending });
+    return NextResponse.json({ commissions: enriched, totalPaid, totalPending, totalRequested });
   } catch (error) {
     console.error("[AFILIADO/FINANCEIRO]", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
