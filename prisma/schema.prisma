@@ -264,6 +264,10 @@ model store {
   support_tickets      support_ticket[]
   affiliates           affiliate[]
   upsell_rules         upsell_rule[]
+  platformAffiliateId  String?
+  platformAffiliate    platform_affiliate? @relation(fields: [platformAffiliateId], references: [id], onDelete: SetNull)
+
+  @@index([platformAffiliateId])
 }
 
 
@@ -324,8 +328,9 @@ model user {
   updatedAt     DateTime
   role             user_role         @default(USER)
   store            store?
-  support_tickets  support_ticket[]
-  support_messages support_message[]
+  support_tickets    support_ticket[]
+  support_messages   support_message[]
+  platformAffiliate  platform_affiliate?
 }
 
 model waiter {
@@ -432,6 +437,7 @@ enum user_role {
   USER
   ADMIN
   SUPERADMIN
+  AFFILIATE
 }
 
 enum order_orderType {
@@ -567,6 +573,38 @@ model affiliate {
   @@index([storeId])
 }
 
+
+model platform_affiliate {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  name        String
+  email       String   @unique
+  pixKey      String?
+  commissionRate Float @default(0.10)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stores      store[]
+  commissions affiliate_commission[]
+}
+
+model affiliate_commission {
+  id                    String   @id @default(cuid())
+  platformAffiliateId   String
+  storeId               String
+  platformTransactionId String
+  amount                Float
+  status                String   @default("PENDING") // PENDING, PAID
+  paidAt                DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  platformAffiliate     platform_affiliate @relation(fields: [platformAffiliateId], references: [id], onDelete: Cascade)
+
+  @@index([platformAffiliateId])
+  @@index([storeId])
+  @@index([platformTransactionId])
+}
 
 model upsell_rule {
   id               String   @id @default(cuid())

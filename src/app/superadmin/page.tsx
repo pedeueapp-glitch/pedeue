@@ -156,6 +156,9 @@ function SuperAdminContent() {
   const [payments, setPayments] = useState<any[]>([]);
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [expiringSoon, setExpiringSoon] = useState<any[]>([]);
+  const [affiliates, setAffiliates] = useState<any[]>([]);
+  const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
+  const [affiliateForm, setAffiliateForm] = useState({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" });
   
   // Modais Adicionais
   const [isAddingAnnouncement, setIsAddingAnnouncement] = useState(false);
@@ -301,6 +304,66 @@ function SuperAdminContent() {
     } catch (e) { console.error(e); }
   }
 
+  async function fetchAffiliates() {
+    try {
+      const res = await fetch("/api/superadmin/afiliados");
+      if (res.ok) {
+        const data = await res.json();
+        setAffiliates(data.affiliates);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function handleSaveAffiliate() {
+    try {
+      const res = await fetch("/api/superadmin/afiliados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...affiliateForm,
+          commissionRate: parseFloat(affiliateForm.commissionRate) / 100
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      toast.success("Afiliado cadastrado!");
+      setIsAddingAffiliate(false);
+      setAffiliateForm({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" });
+      fetchAffiliates();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar afiliado");
+    }
+  }
+
+  async function handleToggleAffiliate(id: string, isActive: boolean) {
+    try {
+      const res = await fetch(`/api/superadmin/afiliados/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle", isActive: !isActive })
+      });
+      if (res.ok) {
+        toast.success(isActive ? "Afiliado desativado!" : "Afiliado ativado!");
+        fetchAffiliates();
+      }
+    } catch { toast.error("Erro ao alterar status"); }
+  }
+
+  async function handleMarkCommissionPaid(commissionId: string) {
+    try {
+      const res = await fetch(`/api/superadmin/comissoes/${commissionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        toast.success("Comissão marcada como paga!");
+        fetchAffiliates();
+      }
+    } catch { toast.error("Erro ao marcar comissão"); }
+  }
+
   async function fetchExpiration() {
     try {
       const res = await fetch("/api/superadmin/expiration");
@@ -320,6 +383,7 @@ function SuperAdminContent() {
     if (activeTab === "payments") fetchPayments();
     if (activeTab === "webhooks") fetchWebhooks();
     if (activeTab === "expiration") fetchExpiration();
+    if (activeTab === "affiliates") fetchAffiliates();
   }, [activeTab]);
 
   async function handleToggleStoreActive(id: string, currentStatus: boolean) {
@@ -1469,9 +1533,143 @@ function SuperAdminContent() {
                     </div>
                  </div>
               </div>
-           </div>
+            </div>
+         )}
+
+        {/* ABA DE AFILIADOS */}
+        {activeTab === "affiliates" && (
+          <div className="animate-in fade-in duration-300 space-y-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Gestão de Afiliados</h2>
+                <p className="text-slate-400 text-sm font-medium mt-1">Parceiros que indicam lojistas e recebem comissão vitalícia.</p>
+              </div>
+              <button
+                onClick={() => { setAffiliateForm({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" }); setIsAddingAffiliate(true); }}
+                className="bg-purple-500 text-white px-8 py-4 rounded-none font-black text-xs tracking-widest shadow-xl border-none hover:brightness-110 transition-all flex items-center gap-3"
+              >
+                <Plus size={16} /> Cadastrar Afiliado
+              </button>
+            </div>
+
+            {/* Resumo geral */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { label: "Total de Afiliados", value: affiliates.length, color: "border-purple-500" },
+                { label: "Afiliados Ativos", value: affiliates.filter((a: any) => a.isActive).length, color: "border-green-500" },
+                {
+                  label: "Comissões Pendentes (Total)",
+                  value: `R$ ${affiliates.reduce((acc: number, a: any) => acc + (a.totalPending ?? 0), 0).toFixed(2)}`,
+                  color: "border-amber-500"
+                },
+              ].map((card) => (
+                <div key={card.label} className={`bg-white p-8 rounded-none border border-slate-100 shadow-sm border-l-8 ${card.color}`}>
+                  <p className="text-xs font-black text-slate-400 tracking-wider mb-2">{card.label}</p>
+                  <h3 className="text-3xl font-black text-slate-900">{card.value}</h3>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabela de afiliados */}
+            <div className="bg-white rounded-none border border-slate-100 shadow-sm overflow-x-auto">
+              <table className="w-full text-left min-w-[900px]">
+                <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-500 tracking-wider">
+                  <tr>
+                    <th className="p-6">Afiliado</th>
+                    <th className="p-6">Chave PIX</th>
+                    <th className="p-6">Comissão</th>
+                    <th className="p-6">Lojas (Total/Ativas)</th>
+                    <th className="p-6">Pendente</th>
+                    <th className="p-6">Total Recebido</th>
+                    <th className="p-6 text-center">Status</th>
+                    <th className="p-6 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {affiliates.length === 0 ? (
+                    <tr><td colSpan={8} className="p-12 text-center text-slate-300 font-black text-sm tracking-widest">Nenhum afiliado cadastrado ainda</td></tr>
+                  ) : affiliates.map((aff: any) => (
+                    <tr key={aff.id} className="hover:bg-slate-50 transition-all font-bold text-sm">
+                      <td className="p-6">
+                        <p className="text-slate-900">{aff.name}</p>
+                        <p className="text-slate-400 text-xs font-medium">{aff.email}</p>
+                      </td>
+                      <td className="p-6">
+                        <span className="font-mono text-xs text-slate-600">{aff.pixKey || "—"}</span>
+                      </td>
+                      <td className="p-6">
+                        <span className="bg-purple-50 text-purple-700 px-3 py-1 text-xs font-black border border-purple-200">
+                          {(aff.commissionRate * 100).toFixed(0)}%
+                        </span>
+                      </td>
+                      <td className="p-6 text-slate-700">{aff.totalStores} / {aff.activeStores} ativas</td>
+                      <td className="p-6 text-amber-600 font-black">R$ {(aff.totalPending ?? 0).toFixed(2)}</td>
+                      <td className="p-6 text-green-600 font-black">R$ {(aff.totalPaid ?? 0).toFixed(2)}</td>
+                      <td className="p-6 text-center">
+                        <span className={`px-3 py-1 text-[9px] font-black border ${
+                          aff.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'
+                        }`}>
+                          {aff.isActive ? 'ATIVO' : 'INATIVO'}
+                        </span>
+                      </td>
+                      <td className="p-6 text-center">
+                        <button
+                          onClick={() => handleToggleAffiliate(aff.id, aff.isActive)}
+                          className={`px-4 py-2 text-[10px] font-black tracking-widest border-none transition-all ${
+                            aff.isActive
+                              ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
+                              : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'
+                          }`}
+                        >
+                          {aff.isActive ? 'Desativar' : 'Ativar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
+
       </main>
+
+      {/* MODAL CADASTRO DE AFILIADO */}
+      {isAddingAffiliate && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-none p-12 relative shadow-2xl border-t-[12px] border-purple-500">
+            <button onClick={() => setIsAddingAffiliate(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 border-none outline-none"><X size={28}/></button>
+            <h3 className="text-3xl font-black text-slate-900 text-center mb-10 tracking-tighter">Cadastrar Afiliado</h3>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400">Nome Completo</p>
+                <input className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="NOME DO AFILIADO" value={affiliateForm.name} onChange={e => setAffiliateForm({...affiliateForm, name: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400">Email de Acesso</p>
+                <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="email@exemplo.com" value={affiliateForm.email} onChange={e => setAffiliateForm({...affiliateForm, email: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400">Senha de Acesso</p>
+                <input type="password" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="Mínimo 8 caracteres" value={affiliateForm.password} onChange={e => setAffiliateForm({...affiliateForm, password: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-black text-slate-400">Chave PIX (para repasses)</p>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="CPF, email, celular..." value={affiliateForm.pixKey} onChange={e => setAffiliateForm({...affiliateForm, pixKey: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-black text-slate-400">Comissão (%)</p>
+                  <input type="number" min="1" max="100" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="10" value={affiliateForm.commissionRate} onChange={e => setAffiliateForm({...affiliateForm, commissionRate: e.target.value})} />
+                </div>
+              </div>
+              <button onClick={handleSaveAffiliate} className="w-full bg-purple-500 text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-[#0f172a] transition-all border-none">
+                Cadastrar Afiliado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL GESTÃO DE LOJA */}
       {isManagingStore && selectedStore && (

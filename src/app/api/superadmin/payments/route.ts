@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPixChargeStatus } from "@/lib/efi";
+import { generateAffiliateCommission } from "@/lib/affiliateCommission";
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,9 @@ export async function PATCH(req: Request) {
             lastPaymentId: transaction.id
           }
         });
+
+        // Gerar comissão para afiliado (se houver)
+        await generateAffiliateCommission(transaction.id, transaction.storeId, transaction.amount);
       }
 
       return NextResponse.json({ success: true, status: newStatus, efiFullStatus: efiStatus.status });
@@ -124,6 +128,9 @@ export async function PATCH(req: Request) {
         lastPaymentId: transaction.id
       }
     });
+
+    // Gerar comissão para afiliado (se houver)
+    await generateAffiliateCommission(transaction.id, transaction.storeId, transaction.amount);
 
     return NextResponse.json({ success: true, status: "paid" });
   }

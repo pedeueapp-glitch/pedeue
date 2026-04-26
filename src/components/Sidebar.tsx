@@ -169,6 +169,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Analytics Pro", href: "/superadmin?tab=analytics", icon: TrendingUp },
     { name: "Gestão de Lojas", href: "/superadmin?tab=stores", icon: ShoppingBag },
     { name: "Gestão Financeira", href: "/superadmin?tab=payments", icon: CreditCard },
+    { name: "Gestão de Afiliados", href: "/superadmin?tab=affiliates", icon: Users },
     { name: "Planos Mensais", href: "/superadmin?tab=plans", icon: Layers },
     { name: "Relatório Expiração", href: "/superadmin?tab=expiration", icon: Calendar },
     { name: "Logs de Webhooks", href: "/superadmin?tab=webhooks", icon: ScrollText },
