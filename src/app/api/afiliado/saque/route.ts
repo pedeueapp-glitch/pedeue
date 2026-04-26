@@ -10,6 +10,10 @@ export async function POST(_req: NextRequest) {
   }
 
   try {
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
+    }
+
     const affiliate = await prisma.platform_affiliate.findUnique({
       where: { userId: session.user.id },
     });

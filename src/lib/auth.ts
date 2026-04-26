@@ -84,6 +84,16 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role; // Incluindo role no token
         token.storeSlug = (user as any).storeSlug;
+      } else if (!token.id && token.email) {
+        // Fallback para sessões antigas que não tinham ID no token
+        const dbUser = await prisma.user.findUnique({ 
+          where: { email: token.email },
+          select: { id: true, role: true }
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+        }
       }
       return token;
     },
