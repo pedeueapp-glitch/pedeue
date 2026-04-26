@@ -37,7 +37,6 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
-import AffiliateDashboardPage from "./afiliado/dashboard_component";
 
 const COLORS = ['#f97316', '#3b82f6', '#10b981', '#6366f1', '#8b5cf6'];
 
@@ -89,17 +88,6 @@ export default function DashboardPage() {
   };
 
   const { data: session } = useSession();
-
-  if (session?.user?.role === "AFFILIATE") {
-    return (
-      <div className="flex-1 flex flex-col min-h-screen bg-[#0f0f1a]">
-        <Header title="Painel do Afiliado" />
-        <div className="p-4 lg:p-6 max-w-7xl mx-auto w-full">
-          <AffiliateDashboardPage />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -57,7 +57,20 @@ export default function ProspectPage() {
     storeName: "",
     whatsapp: "",
     cpf: "",
+    planId: "",
   });
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/plans")
+      .then((res) => res.json())
+      .then((data) => {
+        setPlans(data);
+        if (data.length > 0) {
+          setForm((f) => ({ ...f, planId: data[0].id }));
+        }
+      });
+  }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     let value = e.target.value;
@@ -99,9 +112,9 @@ export default function ProspectPage() {
         <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="w-10 h-10 text-emerald-400" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Lojista cadastrado!</h2>
-        <p className="text-gray-400 mb-6">
-          A loja <span className="text-emerald-400 font-semibold">{done}</span> foi criada e vinculada à sua conta. Você receberá 10% de cada mensalidade paga por esse lojista.
+        <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Lojista cadastrado!</h2>
+        <p className="text-slate-500 mb-6 font-medium">
+          A loja <span className="text-emerald-600 font-bold">{done}</span> foi criada, vinculada à sua conta e ganhou <span className="font-bold text-emerald-600">3 dias grátis</span>. Você receberá a comissão definida assim que a primeira mensalidade for paga.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
@@ -111,8 +124,8 @@ export default function ProspectPage() {
             Cadastrar outro lojista
           </button>
           <Link
-            href="/dashboard/afiliado/clientes"
-            className="px-6 py-3 rounded-xl border border-white/10 text-gray-300 font-semibold hover:bg-white/5 transition-colors"
+            href="/painel-afiliado/clientes"
+            className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:shadow-md transition-all uppercase tracking-widest text-[10px] flex items-center justify-center"
           >
             Ver meus clientes
           </Link>
@@ -124,33 +137,57 @@ export default function ProspectPage() {
   return (
     <div className="max-w-xl mx-auto">
       <Link
-        href="/afiliado"
-        className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6 transition-colors"
+        href="/painel-afiliado"
+        className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 text-xs font-bold uppercase tracking-widest mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Voltar ao dashboard
       </Link>
 
       <div className="mb-8">
-        <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium mb-2">
+        <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium mb-2">
           <UserPlus className="w-4 h-4" />
-          <span>Prospectar Loja</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">Prospectar Loja</span>
         </div>
-        <h1 className="text-2xl font-bold text-white">Cadastrar novo lojista</h1>
-        <p className="text-gray-400 mt-1 text-sm">
-          Preencha os dados do lojista. A loja será automaticamente vinculada à sua conta de afiliado.
+        <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Cadastrar novo lojista</h1>
+        <p className="text-slate-500 mt-1 text-sm font-medium">
+          Preencha os dados do lojista. A loja será automaticamente vinculada à sua conta e receberá 3 dias grátis de assinatura do plano escolhido.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-white/5 bg-[#0f0f1a] p-6">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Seleção de Plano */}
+          <div>
+            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">
+              Plano de Assinatura
+            </label>
+            <div className="relative">
+              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <select
+                name="planId"
+                value={form.planId}
+                onChange={(e) => setForm({ ...form, planId: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm font-semibold appearance-none"
+                required
+              >
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} - R$ {plan.price.toFixed(2)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-[10px] text-emerald-600 font-bold mt-1.5 ml-1">+ 3 Dias Grátis</p>
+          </div>
+
           {fields.map((field) => (
             <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">
                 {field.label}
               </label>
               <div className="relative">
-                <field.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <field.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type={field.type}
                   name={field.name}
@@ -161,7 +198,7 @@ export default function ProspectPage() {
                   }
                   onChange={handleChange}
                   placeholder={field.placeholder}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm font-semibold"
                   required
                 />
               </div>
@@ -170,25 +207,25 @@ export default function ProspectPage() {
 
           {/* Senha */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Senha de acesso
+            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">
+              Senha de acesso do lojista
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type={showPass ? "text" : "password"}
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition-all text-sm"
+                className="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm font-semibold"
                 required
                 minLength={8}
               />
               <button
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -198,8 +235,8 @@ export default function ProspectPage() {
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isLoading || plans.length === 0}
+              className="w-full py-4 rounded-xl bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
               {isLoading ? (
                 <>
@@ -217,8 +254,8 @@ export default function ProspectPage() {
         </form>
       </div>
 
-      <p className="text-center text-gray-600 text-xs mt-4">
-        Ao cadastrar, essa loja será vinculada permanentemente à sua conta de afiliado.
+      <p className="text-center text-slate-400 font-semibold text-[10px] uppercase tracking-widest mt-6">
+        A loja será vinculada permanentemente à sua conta de afiliado.
       </p>
     </div>
   );

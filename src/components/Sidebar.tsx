@@ -182,10 +182,10 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
   ];
 
   const affiliateLinks = [
-    { name: "Meu Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Meus Clientes", href: "/dashboard/afiliado/clientes", icon: Users },
-    { name: "Minhas Comissões", href: "/dashboard/afiliado/financeiro", icon: CreditCard },
-    { name: "Prospectar Lojista", href: "/dashboard/afiliado/prospectar", icon: ShoppingBag },
+    { name: "Meu Dashboard", href: "/painel-afiliado", icon: LayoutDashboard },
+    { name: "Meus Clientes", href: "/painel-afiliado/clientes", icon: Users },
+    { name: "Minhas Comissões", href: "/painel-afiliado/financeiro", icon: CreditCard },
+    { name: "Prospectar Lojista", href: "/painel-afiliado/prospectar", icon: ShoppingBag },
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
     { name: "Configurações", href: "/dashboard/settings", icon: Settings },
   ];

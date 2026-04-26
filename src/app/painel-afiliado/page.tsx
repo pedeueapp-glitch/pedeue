@@ -146,9 +146,9 @@ export default function AffiliateDashboardPage() {
         <h2 className="text-slate-800 font-black text-sm uppercase tracking-widest mb-4">Ações Rápidas</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Novo Lojista", href: "/dashboard/afiliado/prospectar", desc: "Criar loja vinculada ao seu perfil", color: "from-emerald-500 to-teal-600" },
-            { label: "Meus Clientes", href: "/dashboard/afiliado/clientes", desc: "Ver status das lojas indicadas", color: "from-blue-500 to-indigo-600" },
-            { label: "Financeiro", href: "/dashboard/afiliado/financeiro", desc: "Extrato e saldos a receber", color: "from-purple-500 to-violet-600" },
+            { label: "Novo Lojista", href: "/painel-afiliado/prospectar", desc: "Criar loja vinculada ao seu perfil", color: "from-emerald-500 to-teal-600" },
+            { label: "Meus Clientes", href: "/painel-afiliado/clientes", desc: "Ver status das lojas indicadas", color: "from-blue-500 to-indigo-600" },
+            { label: "Financeiro", href: "/painel-afiliado/financeiro", desc: "Extrato e saldos a receber", color: "from-purple-500 to-violet-600" },
           ].map((action) => (
             <Link
               key={action.href}

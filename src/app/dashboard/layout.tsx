@@ -60,8 +60,8 @@ export default function DashboardLayout({
     }
 
     if (status === "authenticated") {
-      if (session.user.role === "AFFILIATE") {
-        setSubStatus({ loading: false, isExpired: false });
+      if (session?.user?.role === "AFFILIATE") {
+        router.push("/painel-afiliado");
         return;
       }
       checkSubscription();

@@ -46,17 +46,19 @@ export function Header({ title }: HeaderProps) {
             <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-[120px]">
               {session?.user?.name || "Usuário"}
             </p>
-            <p className="text-[9px] font-semibold text-purple-500 mt-1  tracking-wider">
-              {isSuperAdmin ? "SuperAdmin" : "Lojista"}
+            <p className="text-[9px] font-semibold text-purple-500 mt-1 tracking-wider">
+              {isSuperAdmin ? "SuperAdmin" : ((session?.user as any)?.role === "AFFILIATE" ? "Afiliado Parceiro" : "Lojista")}
             </p>
           </div>
-          <Link 
-            href="/dashboard/settings" 
-            className="w-10 h-10 lg:w-11 lg:h-11 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all shadow-sm"
-            title="Configurações"
-          >
-            <Settings size={18} />
-          </Link>
+          {(session?.user as any)?.role !== "AFFILIATE" && (
+            <Link 
+              href="/dashboard/settings" 
+              className="w-10 h-10 lg:w-11 lg:h-11 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all shadow-sm"
+              title="Configurações"
+            >
+              <Settings size={18} />
+            </Link>
+          )}
         </div>
       </div>
     </header>
