@@ -1,6 +1,7 @@
 import Gerencianet from 'gn-api-sdk-node';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 /**
  * Configuração da Efí (Gerencianet)
@@ -116,9 +117,14 @@ export async function sendPixOutbound(data: {
   };
 
   try {
+    // O idEnvio deve ser um identificador único para cada tentativa de envio, 
+    // com até 35 caracteres alfanuméricos.
+    const idEnvio = crypto.randomUUID().replace(/-/g, '');
+    const params = { idEnvio };
+
     // Nota: O método pixSend requer que a aplicação tenha o escopo 'pix.write' e 'pix.send' habilitados na Efí.
-    console.log("DEBUG EFI - Chamando efi.pixSend...");
-    const response = await efi.pixSend({}, body);
+    console.log(`DEBUG EFI - Chamando efi.pixSend com idEnvio: ${idEnvio}...`);
+    const response = await efi.pixSend(params, body);
     console.log("DEBUG EFI - Resposta recebida:", JSON.stringify(response));
     return response;
   } catch (error: any) {
