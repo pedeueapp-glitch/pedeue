@@ -107,6 +107,7 @@ interface StoreData {
   restaurantBanners?: string;
   serviceBanners?: string;
   pixKey?: string;
+  freeDeliveryThreshold: number;
 }
 
 export default function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: string }) {
@@ -410,7 +411,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       } else if (current.length < group.maxOptions) {
         setSelectedOptions({ ...selectedOptions, [groupId]: [...current, option] });
       } else {
-        toast.error(`Máximo de ${group.maxOptions} opÃ§Ãµes para ${group.name}`);
+        toast.error(`Máximo de ${group.maxOptions} opções para ${group.name}`);
       }
     }
   }
@@ -537,7 +538,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   function generateWhatsAppMessage(orderNumber: number) {
     if (!store) return;
     const totalItems = getTotal();
-    const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? selectedArea.fee : 0) : 0;
+    const isFreeShipping = store && store.freeDeliveryThreshold > 0 && totalItems >= store.freeDeliveryThreshold;
+    const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
     const discount = 0; // Se houver lógica de cupom no futuro, injetar aqui
     const deliveryTotal = totalItems + currentFee - discount;
 
@@ -686,7 +688,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   const cartCount = getItemCount();
   const subtotal = getTotal();
-  const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? selectedArea.fee : 0) : 0;
+  const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
+  const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
   const total = subtotal + currentFee;
   const primaryColor = store.primaryColor || "#f97316";
 
@@ -724,7 +727,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           <div className="absolute inset-0 bg-black/30" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 -mt-10 relative z-10">
+        <div className="max-w-4xl mx-auto px-6 -mt-10 relative z-10">
           <div className="bg-white rounded-xl p-5 md:p-8 shadow-2xl border-b-4 border-brand">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-5 md:gap-8">
               <div className="w-16 h-16 md:w-24 md:h-24 bg-white border-4 border-white -mt-12 md:-mt-16 shadow-xl overflow-hidden flex-shrink-0 rounded-lg relative z-20">
@@ -757,7 +760,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 mt-6 md:mt-8 space-y-4 sticky top-0 z-40 bg-slate-50/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4">
+      <div className="max-w-4xl mx-auto px-6 mt-6 md:mt-8 space-y-4 sticky top-0 z-40 bg-slate-50/80 backdrop-blur-md pb-4 pt-2">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-slate-400 group-focus-within:text-brand transition-colors" />
@@ -793,7 +796,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         )}
       </div>
 
-      <div className="space-y-20">
+      <div className="max-w-4xl mx-auto px-6 space-y-20">
         {filteredCategories.map((cat) => (
           <section key={cat.id} ref={el => { (categoryRefs.current as any)[cat.id] = el; }} className="scroll-mt-32">
             <div className="flex items-center gap-3 mb-6">
@@ -878,7 +881,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
       {isMounted && cartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 animate-slide-up">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto px-6">
             <button
               onClick={() => setCartOpen(true)}
               className="w-full flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-3xl text-white bg-brand transition-all hover:opacity-90 active:scale-[0.98] shadow-2xl shadow-brand/20"
@@ -1032,20 +1035,20 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                     <div className="bg-brand/5 border border-brand/10 p-5 rounded-2xl animate-in slide-in-from-top duration-500">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-2">
-                           <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
-                              <Truck size={16} className="text-brand" />
-                           </div>
-                           <span className="text-xs font-bold text-slate-700">
-                            {subtotal >= store.freeDeliveryThreshold 
-                              ? "🎉 Parabéns! Você ganhou FRETE GRÁTIS!" 
-                              : `Faltam R$ ${(store.freeDeliveryThreshold - subtotal).toFixed(2).replace('.', ',')} para FRETE GRÁTIS`}
+                          <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
+                            <Truck size={16} className="text-brand" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            {subtotal >= store.freeDeliveryThreshold
+                              ? "🎉 Parabéns! A entrega será grátis!"
+                              : `Faltam R$ ${(store.freeDeliveryThreshold - subtotal).toFixed(2).replace('.', ',')} para você não pagar a taxa de entrega!`}
                           </span>
                         </div>
                         <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-1 rounded">R$ {store.freeDeliveryThreshold.toFixed(2)}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-brand transition-all duration-700 ease-out" 
+                        <div
+                          className="h-full bg-brand transition-all duration-700 ease-out"
                           style={{ width: `${Math.min((subtotal / store.freeDeliveryThreshold) * 100, 100)}%` }}
                         />
                       </div>
@@ -1316,42 +1319,42 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
             <div className="p-10 pt-12 text-center space-y-6">
               <div>
                 <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] mb-2">Já que você levou o outro...</h3>
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1">Preço Exclusivo</p>
-                    <p className="text-3xl font-black text-purple-600">R$ {(showUpsell.rule.discountPrice || showUpsell.product.price).toFixed(2).replace('.', ',')}</p>
-                  </div>
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1">Preço Exclusivo</p>
+                  <p className="text-3xl font-black text-purple-600">R$ {(showUpsell.rule.discountPrice || showUpsell.product.price).toFixed(2).replace('.', ',')}</p>
+                </div>
 
-              <div className="grid grid-cols-1 gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    addItem({
-                      productId: showUpsell.product.id,
-                      name: showUpsell.product.name,
-                      price: showUpsell.rule.discountPrice || showUpsell.product.price,
-                      imageUrl: showUpsell.product.imageUrl,
-                      quantity: 1,
-                      isUpsell: true
-                    });
-                    setActiveUpsellRuleId(showUpsell.rule.id);
-                    toast.success("Excelente escolha!");
-                    setShowUpsell(null);
-                  }}
-                  className="w-full bg-slate-900 text-white py-5 rounded-2xl text-xs font-black tracking-widest hover:bg-purple-500 transition-all shadow-xl active:scale-95"
-                >
-                  Sim, eu quero!
-                </button>
-                <button 
-                  onClick={() => setShowUpsell(null)}
-                  className="w-full py-4 text-slate-400 text-[10px] font-black tracking-widest hover:text-slate-600 transition-all"
-                >
-                   Não, obrigado
-                </button>
+                <div className="grid grid-cols-1 gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      addItem({
+                        productId: showUpsell.product.id,
+                        name: showUpsell.product.name,
+                        price: showUpsell.rule.discountPrice || showUpsell.product.price,
+                        imageUrl: showUpsell.product.imageUrl,
+                        quantity: 1,
+                        isUpsell: true
+                      });
+                      setActiveUpsellRuleId(showUpsell.rule.id);
+                      toast.success("Excelente escolha!");
+                      setShowUpsell(null);
+                    }}
+                    className="w-full bg-slate-900 text-white py-5 rounded-2xl text-xs font-black tracking-widest hover:bg-purple-500 transition-all shadow-xl active:scale-95"
+                  >
+                    Sim, eu quero!
+                  </button>
+                  <button
+                    onClick={() => setShowUpsell(null)}
+                    className="w-full py-4 text-slate-400 text-[10px] font-black tracking-widest hover:text-slate-600 transition-all"
+                  >
+                    Não, obrigado
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
       {showStoreInfo && (
 
