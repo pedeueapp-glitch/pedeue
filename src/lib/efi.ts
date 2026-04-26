@@ -120,21 +120,46 @@ export async function sendPixOutbound(data: {
   };
 
   try {
-    // O idEnvio deve ser um identificador único para cada tentativa de envio, 
-    // com até 35 caracteres alfanuméricos.
     const idEnvio = crypto.randomUUID().replace(/-/g, '');
-    const params = { idEnvio };
+    
+    // 1. Obter Token de Acesso (Usando o próprio SDK para autorizar)
+    const authResponse = await efi.authorize();
+    const accessToken = authResponse.access_token;
 
-    // Nota: O método pixSend requer que a aplicação tenha o escopo 'pix.write' e 'pix.send' habilitados na Efí.
-    console.log(`DEBUG EFI - Params: ${JSON.stringify(params)}`);
-    console.log(`DEBUG EFI - Body: ${JSON.stringify(body)}`);
-    const response = await efi.pixSend(params, body);
-    console.log("DEBUG EFI - Resposta recebida:", JSON.stringify(response));
-    return response;
+    // 2. Configurar Agente HTTPS com o Certificado
+    const https = await import('https');
+    const axios = (await import('axios')).default;
+    
+    const agent = new https.Agent({
+      pfx: fs.readFileSync(certPath),
+      passphrase: '',
+    });
+
+    const baseUrl = options.sandbox 
+      ? 'https://api-pix-h.gerencianet.com.br' 
+      : 'https://api-pix.gerencianet.com.br';
+
+    console.log(`DEBUG EFI MANUAL - Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
+    console.log(`DEBUG EFI MANUAL - Body: ${JSON.stringify(body)}`);
+
+    // 3. Chamada Direta via Axios para evitar propriedades extras do SDK
+    const response = await axios({
+      method: 'PUT',
+      url: `${baseUrl}/v2/gn/pix/${idEnvio}`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      httpsAgent: agent,
+      data: body
+    });
+
+    console.log("DEBUG EFI MANUAL - Sucesso:", JSON.stringify(response.data));
+    return response.data;
+
   } catch (error: any) {
-    console.error('EFI PIX SEND ERROR:', JSON.stringify(error));
-    throw error;
+    const errorData = error.response?.data || error.message;
+    console.error('EFI PIX SEND MANUAL ERROR:', JSON.stringify(errorData));
+    throw errorData;
   }
 }
-
-
