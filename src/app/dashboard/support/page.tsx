@@ -85,27 +85,32 @@ export default function MerchantSupportPage() {
   };
 
   const faqs = [
-    { category: "Começando", questions: [
-      { q: "Como configurar meu domínio próprio?", a: "Vá em Configurações > Domínio e siga as instruções de apontamento DNS." },
-      { q: "Onde cadastro meu horário de funcionamento?", a: "Em Configurações > Perfil, você encontrará a aba Horários." }
+    { category: "Catálogo e Inteligência Artificial", questions: [
+      { q: "Como uso o Importador Mágico para trazer meu cardápio?", a: "Vá em 'Gerenciar Loja > Produtos' e clique no botão 'Importador Mágico'. Você pode colar o link do seu cardápio atual (como iFood) ou apenas colar o texto bruto que a nossa IA cadastra tudo para você." },
+      { q: "A IA pode escrever as descrições dos meus produtos?", a: "Sim! Ao adicionar ou editar um produto, clique no botão 'Gerar com IA' ao lado do campo de descrição. A inteligência artificial criará um texto persuasivo baseado no nome do produto." },
+      { q: "Como organizo meus produtos?", a: "Primeiro crie suas Categorias (ex: Lanches, Bebidas) no menu 'Categorias'. Depois, em 'Produtos', você pode associar os itens a elas." }
     ]},
-    { category: "Pagamentos", questions: [
-      { q: "Como ativar o recebimento via PIX?", a: "Acesse Financeiro > Configurações e insira sua chave PIX ou conecte o gateway Efí." },
-      { q: "Qual o prazo de recebimento das vendas?", a: "Vendas via PIX caem na hora. Cartão de crédito depende do seu plano no gateway." }
+    { category: "Marketing e Vendas", questions: [
+      { q: "Como criar artes para o meu Instagram?", a: "Acesse 'Marketing e Artes > Mídias Sociais'. O nosso Estúdio gera artes profissionais (1080x1920) automaticamente com a cor da sua loja, seu logo e fotos reais dos seus produtos. Basta escolher o template e baixar." },
+      { q: "Como gerar material para imprimir (Adesivos/Display)?", a: "No painel de 'Mídias Sociais', clique na aba 'Kit Impressão'. Você encontrará templates prontos em alta resolução (300 DPI) para displays de balcão, adesivos de mesa e panfletos de agradecimento com seu QR Code." },
+      { q: "Como configuro códigos de rastreio (Pixel/Analytics)?", a: "Vá em 'Configurações' e role até a seção 'Marketing & SEO'. Lá você pode inserir seu Pixel do Facebook, Google Analytics e TikTok Pixel." }
     ]},
-    { category: "Pedidos e Entrega", questions: [
-      { q: "Como configurar taxas por bairro?", a: "Vá em Configurações > Taxas de Entrega e adicione os valores por região." },
-      { q: "Posso integrar com entregadores externos?", a: "Sim, você pode cadastrar entregadores na aba Motoboys para gestão interna." }
+    { category: "Operação e Logística", questions: [
+      { q: "Como configurar taxas de entrega por bairro?", a: "Vá em 'Gerenciar Loja > Taxas de Entrega'. Você pode adicionar os bairros que atende e definir um valor específico para cada um." },
+      { q: "Como gerenciar Garçons e Mesas (para restaurantes)?", a: "Se a sua loja for do tipo Restaurante, você verá os menus 'Mesas' e 'Garçons'. Crie as mesas e cadastre seus garçons para que eles possam lançar pedidos diretamente no sistema." },
+      { q: "Onde cadastro meu horário de funcionamento?", a: "Em 'Configurações', você encontrará a seção 'Horário de Funcionamento'. Lá você pode definir os dias e horários em que sua loja aceita pedidos online." }
     ]}
   ];
 
   const onboardingSteps = [
-    { title: "Perfil da Loja", desc: "Configure logo, nome e endereço", icon: LayoutDashboard, link: "/dashboard/settings", completed: true },
-    { title: "Categorias e Produtos", desc: "Cadastre seus primeiros itens", icon: ShoppingBag, link: "/dashboard/products", completed: true },
-    { title: "Métodos de Pagamento", desc: "Defina como quer receber", icon: CreditCard, link: "/dashboard/finance", completed: false },
-    { title: "Taxas de Entrega", desc: "Configure seus bairros e valores", icon: Truck, link: "/dashboard/delivery-fees", completed: false },
-    { title: "WhatsApp Business", desc: "Conecte para avisos automáticos", icon: MessageCircle, link: "/dashboard/settings", completed: false },
+    { title: "Personalize sua Marca", desc: "Configure logo, nome, cor principal e endereço", icon: LayoutDashboard, link: "/dashboard/settings", completed: true },
+    { title: "Crie Categorias", desc: "Organize seu cardápio ou catálogo", icon: BookOpen, link: "/dashboard/categories", completed: false },
+    { title: "Adicione Produtos", desc: "Cadastre manualmente ou use o Importador Mágico", icon: ShoppingBag, link: "/dashboard/products", completed: false },
+    { title: "Taxas de Entrega", desc: "Configure os bairros e valores de entrega", icon: Truck, link: "/dashboard/delivery-fees", completed: false },
+    { title: "Baixe sua Primeira Arte", desc: "Vá ao Estúdio de Mídias Sociais e anuncie que está online", icon: Zap, link: "/dashboard/midias-sociais", completed: false },
   ];
+
+
 
   const filteredFaqs = faqs.map(cat => ({
     ...cat,

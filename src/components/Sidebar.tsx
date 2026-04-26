@@ -84,16 +84,15 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Minha Assinatura", href: "/dashboard/subscription", icon: CreditCard },
     { name: "Configurações", href: "/dashboard/settings", icon: Settings },
     { name: "Vendas Vitrine", href: "/dashboard/vendas-vitrine", icon: ClipboardList, showcaseOnly: true },
-    { name: "Clientes", href: "/dashboard/customers", icon: Users, serviceOnly: true },
+    { name: "Clientes", href: "/dashboard/customers", icon: Users },
     { name: "Orçamentos", href: "/dashboard/quotes", icon: ScrollText, serviceOnly: true },
     { name: "Calendário", href: "/dashboard/calendar", icon: Calendar, serviceOnly: true },
   ];
 
   const merchantLinks = allMerchantLinks.filter((link: any) => {
     if (store?.storeType === "SHOWCASE") {
-      const hiddenInShowcase = ["Mesas", "Garçons", "Motoboys", "Taxas de Entrega", "Orçamentos", "Calendário", "Clientes", "Cupons e Cashback"];
+      const hiddenInShowcase = ["Mesas", "Garçons", "Motoboys", "Taxas de Entrega", "Orçamentos", "Calendário"];
       if (hiddenInShowcase.includes(link.name)) return false;
-      if (link.name === "PDV Pedidos") link.name = "PDV Loja";
     } else if (store?.storeType === "SERVICE") {
       const serviceOrder = ["Orçamentos", "PDV Pedidos", "Calendário", "Categorias", "Meus Produtos", "Clientes", "Financeiro", "Mídias Sociais", "Marketing e Crescimento", "Cupons e Cashback", "Minha Assinatura", "Configurações", "Suporte"];
       if (!serviceOrder.includes(link.name)) return false;
@@ -116,11 +115,10 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
   // Definição dos Grupos (Apenas para Merchant Desktop)
   const groupedLinks = [
     { 
-      name: store?.storeType === "SERVICE" ? "Novo Orçamento" : "PDV Pedidos", 
+      name: store?.storeType === "SERVICE" ? "Novo Orçamento" : store?.storeType === "SHOWCASE" ? "PDV Loja" : "PDV Pedidos", 
       href: "/dashboard/pdv", 
       icon: ShoppingBag, 
-      feature: 'PDV_SYSTEM',
-      originalName: "PDV Pedidos"
+      feature: 'PDV_SYSTEM'
     },
     {
       name: store?.storeType === "SERVICE" ? "Agenda e Clientes" : "Gestão de Pessoas",
@@ -149,6 +147,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
       items: [
         { name: "Orçamentos", href: "/dashboard/quotes", icon: ScrollText },
         { name: "Relatório de Pedidos", href: "/dashboard/pedidos", icon: ClipboardList },
+        { name: "Vendas Vitrine", href: "/dashboard/vendas-vitrine", icon: ClipboardList },
         { name: "Financeiro", href: "/dashboard", icon: LayoutDashboard },
         { name: "Minha Assinatura", href: "/dashboard/subscription", icon: CreditCard },
       ]
@@ -159,7 +158,6 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
       items: [
         { name: "Mídias Sociais", href: "/dashboard/midias-sociais", icon: Image },
         { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
-        { name: "Cupons e Cashback", href: "/dashboard/coupons", icon: Tag, feature: 'COUPON_SYSTEM' },
       ]
     },
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
@@ -284,8 +282,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
               const isOpen = openGroups.includes(group.name);
               // Filter items based on availability
               const visibleItems = group.items.filter((item: any) => {
-                const searchName = item.originalName || item.name;
-                return merchantLinks.some(ml => ml.name === searchName);
+                return merchantLinks.some(ml => ml.href === item.href);
               });
 
               if (visibleItems.length === 0) return null;
@@ -332,10 +329,9 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
 
             // Single link
             const isActive = pathname === group.href;
-            const searchName = group.originalName || group.name;
             const isLocked = (group.feature && !hasFeature(planFeatures, group.feature as any)) || (isExpired && group.name !== "Minha Assinatura");
 
-            if (mode === "MERCHANT" && !merchantLinks.some(ml => ml.name === searchName)) return null;
+            if (mode === "MERCHANT" && !merchantLinks.some(ml => ml.href === group.href)) return null;
 
             return (
               <Link

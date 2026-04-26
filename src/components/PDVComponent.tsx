@@ -2582,23 +2582,6 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
           </div>
         </div>
       )}
-
-      {/* INFORMATIVO DE ATALHOS - VISÍVEL NO DESKTOP */}
-      <div className="bg-slate-900 text-white p-2 flex items-center justify-center gap-6 shrink-0 border-t border-slate-800 relative z-[200]">
-        <div className="flex items-center gap-2">
-          <span className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] font-black border border-slate-600">F1</span>
-          <span className="text-[10px] font-bold  tracking-widest text-slate-400">Nova Comanda</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] font-black border border-slate-600">ESC</span>
-          <span className="text-[10px] font-bold  tracking-widest text-slate-400">Fechar Janelas</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] font-black border border-slate-600">ENTER</span>
-          <span className="text-[10px] font-bold  tracking-widest text-slate-400">Confirmar</span>
-        </div>
-      </div>
-
     </div>
   );
 }
