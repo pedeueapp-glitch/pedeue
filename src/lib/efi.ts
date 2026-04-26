@@ -139,7 +139,7 @@ export async function sendPixOutbound(data: {
       : 'https://api-pix.gerencianet.com.br';
 
     // 2. Obter Token de Acesso Manualmente (mTLS é obrigatório para PIX)
-    console.log("DEBUG EFI MANUAL - 2. Obtendo Token via mTLS...");
+    console.log("DEBUG EFI MANUAL [V2.0.5] - 2. Obtendo Token via mTLS...");
     const authCredentials = Buffer.from(`${options.client_id}:${options.client_secret}`).toString('base64');
     
     const authResponse = await axios({
@@ -154,13 +154,13 @@ export async function sendPixOutbound(data: {
     });
 
     const accessToken = authResponse.data.access_token;
-    console.log("DEBUG EFI MANUAL - 3. Token obtido com sucesso.");
+    console.log("DEBUG EFI MANUAL [V2.0.5] - 3. Token obtido com sucesso.");
 
-    console.log(`DEBUG EFI MANUAL - 4. Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
-    console.log(`DEBUG EFI MANUAL - Body: ${JSON.stringify(body)}`);
+    console.log(`DEBUG EFI MANUAL [V2.0.5] - 4. Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
+    console.log(`DEBUG EFI MANUAL [V2.0.5] - Body: ${JSON.stringify(body)}`);
 
     // 3. Chamada Nativa via HTTPS para evitar qualquer interferência (Axios/SDK)
-    console.log("DEBUG EFI MANUAL - 3. Enviando via HTTPS nativo...");
+    console.log("DEBUG EFI MANUAL [V2.0.5] - 3. Enviando via HTTPS nativo...");
     
     return new Promise((resolve, reject) => {
       const dataString = JSON.stringify(body);
