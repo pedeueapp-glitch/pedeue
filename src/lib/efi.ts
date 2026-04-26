@@ -116,6 +116,9 @@ export async function sendPixOutbound(data: {
 
   const body = {
     valor: data.amount.toFixed(2),
+    pagador: {
+      chave: process.env.EFI_PIX_KEY || ''
+    },
     favorecido: {
       chave: cleanPixKey
     }
