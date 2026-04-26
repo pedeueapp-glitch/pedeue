@@ -28,7 +28,7 @@ export async function generateAffiliateCommission(
 
     if (existing) return; // já gerada, ignora
 
-    const commissionAmount = parseFloat((amount * affiliate.commissionRate).toFixed(2));
+    const commissionAmount = affiliate.commissionValue;
 
     await prisma.affiliate_commission.create({
       data: {

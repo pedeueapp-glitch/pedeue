@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data: {
           pixKey: data.pixKey,
           pixKeyType: data.pixKeyType,
-          commissionRate: data.commissionRate,
+          commissionValue: data.commissionValue,
           updatedAt: new Date(),
         },
       });

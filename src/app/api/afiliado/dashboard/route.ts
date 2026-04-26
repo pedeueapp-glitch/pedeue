@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest) {
       activeStores,
       totalReceived,
       pendingBalance,
-      commissionRate: affiliate.commissionRate,
+      commissionValue: affiliate.commissionValue,
     });
   } catch (error) {
     console.error("[AFILIADO/DASHBOARD]", error);

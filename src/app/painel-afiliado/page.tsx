@@ -17,7 +17,7 @@ interface DashboardData {
   activeStores: number;
   totalReceived: number;
   pendingBalance: number;
-  commissionRate: number;
+  commissionValue: number;
 }
 
 function StatCard({
@@ -131,11 +131,11 @@ export default function AffiliateDashboardPage() {
             <h3 className="text-emerald-900 font-black text-lg mb-1 tracking-tight">
               Sua comissão vitalícia é de{" "}
               <span className="text-emerald-600">
-                {((data?.commissionRate ?? 0.1) * 100).toFixed(0)}%
+                {fmt(data?.commissionValue ?? 10)} fixo
               </span>
             </h3>
             <p className="text-emerald-700/70 text-sm font-medium leading-relaxed">
-              Cada vez que um lojista indicado por você renovar a assinatura, você recebe automaticamente o percentual sobre o valor pago. Sem limites de indicação e sem prazo de expiração.
+              Cada vez que um lojista indicado por você renovar a assinatura, você recebe automaticamente este valor fixo. Sem limites de indicação e sem prazo de expiração.
             </p>
           </div>
         </div>

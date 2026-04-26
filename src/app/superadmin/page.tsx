@@ -159,7 +159,7 @@ function SuperAdminContent() {
   const [affiliates, setAffiliates] = useState<any[]>([]);
   const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
   const [editingAffiliateId, setEditingAffiliateId] = useState<string | null>(null);
-  const [affiliateForm, setAffiliateForm] = useState({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionRate: "10" });
+  const [affiliateForm, setAffiliateForm] = useState({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionValue: "10.00" });
   
   // Modais Adicionais
   const [isAddingAnnouncement, setIsAddingAnnouncement] = useState(false);
@@ -325,10 +325,10 @@ function SuperAdminContent() {
           action: "update",
           pixKey: affiliateForm.pixKey,
           pixKeyType: affiliateForm.pixKeyType,
-          commissionRate: parseFloat(affiliateForm.commissionRate) / 100
+          commissionValue: parseFloat(affiliateForm.commissionValue)
         } : {
           ...affiliateForm,
-          commissionRate: parseFloat(affiliateForm.commissionRate) / 100
+          commissionValue: parseFloat(affiliateForm.commissionValue)
         })
       });
       if (!res.ok) {
@@ -338,7 +338,7 @@ function SuperAdminContent() {
       toast.success(isEditing ? "Dados atualizados!" : "Afiliado cadastrado!");
       setIsAddingAffiliate(false);
       setEditingAffiliateId(null);
-      setAffiliateForm({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionRate: "10" });
+      setAffiliateForm({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionValue: "10.00" });
       fetchAffiliates();
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar afiliado");
@@ -1576,7 +1576,7 @@ function SuperAdminContent() {
               <button
                 onClick={() => { 
                   setEditingAffiliateId(null);
-                  setAffiliateForm({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionRate: "10" }); 
+                  setAffiliateForm({ name: "", email: "", password: "", pixKey: "", pixKeyType: "CPF", commissionValue: "10.00" }); 
                   setIsAddingAffiliate(true); 
                 }}
                 className="bg-purple-500 text-white px-8 py-4 rounded-none font-black text-xs tracking-widest shadow-xl border-none hover:brightness-110 transition-all flex items-center gap-3"
@@ -1632,7 +1632,7 @@ function SuperAdminContent() {
                       </td>
                       <td className="p-6">
                         <span className="bg-purple-50 text-purple-700 px-3 py-1 text-xs font-black border border-purple-200">
-                          {(aff.commissionRate * 100).toFixed(0)}%
+                          R$ {aff.commissionValue.toFixed(2)}
                         </span>
                       </td>
                       <td className="p-6 text-slate-700">{aff.totalStores} / {aff.activeStores} ativas</td>
@@ -1659,7 +1659,7 @@ function SuperAdminContent() {
                                  password: "",
                                  pixKey: aff.pixKey || "",
                                  pixKeyType: aff.pixKeyType || "CPF",
-                                 commissionRate: (aff.commissionRate * 100).toString()
+                                 commissionValue: aff.commissionValue.toString()
                                });
                                setIsAddingAffiliate(true);
                              }}
@@ -1743,8 +1743,8 @@ function SuperAdminContent() {
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-black text-slate-400">Comissão (%)</p>
-                <input type="number" min="1" max="100" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="10" value={affiliateForm.commissionRate} onChange={e => setAffiliateForm({...affiliateForm, commissionRate: e.target.value})} />
+                <p className="text-xs font-black text-slate-400">Comissão Fixa (R$)</p>
+                <input type="number" step="0.01" min="0" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="10.00" value={affiliateForm.commissionValue} onChange={e => setAffiliateForm({...affiliateForm, commissionValue: e.target.value})} />
               </div>
               <button onClick={handleSaveAffiliate} className="w-full bg-purple-500 text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-[#0f172a] transition-all border-none">
                 {editingAffiliateId ? "Salvar Alterações" : "Cadastrar Afiliado"}

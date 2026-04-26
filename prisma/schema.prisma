@@ -581,7 +581,7 @@ model platform_affiliate {
   email       String   @unique
   pixKey      String?
   pixKeyType  pix_key_type? @default(CPF)
-  commissionRate Float @default(0.10)
+  commissionValue Float @default(10.00)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

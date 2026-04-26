@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name, email, password, pixKey, pixKeyType, commissionRate } = await req.json();
+    const { name, email, password, pixKey, pixKeyType, commissionValue } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Nome, email e senha são obrigatórios" }, { status: 400 });
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
             email,
             pixKey: pixKey || null,
             pixKeyType: pixKeyType || "CPF",
-            commissionRate: commissionRate ?? 0.10,
+            commissionValue: commissionValue ?? 10.00,
             updatedAt: new Date(),
           },
         },
