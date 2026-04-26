@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
   Lock, 
@@ -58,7 +58,18 @@ export default function LoginPage() {
           localStorage.removeItem("saved_password");
         }
         toast.success("Bem-vindo de volta!");
-        router.push("/dashboard");
+        
+        const session = await getSession();
+        const role = (session?.user as any)?.role;
+
+        if (role === "SUPERADMIN") {
+          router.push("/superadmin");
+        } else if (role === "AFFILIATE") {
+          router.push("/painel-afiliado");
+        } else {
+          router.push("/dashboard");
+        }
+        
         router.refresh();
       }
     } catch (error) {

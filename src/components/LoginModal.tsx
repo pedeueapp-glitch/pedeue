@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, Loader2, X, ArrowRight } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -34,7 +34,18 @@ export function LoginModal({ onClose, onRegisterClick }: { onClose: () => void, 
         toast.error("E-mail ou senha incorretos");
       } else {
         toast.success("Login realizado com sucesso!");
-        router.push("/dashboard");
+        
+        const session = await getSession();
+        const role = (session?.user as any)?.role;
+
+        if (role === "SUPERADMIN") {
+          router.push("/superadmin");
+        } else if (role === "AFFILIATE") {
+          router.push("/painel-afiliado");
+        } else {
+          router.push("/dashboard");
+        }
+        
         onClose();
       }
     } catch (error) {

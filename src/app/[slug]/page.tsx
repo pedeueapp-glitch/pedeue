@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import StorefrontClient from "./StorefrontClient";
 import Script from "next/script";
 
@@ -61,6 +62,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const reqHeaders = await headers();
+  if (reqHeaders.get("x-store-rewrite") !== "true") {
+    notFound();
+  }
+
   const { slug } = await params;
 
   // Busca inicial no servidor para ISR

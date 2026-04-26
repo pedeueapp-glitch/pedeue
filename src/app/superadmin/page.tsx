@@ -334,8 +334,9 @@ function SuperAdminContent() {
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast.success("Afiliado cadastrado!");
+      toast.success(isEditing ? "Dados atualizados!" : "Afiliado cadastrado!");
       setIsAddingAffiliate(false);
+      setEditingAffiliateId(null);
       setAffiliateForm({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" });
       fetchAffiliates();
     } catch (e: any) {
@@ -1566,7 +1567,11 @@ function SuperAdminContent() {
                 <p className="text-slate-400 text-sm font-medium mt-1">Parceiros que indicam lojistas e recebem comissão vitalícia.</p>
               </div>
               <button
-                onClick={() => { setAffiliateForm({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" }); setIsAddingAffiliate(true); }}
+                onClick={() => { 
+                  setEditingAffiliateId(null);
+                  setAffiliateForm({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" }); 
+                  setIsAddingAffiliate(true); 
+                }}
                 className="bg-purple-500 text-white px-8 py-4 rounded-none font-black text-xs tracking-widest shadow-xl border-none hover:brightness-110 transition-all flex items-center gap-3"
               >
                 <Plus size={16} /> Cadastrar Afiliado

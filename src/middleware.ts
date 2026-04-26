@@ -44,7 +44,14 @@ export async function middleware(request: NextRequest) {
     const slug = hostname.split('.')[0];
     
     if (!reservedSubdomains.includes(slug)) {
-      const res = NextResponse.rewrite(new URL(`/${slug}${pathname}`, request.url));
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-store-rewrite', 'true');
+      
+      const res = NextResponse.rewrite(new URL(`/${slug}${pathname}`, request.url), {
+        request: {
+          headers: requestHeaders,
+        },
+      });
       res.headers.set('Access-Control-Allow-Origin', origin);
       res.headers.set('Access-Control-Allow-Credentials', 'true');
       res.headers.set('Access-Control-Allow-Headers', 'x-nextjs-data, x-rsc, x-rsc-version');
@@ -59,7 +66,14 @@ export async function middleware(request: NextRequest) {
       const data = await resLookup.json();
 
       if (data.slug) {
-        const res = NextResponse.rewrite(new URL(`/${data.slug}${pathname}`, request.url));
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('x-store-rewrite', 'true');
+        
+        const res = NextResponse.rewrite(new URL(`/${data.slug}${pathname}`, request.url), {
+          request: {
+            headers: requestHeaders,
+          },
+        });
         res.headers.set('Access-Control-Allow-Origin', origin);
         return res;
       }
