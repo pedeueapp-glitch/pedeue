@@ -109,9 +109,14 @@ export async function sendPixOutbound(data: {
 }) {
   console.log(`DEBUG EFI - Iniciando transferência PIX para: ${data.pixKey}, Valor: R$ ${data.amount.toFixed(2)}`);
 
+  // Se for uma chave numérica (CPF, CNPJ ou Telefone), removemos caracteres especiais.
+  // Se for e-mail ou chave aleatória, mantemos como está.
+  const isNumericKey = /^\d+$/.test(data.pixKey.replace(/[\.\-\s\(\)]/g, ''));
+  const cleanPixKey = isNumericKey ? data.pixKey.replace(/\D/g, '') : data.pixKey;
+
   const body = {
     valor: data.amount.toFixed(2),
-    chave: data.pixKey
+    chave: cleanPixKey
   };
 
   try {
