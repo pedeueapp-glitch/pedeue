@@ -107,8 +107,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     merchantLinks.push({ 
       name: "Ver Cardápio", 
       href: `/${store.slug}`, 
-      icon: Eye,
-      mobileOnly: true 
+      icon: Eye
     });
   }
 

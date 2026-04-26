@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 
 // Criar um contexto para que qualquer Header dentro das páginas possa abrir a sidebar
 import { SidebarProvider, useSidebar } from "@/lib/contexts/SidebarContext";
-import { SystemAnnouncements } from "@/components/SystemAnnouncements";
 
 
 export default function DashboardLayout({

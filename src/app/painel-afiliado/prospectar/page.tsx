@@ -118,7 +118,7 @@ export default function ProspectPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => { setDone(null); setForm({ name: "", email: "", password: "", storeName: "", whatsapp: "", cpf: "" }); }}
+            onClick={() => { setDone(null); setForm({ name: "", email: "", password: "", storeName: "", whatsapp: "", cpf: "", planId: "" }); }}
             className="px-6 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-colors"
           >
             Cadastrar outro lojista

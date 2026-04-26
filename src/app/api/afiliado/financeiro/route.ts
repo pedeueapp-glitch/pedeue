@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    const totalPaid = enriched.filter(c => c.status === "PAID").reduce((a, c) => a + c.amount, 0);
-    const totalPending = enriched.filter(c => c.status === "PENDING").reduce((a, c) => a + c.amount, 0);
+    const totalPaid = enriched.filter(c => c.status === "PAID").reduce((a: number, c: any) => a + c.amount, 0);
+    const totalPending = enriched.filter(c => c.status === "PENDING").reduce((a: number, c: any) => a + c.amount, 0);
 
     return NextResponse.json({ commissions: enriched, totalPaid, totalPending });
   } catch (error) {
