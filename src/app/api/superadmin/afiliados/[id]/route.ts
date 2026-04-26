@@ -102,8 +102,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
-  } catch (error) {
-    console.error("[SUPERADMIN/AFILIADOS PATCH]", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[SUPERADMIN/AFILIADOS PATCH CRITICAL ERROR]:", error);
+    return NextResponse.json({ 
+      error: "Erro interno ao processar a solicitação", 
+      details: error.message || "Erro desconhecido" 
+    }, { status: 500 });
   }
 }

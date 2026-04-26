@@ -385,9 +385,11 @@ function SuperAdminContent() {
         fetchAffiliates();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Erro ao aprovar saques");
+        toast.error(`${data.error}${data.details ? ': ' + data.details : ''}`);
       }
-    } catch { toast.error("Erro de conexão ao processar saque"); }
+    } catch (err: any) { 
+      toast.error("Erro de conexão ao processar saque"); 
+    }
   }
 
   async function fetchExpiration() {

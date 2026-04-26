@@ -15,10 +15,15 @@ const certPath = path.join(certDir, 'efi-cert.p12');
 
 // Se o certificado estiver em Base64 no ENV, salva no arquivo temporário (necessário para o SDK)
 if (process.env.EFI_CERTIFICATE_BASE64) {
-  if (!fs.existsSync(certDir)) {
-    fs.mkdirSync(certDir, { recursive: true });
+  try {
+    if (!fs.existsSync(certDir)) {
+      fs.mkdirSync(certDir, { recursive: true });
+    }
+    fs.writeFileSync(certPath, Buffer.from(process.env.EFI_CERTIFICATE_BASE64, 'base64'));
+    console.log("DEBUG EFI - Certificado salvo com sucesso em:", certPath);
+  } catch (err) {
+    console.error("DEBUG EFI - Erro ao salvar certificado no disco:", err);
   }
-  fs.writeFileSync(certPath, Buffer.from(process.env.EFI_CERTIFICATE_BASE64, 'base64'));
 }
 
 const options = {
@@ -112,10 +117,12 @@ export async function sendPixOutbound(data: {
 
   try {
     // Nota: O método pixSend requer que a aplicação tenha o escopo 'pix.write' e 'pix.send' habilitados na Efí.
+    console.log("DEBUG EFI - Chamando efi.pixSend...");
     const response = await efi.pixSend({}, body);
+    console.log("DEBUG EFI - Resposta recebida:", JSON.stringify(response));
     return response;
-  } catch (error) {
-    console.error('EFI PIX SEND ERROR:', error);
+  } catch (error: any) {
+    console.error('EFI PIX SEND ERROR:', JSON.stringify(error));
     throw error;
   }
 }
