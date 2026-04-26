@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   
   const rootDomain = 'pedeue.com';
   // Rotas que DEVEM permanecer no domínio principal
-  const mainRoutes = ['/dashboard', '/api', '/_next', '/entrar', '/cadastrar', '/recuperar-senha', '/superadmin', '/favicon.ico'];
+  const mainRoutes = ['/dashboard', '/api', '/_next', '/entrar', '/cadastrar', '/recuperar-senha', '/superadmin', '/favicon.ico', '/painel-afiliado', '/contato-suporte'];
   const reservedSubdomains = ['www', 'api', 'admin', 'superadmin', 'dev', 'websocket'];
   
   const { pathname } = url;
@@ -35,20 +35,7 @@ export async function middleware(request: NextRequest) {
   const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}` || hostname.includes('localhost');
   
   if (isMainDomain) {
-    const slug = pathname.split('/')[1];
-    const isSystemRoute = mainRoutes.some(route => pathname.startsWith(route));
-    const isValidSlug = slug && !slug.startsWith('#') && !slug.startsWith('%') && slug.length > 0;
-
-    if (!isSystemRoute && pathname !== '/' && isValidSlug) {
-      try {
-        const redirectUrl = new URL(`${url.protocol}//${slug}.${rootDomain}${pathname.replace(`/${slug}`, '')}`);
-        const res = NextResponse.redirect(redirectUrl);
-        res.headers.set('Access-Control-Allow-Origin', origin);
-        return res;
-      } catch (e) {
-        return NextResponse.next();
-      }
-    }
+    return NextResponse.next();
     
     return NextResponse.next();
   }
