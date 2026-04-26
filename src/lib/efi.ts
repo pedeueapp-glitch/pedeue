@@ -111,9 +111,7 @@ export async function sendPixOutbound(data: {
 
   const body = {
     valor: data.amount.toFixed(2),
-    chave: data.pixKey,
-    // No PIX Envio da Efí v2, o campo de descrição pode variar conforme a versão ou conta. 
-    // Geralmente é passado como 'mensagem' ou em campos específicos.
+    chave: data.pixKey
   };
 
   try {
@@ -123,7 +121,8 @@ export async function sendPixOutbound(data: {
     const params = { idEnvio };
 
     // Nota: O método pixSend requer que a aplicação tenha o escopo 'pix.write' e 'pix.send' habilitados na Efí.
-    console.log(`DEBUG EFI - Chamando efi.pixSend com idEnvio: ${idEnvio}...`);
+    console.log(`DEBUG EFI - Params: ${JSON.stringify(params)}`);
+    console.log(`DEBUG EFI - Body: ${JSON.stringify(body)}`);
     const response = await efi.pixSend(params, body);
     console.log("DEBUG EFI - Resposta recebida:", JSON.stringify(response));
     return response;
