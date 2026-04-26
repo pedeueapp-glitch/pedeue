@@ -11,14 +11,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { name: true, description: true, logo: true }
+    select: { name: true, description: true, logo: true, city: true, state: true, address: true }
   });
 
   if (!store) return { title: "PedeUe - Loja não encontrada" };
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pedeue.com";
-  const title = `${store.name} | Cardápio Digital`;
-  const description = store.description || `Confira os produtos e faça seu pedido online na loja ${store.name}.`;
+  const location = store.city ? ` em ${store.city} - ${store.state}` : "";
+  const title = `${store.name} | Cardápio Digital${location}`;
+  const description = store.description || `Confira os produtos e faça seu pedido online na loja ${store.name}${location}. Entregas rápidas e melhor preço.`;
   
   let imageUrl = store.logo || "/icon-512x512.png";
   if (imageUrl.startsWith("/")) {
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     metadataBase: new URL(baseUrl),
     title,
     description,
+    keywords: `${store.name}, delivery ${store.city}, cardápio online ${store.name}, pedir comida ${store.city}`,
     openGraph: {
       title,
       description,
@@ -65,7 +67,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // Busca inicial simplificada para pegar o storeType
   const initialStore = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, storeType: true }
+    select: { id: true, storeType: true, name: true, logo: true, city: true, state: true, address: true, whatsapp: true }
   });
 
   if (!initialStore) {
@@ -117,11 +119,34 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     notFound();
   }
 
+  // Schema.org JSON-LD
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": store.storeType === "RESTAURANT" ? "Restaurant" : "LocalBusiness",
+    "name": store.name,
+    "image": store.logo,
+    "url": `${process.env.NEXT_PUBLIC_APP_URL || "https://pedeue.com"}/${slug}`,
+    "telephone": store.whatsapp,
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": store.address,
+      "addressLocality": store.city,
+      "addressRegion": store.state,
+      "addressCountry": "BR"
+    },
+    "priceRange": "R$",
+    "servesCuisine": "Variada"
+  };
+
   // Sanitização simples para garantir que o objeto seja serializável
   const sanitizedStore = JSON.parse(JSON.stringify(store));
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
       {/* Facebook Pixel */}
       {store.facebookPixelId && (
         <Script id="facebook-pixel" strategy="afterInteractive">

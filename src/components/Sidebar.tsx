@@ -32,7 +32,9 @@ import {
   Server,
   ShieldCheck,
   Eye,
-  Download
+  Download,
+  Megaphone,
+  Image
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
@@ -74,6 +76,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Mesas", href: "/dashboard/tables", icon: Layers, feature: 'TABLE_MANAGEMENT' },
     { name: "Taxas de Entrega", href: "/dashboard/delivery-fees", icon: MapPin },
     { name: "Cupons e Cashback", href: "/dashboard/coupons", icon: Tag, feature: 'COUPON_SYSTEM' },
+    { name: "Mídias Sociais", href: "/dashboard/midias-sociais", icon: Image },
     { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
     { name: "Financeiro", href: "/dashboard", icon: LayoutDashboard },
 
@@ -92,9 +95,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
       if (hiddenInShowcase.includes(link.name)) return false;
       if (link.name === "PDV Pedidos") link.name = "PDV Loja";
     } else if (store?.storeType === "SERVICE") {
-      const serviceOrder = ["Orçamentos", "Novo Orçamento", "Calendário", "Categorias", "Produtos", "Clientes", "Minha Assinatura", "Configurações", "Suporte"];
-      if (link.name === "Meus Produtos") link.name = "Produtos";
-      if (link.name === "PDV Pedidos") link.name = "Novo Orçamento";
+      const serviceOrder = ["Orçamentos", "PDV Pedidos", "Calendário", "Categorias", "Meus Produtos", "Clientes", "Financeiro", "Mídias Sociais", "Marketing e Crescimento", "Cupons e Cashback", "Minha Assinatura", "Configurações", "Suporte"];
       if (!serviceOrder.includes(link.name)) return false;
     } else {
       if (link.showcaseOnly || link.serviceOnly) return false;
@@ -114,12 +115,26 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
 
   // Definição dos Grupos (Apenas para Merchant Desktop)
   const groupedLinks = [
-    { name: "PDV Pedidos", href: "/dashboard/pdv", icon: ShoppingBag, feature: 'PDV_SYSTEM' },
+    { 
+      name: store?.storeType === "SERVICE" ? "Novo Orçamento" : "PDV Pedidos", 
+      href: "/dashboard/pdv", 
+      icon: ShoppingBag, 
+      feature: 'PDV_SYSTEM',
+      originalName: "PDV Pedidos"
+    },
+    {
+      name: store?.storeType === "SERVICE" ? "Agenda e Clientes" : "Gestão de Pessoas",
+      icon: Users,
+      items: [
+        { name: "Calendário", href: "/dashboard/calendar", icon: Calendar },
+        { name: "Clientes", href: "/dashboard/customers", icon: Users },
+      ]
+    },
     {
       name: "Gerenciar Loja",
       icon: Settings,
       items: [
-        { name: "Meus Produtos", href: "/dashboard/products", icon: UtensilsCrossed },
+        { name: store?.storeType === "SERVICE" ? "Produtos" : "Meus Produtos", href: "/dashboard/products", icon: UtensilsCrossed, originalName: "Meus Produtos" },
         { name: "Categorias", href: "/dashboard/categories", icon: Layers },
         { name: "Motoboys", href: "/dashboard/drivers", icon: Users },
         { name: "Garçons", href: "/dashboard/waiters", icon: Users, feature: 'TABLE_MANAGEMENT' },
@@ -132,12 +147,21 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
       name: "Gestão Financeira",
       icon: CreditCard,
       items: [
+        { name: "Orçamentos", href: "/dashboard/quotes", icon: ScrollText },
         { name: "Relatório de Pedidos", href: "/dashboard/pedidos", icon: ClipboardList },
         { name: "Financeiro", href: "/dashboard", icon: LayoutDashboard },
         { name: "Minha Assinatura", href: "/dashboard/subscription", icon: CreditCard },
       ]
     },
-    { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
+    {
+      name: "Marketing e Artes",
+      icon: Megaphone,
+      items: [
+        { name: "Mídias Sociais", href: "/dashboard/midias-sociais", icon: Image },
+        { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
+        { name: "Cupons e Cashback", href: "/dashboard/coupons", icon: Tag, feature: 'COUPON_SYSTEM' },
+      ]
+    },
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
     { name: "Configurações", href: "/dashboard/settings", icon: Settings },
   ];
@@ -260,7 +284,8 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
               const isOpen = openGroups.includes(group.name);
               // Filter items based on availability
               const visibleItems = group.items.filter((item: any) => {
-                return merchantLinks.some(ml => ml.name === item.name);
+                const searchName = item.originalName || item.name;
+                return merchantLinks.some(ml => ml.name === searchName);
               });
 
               if (visibleItems.length === 0) return null;
@@ -307,7 +332,10 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
 
             // Single link
             const isActive = pathname === group.href;
+            const searchName = group.originalName || group.name;
             const isLocked = (group.feature && !hasFeature(planFeatures, group.feature as any)) || (isExpired && group.name !== "Minha Assinatura");
+
+            if (mode === "MERCHANT" && !merchantLinks.some(ml => ml.name === searchName)) return null;
 
             return (
               <Link

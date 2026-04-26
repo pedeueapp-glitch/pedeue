@@ -11,7 +11,11 @@ import {
   PlusCircle, 
   MinusCircle,
   Tag,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Wand2,
+  Globe,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -55,8 +59,14 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [productModal, setProductModal] = useState(false);
+  const [importModal, setImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importMode, setImportMode] = useState<"url" | "text">("url");
+  const [importPreview, setImportPreview] = useState<any>(null);
 
   const [productForm, setProductForm] = useState({
     name: "", 
@@ -90,6 +100,54 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  async function handleImport() {
+    if (importMode === "url" && !importUrl) return toast.error("Cole uma URL do cardápio");
+    if (importMode === "text" && !importText) return toast.error("Cole o texto do cardápio");
+
+    setImporting(true);
+    setImportPreview(null);
+    try {
+      const res = await fetch("/api/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          url: importMode === "url" ? importUrl : undefined,
+          text: importMode === "text" ? importText : undefined
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na importação");
+      setImportPreview(data);
+      toast.success("Cardápio analisado com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function saveImport() {
+    if (!importPreview) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/import/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(importPreview),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar cardápio");
+      toast.success("Cardápio importado com sucesso!");
+      setImportModal(false);
+      setImportPreview(null);
+      setImportUrl("");
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function saveProduct(e: React.FormEvent) {
     e.preventDefault();
@@ -180,24 +238,32 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Produtos</h2>
           <p className="text-gray-500 text-sm">Gerencie seu cardápio e estoque</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingProduct(null);
-            setProductForm({ 
-              name: "", description: "", price: "", imageUrl: "", categoryId: categories[0]?.id || "", 
-              isActive: true, inStock: true, optionGroups: [] 
-            });
-            setProductModal(true);
-          }}
-          className="btn-primary"
-        >
-          <Plus className="w-4 h-4" /> Novo Produto
-        </button>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <button 
+            onClick={() => setImportModal(true)}
+            className="flex-1 md:flex-none btn-secondary !bg-purple-50 !text-purple-600 !border-purple-100 hover:!bg-purple-100 flex items-center justify-center gap-2"
+          >
+            <Wand2 className="w-4 h-4" /> Importador Mágico
+          </button>
+          <button 
+            onClick={() => {
+              setEditingProduct(null);
+              setProductForm({ 
+                name: "", description: "", price: "", imageUrl: "", categoryId: categories[0]?.id || "", 
+                isActive: true, inStock: true, optionGroups: [] 
+              });
+              setProductModal(true);
+            }}
+            className="flex-1 md:flex-none btn-primary flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Novo Produto
+          </button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -241,7 +307,152 @@ export default function ProductsPage() {
         ))}
       </div>
 
+      {/* MODAL DE IMPORTAÇÃO */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[40px] w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
+            <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600">
+                  <Wand2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold">Importador Mágico</h3>
+                  <p className="text-gray-500 text-sm">Cole o link do iFood ou cardápio digital</p>
+                </div>
+              </div>
+              <button onClick={() => setImportModal(false)} className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600"><X /></button>
+            </div>
+
+            <div className="p-8 overflow-y-auto flex-1 space-y-6">
+              {!importPreview ? (
+                <div className="space-y-4">
+                  <div className="flex bg-gray-100 p-1 rounded-2xl">
+                    <button 
+                      onClick={() => setImportMode("url")}
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${importMode === "url" ? "bg-white shadow-sm text-purple-600" : "text-gray-500"}`}
+                    >
+                      Via Link (iFood, etc)
+                    </button>
+                    <button 
+                      onClick={() => setImportMode("text")}
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${importMode === "text" ? "bg-white shadow-sm text-purple-600" : "text-gray-500"}`}
+                    >
+                      Copiar e Colar Texto
+                    </button>
+                  </div>
+
+                  {importMode === "url" ? (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
+                        <AlertCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                        <p className="text-sm text-blue-700">
+                          Nossa inteligência artificial vai ler o site, identificar os produtos, preços e categorias e cadastrar tudo para você em segundos.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700">URL do Cardápio</label>
+                        <div className="relative">
+                          <Globe className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input 
+                            type="url" 
+                            placeholder="Ex: https://www.ifood.com.br/delivery/restaurante-exemplo"
+                            className="input-field !pl-12"
+                            value={importUrl}
+                            onChange={e => setImportUrl(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 flex gap-3">
+                        <AlertCircle className="w-5 h-5 text-purple-500 shrink-0" />
+                        <p className="text-sm text-purple-700">
+                          Abra seu cardápio, selecione tudo (Ctrl+A), copie (Ctrl+C) e cole aqui (Ctrl+V).
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700">Texto do Cardápio</label>
+                        <textarea 
+                          placeholder="Cole aqui o texto do seu cardápio..."
+                          className="input-field min-h-[200px] !py-4"
+                          value={importText}
+                          onChange={e => setImportText(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleImport}
+                    disabled={importing || (importMode === "url" ? !importUrl : !importText)}
+                    className="btn-primary w-full h-14 text-lg flex items-center justify-center gap-3"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        Mágica em andamento...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-6 h-6" />
+                        Começar Importação
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-gray-800">Itens Encontrados ({importPreview.categories?.length} categorias)</h4>
+                    <button onClick={() => setImportPreview(null)} className="text-sm text-purple-600 font-bold hover:underline">Alterar Link</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {importPreview.categories?.map((cat: any, idx: number) => (
+                      <div key={idx} className="border border-gray-100 rounded-2xl p-4 bg-gray-50">
+                        <div className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          {cat.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {cat.products?.length} produtos identificados
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-orange-500 shrink-0" />
+                    <p className="text-xs text-orange-700">
+                      Ao clicar em confirmar, criaremos as categorias e produtos acima na sua loja. Você poderá editá-los individualmente depois.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={saveImport}
+                    disabled={saving}
+                    className="btn-primary w-full h-14 text-lg flex items-center justify-center gap-3"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-6 h-6" />
+                        Confirmar e Salvar Tudo
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {productModal && (
+
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
             <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">

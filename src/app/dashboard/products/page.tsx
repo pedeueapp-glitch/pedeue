@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { 
   Plus, Search, Edit3, Trash2, Loader2, X, PlusSquare,
   Package, Camera, AlertCircle, CheckCircle2, PlusCircle, Palette,
-  Calculator, TrendingUp, Copy
+  Calculator, TrendingUp, Copy, Wand2, Globe
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Header } from "@/components/Header";
@@ -22,9 +22,18 @@ export default function ProductsPage() {
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [importModal, setImportModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const [importing, setImporting] = useState(false);
+  const [savingImport, setSavingImport] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importMode, setImportMode] = useState<"url" | "text">("url");
+  const [importPreview, setImportPreview] = useState<any>(null);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "", description: "", price: "", salePrice: "", categoryId: "",
@@ -102,6 +111,77 @@ export default function ProductsPage() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const handleImport = async () => {
+    if (importMode === "url" && !importUrl) return toast.error("Cole uma URL do cardápio");
+    if (importMode === "text" && !importText) return toast.error("Cole o texto do cardápio");
+
+    setImporting(true);
+    setImportPreview(null);
+    try {
+      const res = await fetch("/api/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          url: importMode === "url" ? importUrl : undefined,
+          text: importMode === "text" ? importText : undefined
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na importação");
+      setImportPreview(data);
+      toast.success("Cardápio analisado com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const saveImport = async () => {
+    if (!importPreview) return;
+    setSavingImport(true);
+    try {
+      const res = await fetch("/api/import/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(importPreview),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar cardápio");
+      toast.success("Cardápio importado com sucesso!");
+      setImportModal(false);
+      setImportPreview(null);
+      setImportUrl("");
+      setImportText("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingImport(false);
+    }
+  };
+
+  const generateAIDescription = async () => {
+    if (!formData.name) return toast.error("Digite o nome do produto primeiro");
+    
+    setGeneratingDescription(true);
+    try {
+      const res = await fetch("/api/products/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: formData.name, storeType }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      setFormData(prev => ({ ...prev, description: data.description }));
+      toast.success("Descrição gerada!");
+    } catch (err: any) {
+      toast.error("Erro ao gerar descrição");
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -262,6 +342,15 @@ export default function ProductsPage() {
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
+
+            <button 
+              onClick={() => setImportModal(true)}
+              className="flex-1 md:flex-none btn-secondary !bg-purple-50 !text-purple-600 !border-purple-100 hover:!bg-purple-100 flex items-center justify-center gap-2 !py-3.5 !rounded-2xl font-bold"
+            >
+              <Wand2 className="w-4 h-4" /> 
+              <span className="hidden sm:inline">Importador Mágico</span>
+            </button>
+
             <button 
               onClick={() => {
                 setEditingProduct(null);
@@ -572,8 +661,23 @@ export default function ProductsPage() {
               )}
               
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Descrição Detalhada</label>
-                <textarea className="input-field h-24 resize-none" placeholder="Fale sobre o produto/serviço..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Descrição Detalhada</label>
+                  <button 
+                    type="button"
+                    onClick={generateAIDescription}
+                    disabled={generatingDescription || !formData.name}
+                    className="text-[9px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-1 uppercase tracking-widest disabled:opacity-50 transition-all"
+                  >
+                    {generatingDescription ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-3 h-3" />
+                    )}
+                    Gerar com IA
+                  </button>
+                </div>
+                <textarea className="input-field h-24 resize-none !rounded-2xl" placeholder="Fale sobre o produto/serviço..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
               
               <label className="block border-2 border-dashed border-slate-100 p-6 rounded-2xl text-center hover:bg-slate-50/50 cursor-pointer transition-all">
@@ -716,6 +820,150 @@ export default function ProductsPage() {
         message="Esta ação não pode ser desfeita."
         confirmText="Excluir Agora"
       />
+
+      {/* MODAL DE IMPORTAÇÃO */}
+      {importModal && (
+        <div className="fixed inset-0 bg-navy/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
+                  <Wand2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-navy">Importador Mágico</h3>
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Traga seu cardápio em segundos</p>
+                </div>
+              </div>
+              <button onClick={() => setImportModal(false)} className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-navy transition-all"><X size={18} /></button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-5 scrollbar-hide">
+              {!importPreview ? (
+                <div className="space-y-4">
+                  <div className="flex bg-slate-100 p-1 rounded-xl">
+                    <button 
+                      onClick={() => setImportMode("url")}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${importMode === "url" ? "bg-white shadow-sm text-purple-600" : "text-slate-500"}`}
+                    >
+                      Via Link
+                    </button>
+                    <button 
+                      onClick={() => setImportMode("text")}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${importMode === "text" ? "bg-white shadow-sm text-purple-600" : "text-gray-500"}`}
+                    >
+                      Copiar e Colar
+                    </button>
+                  </div>
+
+                  {importMode === "url" ? (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
+                        <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-bold text-blue-700 leading-relaxed">
+                          Nossa IA vai identificar os produtos, preços e categorias automaticamente.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">URL DO CARDÁPIO</label>
+                        <div className="relative">
+                          <Globe className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                          <input 
+                            type="url" 
+                            placeholder="Ex: https://ifood.com.br/restaurante-exemplo"
+                            className="input-field !pl-10 !rounded-xl !py-2.5 text-sm"
+                            value={importUrl}
+                            onChange={e => setImportUrl(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex gap-3">
+                        <AlertCircle className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-bold text-purple-700 leading-relaxed">
+                          Selecione tudo (Ctrl+A), copie (Ctrl+C) e cole o texto do seu cardápio abaixo.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">TEXTO DO CARDÁPIO</label>
+                        <textarea 
+                          placeholder="Cole o conteúdo aqui..."
+                          className="input-field min-h-[180px] !py-4 !rounded-xl resize-none text-sm"
+                          value={importText}
+                          onChange={e => setImportText(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleImport}
+                    disabled={importing || (importMode === "url" ? !importUrl : !importText)}
+                    className="btn-primary w-full h-12 text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-purple-500/10"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Aguarde...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        Processar Cardápio
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-navy text-sm">Itens Encontrados ({importPreview.categories?.length})</h4>
+                    <button onClick={() => setImportPreview(null)} className="text-[9px] text-purple-600 font-black tracking-widest uppercase hover:underline">Alterar Link</button>
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-hide">
+                    {importPreview.categories?.map((cat: any, idx: number) => (
+                      <div key={idx} className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/50">
+                        <div className="font-bold text-navy text-xs mb-1 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          {cat.name}
+                        </div>
+                        <div className="text-[9px] font-black text-slate-400 tracking-widest uppercase ml-6">
+                          {cat.products?.length} produtos
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
+                    <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p className="text-[10px] font-bold text-amber-700 leading-relaxed">
+                      Ao confirmar, criaremos as categorias e produtos. Você poderá editá-los depois no painel.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={saveImport}
+                    disabled={savingImport}
+                    className="btn-primary w-full h-12 text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2 rounded-xl"
+                  >
+                    {savingImport ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Importar Tudo Agora
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
