@@ -158,7 +158,7 @@ export async function sendPixOutbound(data: {
     return response.data;
 
   } catch (error: any) {
-    const errorData = error.response?.data || error.message;
+    const errorData = error.response?.data || { mensagem: error.message || "Erro desconhecido na comunicação com a Efí." };
     console.error('EFI PIX SEND MANUAL ERROR:', JSON.stringify(errorData));
     throw errorData;
   }

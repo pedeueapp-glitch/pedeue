@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         console.error("ERRO AO ENVIAR PIX VIA EFI:", efiError);
         
         // Se a Efí retornar erro de saldo ou permissão, avisamos o admin sem alterar o banco
-        const errorMessage = efiError.mensagem || efiError.error_description || "Erro na API da Efí ao processar transferência.";
+        const errorMessage = efiError?.mensagem || efiError?.error_description || "Erro desconhecido na API da Efí.";
         return NextResponse.json({ 
           error: `Falha na transferência bancária: ${errorMessage}. Verifique seu saldo e permissões na Efí.` 
         }, { status: 502 });
