@@ -60,9 +60,13 @@ export default function DashboardLayout({
     }
 
     if (status === "authenticated") {
+      if (session.user.role === "AFFILIATE") {
+        setSubStatus({ loading: false, isExpired: false });
+        return;
+      }
       checkSubscription();
     }
-  }, [status, router]);
+  }, [status, router, session]);
 
   // Loading State
   if (status === "loading" || (status === "authenticated" && subStatus.loading)) {
@@ -83,7 +87,7 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-slate-50/50">
-        <SidebarWrapper />
+        <SidebarWrapper mode={session.user.role === "AFFILIATE" ? "AFFILIATE" : "MERCHANT"} />
         
         <main className={`flex-1 flex flex-col min-w-0 ${isPDV ? "" : "pb-20 lg:pb-0"}`}>
           {children}
@@ -93,12 +97,13 @@ export default function DashboardLayout({
   );
 }
 
-function SidebarWrapper() {
+function SidebarWrapper({ mode }: { mode: "MERCHANT" | "AFFILIATE" }) {
   const { isOpen, close } = useSidebar();
   return (
     <Sidebar 
       isOpen={isOpen} 
       onClose={close} 
+      mode={mode}
     />
   );
 }

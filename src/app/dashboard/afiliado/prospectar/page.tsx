@@ -111,7 +111,7 @@ export default function ProspectPage() {
             Cadastrar outro lojista
           </button>
           <Link
-            href="/afiliado/clientes"
+            href="/dashboard/afiliado/clientes"
             className="px-6 py-3 rounded-xl border border-white/10 text-gray-300 font-semibold hover:bg-white/5 transition-colors"
           >
             Ver meus clientes

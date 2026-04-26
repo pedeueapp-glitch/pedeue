@@ -94,7 +94,7 @@ export default function ClientesPage() {
             </p>
             {!search && (
               <Link
-                href="/afiliado/prospectar"
+                href="/dashboard/afiliado/prospectar"
                 className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition-colors"
               >
                 Cadastrar primeiro lojista

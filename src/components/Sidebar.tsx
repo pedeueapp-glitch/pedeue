@@ -43,7 +43,7 @@ import toast from "react-hot-toast";
 import { APP_VERSION } from "@/lib/version";
 
 interface SidebarProps {
-  mode?: "MERCHANT" | "SUPERADMIN";
+  mode?: "MERCHANT" | "SUPERADMIN" | "AFFILIATE";
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -181,13 +181,22 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Backups", href: "/superadmin?tab=backups", icon: ShieldCheck },
   ];
 
+  const affiliateLinks = [
+    { name: "Meu Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Meus Clientes", href: "/dashboard/afiliado/clientes", icon: Users },
+    { name: "Minhas Comissões", href: "/dashboard/afiliado/financeiro", icon: CreditCard },
+    { name: "Prospectar Lojista", href: "/dashboard/afiliado/prospectar", icon: ShoppingBag },
+    { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
+    { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+  ];
+
   const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   const toggleGroup = (name: string) => {
     setOpenGroups(prev => prev.includes(name) ? prev.filter(g => g !== name) : [...prev, name]);
   };
 
-  const navigationLinks = mode === "SUPERADMIN" ? superAdminLinks : merchantLinks;
+  const navigationLinks = mode === "SUPERADMIN" ? superAdminLinks : mode === "AFFILIATE" ? affiliateLinks : merchantLinks;
 
 
   return (
