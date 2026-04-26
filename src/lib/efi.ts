@@ -122,17 +122,11 @@ export async function sendPixOutbound(data: {
   try {
     const idEnvio = crypto.randomUUID().replace(/-/g, '');
     
-    // 1. Obter Token de Acesso (Usando o próprio SDK para autorizar)
-    console.log("DEBUG EFI MANUAL - 1. Autorizando...");
-    const authResponse = await efi.authorize();
-    const accessToken = authResponse.access_token;
-    console.log("DEBUG EFI MANUAL - 2. Token obtido com sucesso.");
-
-    // 2. Configurar Agente HTTPS com o Certificado
-    console.log("DEBUG EFI MANUAL - 3. Configurando agente HTTPS...");
     const https = await import('https');
     const axios = (await import('axios')).default;
-    
+
+    // 1. Configurar Agente HTTPS com o Certificado
+    console.log("DEBUG EFI MANUAL - 1. Configurando agente HTTPS...");
     const agent = new https.Agent({
       pfx: fs.readFileSync(certPath),
       passphrase: '',
@@ -142,10 +136,28 @@ export async function sendPixOutbound(data: {
       ? 'https://api-pix-h.gerencianet.com.br' 
       : 'https://api-pix.gerencianet.com.br';
 
+    // 2. Obter Token de Acesso Manualmente (mTLS é obrigatório para PIX)
+    console.log("DEBUG EFI MANUAL - 2. Obtendo Token via mTLS...");
+    const authCredentials = Buffer.from(`${options.client_id}:${options.client_secret}`).toString('base64');
+    
+    const authResponse = await axios({
+      method: 'POST',
+      url: `${baseUrl}/oauth/token`,
+      headers: {
+        'Authorization': `Basic ${authCredentials}`,
+        'Content-Type': 'application/json',
+      },
+      httpsAgent: agent,
+      data: { grant_type: 'client_credentials' }
+    });
+
+    const accessToken = authResponse.data.access_token;
+    console.log("DEBUG EFI MANUAL - 3. Token obtido com sucesso.");
+
     console.log(`DEBUG EFI MANUAL - 4. Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
     console.log(`DEBUG EFI MANUAL - Body: ${JSON.stringify(body)}`);
 
-    // 3. Chamada Direta via Axios para evitar propriedades extras do SDK
+    // 3. Chamada Direta via Axios para enviar o PIX
     const response = await axios({
       method: 'PUT',
       url: `${baseUrl}/v2/gn/pix/${idEnvio}`,
