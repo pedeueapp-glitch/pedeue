@@ -25,6 +25,7 @@
     "@prisma/client": "^6.19.3",
     "@prisma/extension-accelerate": "^3.0.1",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "date-fns": "^4.1.0",
     "electron-is-dev": "^3.0.1",
     "gn-api-sdk-node": "^3.0.4",
