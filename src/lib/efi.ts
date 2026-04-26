@@ -157,29 +157,58 @@ export async function sendPixOutbound(data: {
     console.log(`DEBUG EFI MANUAL - 4. Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
     console.log(`DEBUG EFI MANUAL - Body: ${JSON.stringify(body)}`);
 
-    // 3. Chamada Direta via Axios para enviar o PIX
-    const response = await axios({
-      method: 'PUT',
-      url: `${baseUrl}/v2/gn/pix/${idEnvio}`,
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      httpsAgent: agent,
-      data: body
+    // 3. Chamada Nativa via HTTPS para evitar qualquer interferência (Axios/SDK)
+    console.log("DEBUG EFI MANUAL - 3. Enviando via HTTPS nativo...");
+    
+    return new Promise((resolve, reject) => {
+      const dataString = JSON.stringify(body);
+      
+      const reqOptions = {
+        hostname: baseUrl.replace('https://', ''),
+        port: 443,
+        path: `/v2/gn/pix/${idEnvio}`,
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(dataString)
+        },
+        agent: agent
+      };
+
+      const request = https.request(reqOptions, (res) => {
+        let responseData = '';
+        res.on('data', (chunk) => { responseData += chunk; });
+        res.on('end', () => {
+          try {
+            const parsed = responseData ? JSON.parse(responseData) : {};
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              console.log("DEBUG EFI MANUAL - Sucesso:", responseData);
+              resolve(parsed);
+            } else {
+              console.error("DEBUG EFI MANUAL - Erro API:", responseData);
+              reject(parsed);
+            }
+          } catch (e) {
+            reject({ mensagem: "Erro ao processar resposta da Efí", details: responseData });
+          }
+        });
+      });
+
+      request.on('error', (e) => {
+        console.error("DEBUG EFI MANUAL - Erro Conexão:", e);
+        reject(e);
+      });
+
+      request.write(dataString);
+      request.end();
     });
 
-    console.log("DEBUG EFI MANUAL - 5. Sucesso:", JSON.stringify(response.data));
-    return response.data;
-
   } catch (error: any) {
-    console.error('DEBUG EFI MANUAL - ERRO CAPTURADO:', JSON.stringify(error?.response?.data || error.message, null, 2));
-    const errorData = error.response?.data || { 
-      mensagem: error.message || "Erro desconhecido na comunicação com a Efí.",
-      code: error.code,
-      stack: error.stack
+    console.error('DEBUG EFI MANUAL - ERRO CAPTURADO:', JSON.stringify(error, null, 2));
+    const errorData = error.response?.data || error || { 
+      mensagem: "Erro desconhecido na comunicação com a Efí."
     };
-    console.dir(errorData, { depth: null });
     console.error('EFI PIX SEND MANUAL ERROR:', JSON.stringify(errorData));
     throw errorData;
   }
