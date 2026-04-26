@@ -123,10 +123,13 @@ export async function sendPixOutbound(data: {
     const idEnvio = crypto.randomUUID().replace(/-/g, '');
     
     // 1. Obter Token de Acesso (Usando o próprio SDK para autorizar)
+    console.log("DEBUG EFI MANUAL - 1. Autorizando...");
     const authResponse = await efi.authorize();
     const accessToken = authResponse.access_token;
+    console.log("DEBUG EFI MANUAL - 2. Token obtido com sucesso.");
 
     // 2. Configurar Agente HTTPS com o Certificado
+    console.log("DEBUG EFI MANUAL - 3. Configurando agente HTTPS...");
     const https = await import('https');
     const axios = (await import('axios')).default;
     
@@ -139,7 +142,7 @@ export async function sendPixOutbound(data: {
       ? 'https://api-pix-h.gerencianet.com.br' 
       : 'https://api-pix.gerencianet.com.br';
 
-    console.log(`DEBUG EFI MANUAL - Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
+    console.log(`DEBUG EFI MANUAL - 4. Enviando para ${baseUrl}/v2/gn/pix/${idEnvio}`);
     console.log(`DEBUG EFI MANUAL - Body: ${JSON.stringify(body)}`);
 
     // 3. Chamada Direta via Axios para evitar propriedades extras do SDK
@@ -154,11 +157,16 @@ export async function sendPixOutbound(data: {
       data: body
     });
 
-    console.log("DEBUG EFI MANUAL - Sucesso:", JSON.stringify(response.data));
+    console.log("DEBUG EFI MANUAL - 5. Sucesso:", JSON.stringify(response.data));
     return response.data;
 
   } catch (error: any) {
-    const errorData = error.response?.data || { mensagem: error.message || "Erro desconhecido na comunicação com a Efí." };
+    console.error('DEBUG EFI MANUAL - ERRO CAPTURADO:', error);
+    const errorData = error.response?.data || { 
+      mensagem: error.message || "Erro desconhecido na comunicação com a Efí.",
+      code: error.code,
+      stack: error.stack
+    };
     console.error('EFI PIX SEND MANUAL ERROR:', JSON.stringify(errorData));
     throw errorData;
   }
