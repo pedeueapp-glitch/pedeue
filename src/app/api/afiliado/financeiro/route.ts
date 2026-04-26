@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "AFFILIATE") {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    const totalPaid = enriched.filter(c => c.status === "PAID").reduce((a: number, c: any) => a + c.amount, 0);
-    const totalPending = enriched.filter(c => c.status === "PENDING").reduce((a: number, c: any) => a + c.amount, 0);
+    const totalPaid = enriched.filter(c => c.status === "PAID").reduce((a: number, c: { amount: number }) => a + c.amount, 0);
+    const totalPending = enriched.filter(c => c.status === "PENDING").reduce((a: number, c: { amount: number }) => a + c.amount, 0);
 
     return NextResponse.json({ commissions: enriched, totalPaid, totalPending });
   } catch (error) {

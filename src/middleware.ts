@@ -6,12 +6,9 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   
   const rootDomain = 'pedeue.com';
-  // Rotas que DEVEM permanecer no domínio principal
-  const mainRoutes = ['/dashboard', '/api', '/_next', '/entrar', '/cadastrar', '/recuperar-senha', '/superadmin', '/favicon.ico', '/painel-afiliado', '/contato-suporte'];
   const reservedSubdomains = ['www', 'api', 'admin', 'superadmin', 'dev', 'websocket'];
   
   const { pathname } = url;
-  const isRsc = url.searchParams.has('_rsc');
 
   // Adicionar cabeçalhos CORS para permitir requisições cross-subdomain (importante para Next.js RSC)
   const corsHeaders = {

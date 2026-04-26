@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
@@ -18,7 +18,7 @@ export default function DashboardLayout({
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [subStatus, setSubStatus] = useState<{ loading: boolean, isExpired: boolean, expiresAt?: string }>({ 
     loading: true, 
     isExpired: false 
@@ -52,7 +52,7 @@ export default function DashboardLayout({
         } else {
           setSubStatus({ loading: false, isExpired: true });
         }
-      } catch (e: any) {
+      } catch (_err: unknown) {
         setSubStatus({ loading: false, isExpired: false });
       }
 

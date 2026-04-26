@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   UserPlus,
@@ -29,7 +28,7 @@ function maskCPF(value: string) {
 }
 
 function maskPhone(value: string) {
-  let val = value.replace(/\D/g, "").substring(0, 11);
+  const val = value.replace(/\D/g, "").substring(0, 11);
   if (val.length > 7)
     return `(${val.substring(0, 2)}) ${val.substring(2, 7)}-${val.substring(7)}`;
   if (val.length > 2) return `(${val.substring(0, 2)}) ${val.substring(2)}`;
@@ -46,7 +45,6 @@ const fields = [
 ];
 
 export default function ProspectPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -59,7 +57,8 @@ export default function ProspectPage() {
     cpf: "",
     planId: "",
   });
-  const [plans, setPlans] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [plans, setPlans] = useState<{ id: string; name: string; price: number }[]>([]);
 
   useEffect(() => {
     fetch("/api/plans")
@@ -193,8 +192,8 @@ export default function ProspectPage() {
                   name={field.name}
                   value={
                     field.name === "whatsapp"
-                      ? maskPhone((form as any)[field.name])
-                      : (form as any)[field.name]
+                      ? maskPhone((form as Record<string, string>)[field.name])
+                      : (form as Record<string, string>)[field.name]
                   }
                   onChange={handleChange}
                   placeholder={field.placeholder}

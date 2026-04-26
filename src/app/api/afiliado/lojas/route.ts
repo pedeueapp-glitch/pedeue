@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Este CPF já está cadastrado" }, { status: 409 });
     }
 
-    let baseSlug = generateSlug(storeName);
+    const baseSlug = generateSlug(storeName);
     let slug = baseSlug;
     let counter = 1;
     while (await prisma.store.findUnique({ where: { slug } })) {
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     expiresAtDate.setDate(expiresAtDate.getDate() + 3); // 3 dias grátis
 
     // Criar usuário + loja + assinatura
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
         name,
