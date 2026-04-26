@@ -1,0 +1,43 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /root/saas-delivery
+            
+            # Garantir que o repositório está configurado
+            if [ ! -d .git ]; then
+                git init
+                git remote add origin git@github.com:pedeueapp-glitch/pedeue.git
+            fi
+
+            # Puxar código novo
+            git fetch --all
+            git reset --hard origin/main
+
+            # Reiniciar containers e atualizar banco
+            echo "Reiniciando containers com a nova versão..."
+            docker compose up -d --build --remove-orphans
+            
+            echo "Sincronizando banco de dados..."
+            docker compose exec -T app npx prisma db push --accept-data-loss
+
+            echo "🚀 Deploy v1.6.1 concluído com sucesso!"
