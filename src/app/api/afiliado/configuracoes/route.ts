@@ -27,6 +27,7 @@ export async function GET(_req: NextRequest) {
       name: affiliate.name,
       email: affiliate.email,
       pixKey: affiliate.pixKey || "",
+      pixKeyType: affiliate.pixKeyType || "CPF",
     });
   } catch (error) {
     console.error("[AFILIADO/CONFIG GET]", error);
@@ -46,7 +47,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const data = await req.json();
-    const { name, pixKey, password } = data;
+    const { name, pixKey, pixKeyType, password } = data;
 
     const affiliate = await prisma.platform_affiliate.findUnique({
       where: { userId: session.user.id },
@@ -79,6 +80,7 @@ export async function PATCH(req: NextRequest) {
       data: {
         name: name || affiliate.name,
         pixKey: pixKey !== undefined ? pixKey : affiliate.pixKey,
+        pixKeyType: pixKeyType !== undefined ? pixKeyType : affiliate.pixKeyType,
         updatedAt: new Date(),
       },
     });

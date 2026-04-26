@@ -28,6 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         where: { id },
         data: {
           pixKey: data.pixKey,
+          pixKeyType: data.pixKeyType,
           commissionRate: data.commissionRate,
           updatedAt: new Date(),
         },
@@ -67,6 +68,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const efiResponse = await sendPixOutbound({
           amount: totalAmount,
           pixKey: affiliate.pixKey,
+          pixKeyType: affiliate.pixKeyType || undefined,
           description: `Pagamento de Comissao PedeUe - ${affiliate.name}`
         });
 

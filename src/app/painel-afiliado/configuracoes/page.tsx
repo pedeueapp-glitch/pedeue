@@ -13,6 +13,7 @@ export default function ConfiguracoesAfiliadoPage() {
     name: "",
     email: "",
     pixKey: "",
+    pixKeyType: "CPF",
     password: "",
     confirmPassword: "",
   });
@@ -27,6 +28,7 @@ export default function ConfiguracoesAfiliadoPage() {
             name: data.name || "",
             email: data.email || "",
             pixKey: data.pixKey || "",
+            pixKeyType: data.pixKeyType || "CPF",
           }));
         }
       })
@@ -58,6 +60,7 @@ export default function ConfiguracoesAfiliadoPage() {
         body: JSON.stringify({
           name: form.name,
           pixKey: form.pixKey,
+          pixKeyType: form.pixKeyType,
           password: form.password || undefined,
         }),
       });
@@ -137,18 +140,37 @@ export default function ConfiguracoesAfiliadoPage() {
             Dados para Repasse
           </h2>
           
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chave PIX ou CPF</label>
-            <input
-              name="pixKey"
-              value={form.pixKey}
-              onChange={handleChange}
-              placeholder="Ex: CPF, Telefone, Email, ou chave aleatória"
-              className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 transition-colors"
-              required
-            />
-            <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">As comissões aprovadas serão enviadas para esta chave PIX.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo de Chave PIX</label>
+              <select
+                name="pixKeyType"
+                value={form.pixKeyType}
+                onChange={(e) => setForm({ ...form, pixKeyType: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 transition-colors"
+              >
+                <option value="CPF">CPF</option>
+                <option value="CNPJ">CNPJ</option>
+                <option value="EMAIL">E-MAIL</option>
+                <option value="PHONE">TELEFONE (CELULAR)</option>
+                <option value="RANDOM">CHAVE ALEATÓRIA</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chave PIX</label>
+              <input
+                name="pixKey"
+                value={form.pixKey}
+                onChange={handleChange}
+                placeholder="Digite sua chave"
+                className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 transition-colors"
+                required
+              />
+            </div>
           </div>
+          <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">
+            IMPORTANTE: Se sua chave for um telefone, use o formato com DDD. O sistema adicionará o prefixo +55 automaticamente.
+          </p>
         </div>
 
         <div className="space-y-4 pt-4">

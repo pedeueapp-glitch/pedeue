@@ -105,14 +105,24 @@ export async function getPixChargeStatus(txid: string) {
 export async function sendPixOutbound(data: {
   amount: number;
   pixKey: string;
+  pixKeyType?: string;
   description?: string;
 }) {
-  console.log(`DEBUG EFI - Iniciando transferência PIX para: ${data.pixKey}, Valor: R$ ${data.amount.toFixed(2)}`);
+  console.log(`DEBUG EFI - Iniciando transferência PIX para: ${data.pixKey} (${data.pixKeyType || 'N/A'}), Valor: R$ ${data.amount.toFixed(2)}`);
 
-  // Se for uma chave numérica (CPF, CNPJ ou Telefone), removemos caracteres especiais.
-  // Se for e-mail ou chave aleatória, mantemos como está.
-  const isNumericKey = /^\d+$/.test(data.pixKey.replace(/[\.\-\s\(\)]/g, ''));
-  const cleanPixKey = isNumericKey ? data.pixKey.replace(/\D/g, '') : data.pixKey;
+  // Limpeza da chave
+  let cleanPixKey = data.pixKey.trim();
+
+  // Se for telefone, garantimos o formato internacional +55...
+  if (data.pixKeyType === "PHONE" || (!data.pixKeyType && /^\d{10,11}$/.test(cleanPixKey.replace(/\D/g, '')))) {
+    const digits = cleanPixKey.replace(/\D/g, '');
+    if (digits.length >= 10 && digits.length <= 11 && !cleanPixKey.startsWith('+')) {
+      cleanPixKey = `+55${digits}`;
+      console.log(`DEBUG EFI - Chave de telefone detectada e formatada: ${cleanPixKey}`);
+    }
+  } else if (data.pixKeyType === "CPF" || data.pixKeyType === "CNPJ") {
+    cleanPixKey = cleanPixKey.replace(/\D/g, '');
+  }
 
   const body = {
     valor: data.amount.toFixed(2),

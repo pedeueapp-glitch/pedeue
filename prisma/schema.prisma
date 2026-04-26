@@ -580,6 +580,7 @@ model platform_affiliate {
   name        String
   email       String   @unique
   pixKey      String?
+  pixKeyType  pix_key_type? @default(CPF)
   commissionRate Float @default(0.10)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -619,4 +620,12 @@ model upsell_rule {
   store            store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
+}
+
+enum pix_key_type {
+  CPF
+  CNPJ
+  EMAIL
+  PHONE
+  RANDOM
 }
