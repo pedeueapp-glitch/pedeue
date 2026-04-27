@@ -1,7 +1,8 @@
-name: v1.8.0 - Deploy por Tags (Correção de Duplicidade)
+name: Deploy to VPS
 
 on:
   push:
+    branches: [ main ]
     tags:
       - 'v*'
 
@@ -34,11 +35,10 @@ jobs:
             git reset --hard origin/main
 
             # Reiniciar containers e atualizar banco
-            echo "Realizando limpeza e reiniciando containers..."
-            docker compose down
+            echo "Reiniciando containers com a nova versão..."
             docker compose up -d --build --remove-orphans
             
             echo "Sincronizando banco de dados..."
             docker compose exec -T app npx prisma db push --accept-data-loss
 
-            echo "🚀 Deploy v1.7.9 concluído com sucesso!"
+            echo "🚀 Deploy concluído com sucesso!"

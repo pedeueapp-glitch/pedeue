@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import dynamic from "next/dynamic";
-const StorefrontClient = dynamic(() => import("./StorefrontClient"), { ssr: true });
+import StorefrontClient from "./StorefrontClient";
 import Script from "next/script";
 
 import { Metadata } from "next";
