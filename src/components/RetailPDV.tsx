@@ -238,7 +238,11 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+
+      if (!res.ok) {
+        toast.error(data.error || "Erro ao gerenciar caixa");
+        return;
+      }
 
       if (currentAction === "PREVIEW") {
         setCloseReport(data.report);

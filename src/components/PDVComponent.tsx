@@ -591,6 +591,10 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
         body: JSON.stringify({ action, openingBalance: parseFloat(openingBalance) || 0 }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Erro ao gerenciar caixa");
+        return;
+      }
 
       if (action === "OPEN") {
         setCashier(data.cashier);

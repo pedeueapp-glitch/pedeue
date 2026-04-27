@@ -139,6 +139,16 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [phoneInput, setPhoneInput] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedProduct || cartOpen || showUpsell || showStoreInfo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [selectedProduct, cartOpen, showUpsell, showStoreInfo]);
+
   const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">("DELIVERY");
   const [selectedArea, setSelectedArea] = useState<DeliveryArea | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("pix");
@@ -903,21 +913,21 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       )}
 
       {selectedProduct && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-white w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[800px] flex flex-col rounded-t-xl md:rounded-xl shadow-2xl relative animate-slide-up overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-white z-[100] flex flex-col animate-in fade-in slide-in-from-bottom duration-300">
+          <div className="relative flex-1 flex flex-col overflow-hidden">
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-6 right-6 z-20 w-10 h-10 bg-white/20 backdrop-blur-lg hover:bg-slate-100 transition-all flex items-center justify-center border border-white/20 rounded-full"
+              className="absolute top-6 right-6 z-50 w-12 h-12 bg-slate-900/10 hover:bg-slate-900/20 transition-all flex items-center justify-center rounded-full backdrop-blur-md"
             >
-              <X size={20} className="text-slate-900" />
+              <X size={24} className="text-slate-900" />
             </button>
 
-            <div className="flex-1 overflow-y-auto flex flex-col sm:flex-row">
-              <div className="w-full sm:w-[35%] h-56 sm:h-auto bg-slate-100">
+            <div className="flex-1 overflow-y-auto flex flex-col md:flex-row">
+              <div className="w-full md:w-[45%] h-48 md:h-full bg-slate-100 sticky top-0 md:relative z-10">
                 {selectedProduct.imageUrl ? (
                   <img src={selectedProduct.imageUrl} className="w-full h-full object-cover" alt="p" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={48} /></div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-200 bg-slate-50"><Package size={48} /></div>
                 )}
               </div>
               <div className="flex-1 p-8 overflow-y-auto">
@@ -977,35 +987,43 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                 </div>
               </div>
             </div>
-            <div className="p-8 border-t border-slate-50 bg-slate-50">
-              <button
-                onClick={confirmAddWithPricing}
-                disabled={!storeOpen}
-                className="w-full bg-brand text-white py-5 flex items-center justify-between px-10 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-2xl"
-              >
-                <span className="font-bold text-sm">{storeOpen ? "Adicionar" : "Loja Fechada"}</span>
-                <span className="font-bold text-lg">R$ {(() => {
-                  const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
-                  let currentBasePrice = originalBasePrice;
-                  let sumOfAdicionais = 0;
-                  for (const group of selectedProduct.optiongroup || []) {
-                    const selected = selectedOptions[group.id] || [];
-                    if (selected.length === 0) continue;
-                    const calcType = group.priceCalculation || "SUM";
-                    if (calcType === "HIGHEST") {
-                      const highestOption = Math.max(...selected.map(o => Number(o.price)));
-                      if (highestOption > currentBasePrice) currentBasePrice = highestOption;
-                    } else if (calcType === "AVERAGE") {
-                      const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                      const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
-                      if (avg > currentBasePrice) currentBasePrice = avg;
-                    } else {
-                      sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                    }
-                  }
-                  return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
-                })()}</span>
-              </button>
+            <div className="p-6 md:p-10 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.05)] relative z-20">
+              <div className="max-w-4xl mx-auto">
+                <button
+                  onClick={confirmAddWithPricing}
+                  disabled={!storeOpen}
+                  className="w-full bg-brand text-white py-4 md:py-8 flex items-center justify-between px-8 md:px-16 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-2xl md:rounded-3xl transition-all active:scale-[0.98] shadow-2xl shadow-brand/20"
+                >
+                  <div className="flex flex-col items-start leading-tight">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">{storeOpen ? "Confirmar e" : "Loja"}</span>
+                    <span className="font-black text-base md:text-xl">{storeOpen ? "Adicionar ao Pedido" : "Fechada"}</span>
+                  </div>
+                  <div className="flex flex-col items-end leading-tight">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Total Item</span>
+                    <span className="font-black text-xl md:text-3xl">R$ {(() => {
+                      const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
+                      let currentBasePrice = originalBasePrice;
+                      let sumOfAdicionais = 0;
+                      for (const group of selectedProduct.optiongroup || []) {
+                        const selected = selectedOptions[group.id] || [];
+                        if (selected.length === 0) continue;
+                        const calcType = group.priceCalculation || "SUM";
+                        if (calcType === "HIGHEST") {
+                          const highestOption = Math.max(...selected.map(o => Number(o.price)));
+                          if (highestOption > currentBasePrice) currentBasePrice = highestOption;
+                        } else if (calcType === "AVERAGE") {
+                          const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
+                          const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
+                          if (avg > currentBasePrice) currentBasePrice = avg;
+                        } else {
+                          sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
+                        }
+                      }
+                      return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
+                    })()}</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>

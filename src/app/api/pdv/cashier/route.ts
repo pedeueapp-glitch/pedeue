@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStore } from "@/lib/get-store";
 
 // GET: Busca o caixa do dia ou o último aberto (ou histórico se solicitado)
 export async function GET(req: NextRequest) {
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    const store = await getCurrentStore();
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const { searchParams } = new URL(req.url);
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    const store = await getCurrentStore();
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
     const { action, openingBalance, withdrawal, closingNotes } = await req.json();
@@ -115,31 +116,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ cashier: updated, withdrawal: newWithdrawal });
     }
 
-    if (action === "CLOSE") {
+    if (action === "PREVIEW" || action === "CLOSE") {
       const cashier = await (prisma as any).cashiersession.findFirst({
         where: { storeId: store.id, status: "OPEN" },
         orderBy: { openedAt: "desc" }
       });
       if (!cashier) return NextResponse.json({ error: "Nenhum caixa aberto" }, { status: 400 });
 
-      // Verificar se existem pedidos em aberto (exceto DONE, DELIVERED ou CANCELED)
-      const openOrders = await prisma.order.count({
+      // Verificar se existem pedidos em aberto (TUDO que não for DONE, DELIVERED ou CANCELED)
+      const openOrders = await prisma.order.findMany({
         where: {
           storeId: store.id,
           status: {
-            in: ["PENDING", "ACCEPTED", "PREPARING", "DELIVERING"]
+            notIn: ["DONE", "DELIVERED", "CANCELED"]
           }
-        }
+        },
+        select: { id: true, status: true, orderNumber: true }
       });
 
-      if (openOrders > 0) {
+      console.log(`[CASHIER] Checking for open orders for store ${store.id}. Found: ${openOrders.length}`);
+      if (openOrders.length > 0) {
+        console.log(`[CASHIER] Open orders IDs:`, openOrders.map(o => `#${o.orderNumber} (${o.status})`).join(", "));
         return NextResponse.json({ 
-          error: `Não é possível fechar o caixa: existem ${openOrders} pedido(s) em aberto. Finalize ou cancele todos os pedidos antes de prosseguir.`,
-          openOrdersCount: openOrders
+          error: `Não é possível prosseguir: existem ${openOrders.length} pedido(s) em aberto no sistema. Finalize ou cancele todos antes de fechar o caixa.`,
+          openOrdersCount: openOrders.length,
+          openOrders: openOrders.map(o => `#${o.orderNumber}`)
         }, { status: 400 });
       }
 
-      // Buscar pedidos do período do caixa para gerar relatório
       const openedAt = new Date(cashier.openedAt);
       const now = new Date();
 
@@ -200,6 +204,11 @@ export async function POST(req: NextRequest) {
         totalLiquido: totalGeral - totalWithdrawals
       };
 
+      if (action === "PREVIEW") {
+        return NextResponse.json({ report });
+      }
+
+      // Se for CLOSE, continua aqui...
       const updated = await (prisma as any).cashiersession.update({
         where: { id: cashier.id },
         data: {
@@ -210,76 +219,6 @@ export async function POST(req: NextRequest) {
         }
       });
       return NextResponse.json({ cashier: updated, report });
-    }
-
-    if (action === "PREVIEW") {
-      const cashier = await (prisma as any).cashiersession.findFirst({
-        where: { storeId: store.id, status: "OPEN" },
-        orderBy: { openedAt: "desc" }
-      });
-      if (!cashier) return NextResponse.json({ error: "Nenhum caixa aberto" }, { status: 400 });
-
-      const openedAt = new Date(cashier.openedAt);
-      const now = new Date();
-
-      const orders = await prisma.order.findMany({
-        where: {
-          storeId: store.id,
-          createdAt: { gte: openedAt, lte: now },
-          status: { not: "CANCELED" }
-        }
-      });
-
-      const canceledOrders = await prisma.order.findMany({
-        where: {
-          storeId: store.id,
-          createdAt: { gte: openedAt, lte: now },
-          status: "CANCELED"
-        }
-      });
-
-      const totalDinheiro = orders
-        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
-        .reduce((s: number, o: any) => s + (o.total || 0), 0);
-
-      const totalCartao = orders
-        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("cart"))
-        .reduce((s: number, o: any) => s + (o.total || 0), 0);
-
-      const totalPix = orders
-        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("pix"))
-        .reduce((s: number, o: any) => s + (o.total || 0), 0);
-
-      const totalDelivery = orders.filter((o: any) => o.orderType === "DELIVERY" || o.deliveryType === "DELIVERY").length;
-      const totalComandas = orders.filter((o: any) => o.orderType === "DINING_IN").length;
-      const totalGeral = orders.reduce((s: number, o: any) => s + (o.total || 0), 0);
-
-      const withdrawals = cashier.withdrawals ? JSON.parse(cashier.withdrawals) : [];
-      const totalWithdrawals = withdrawals.reduce((s: number, w: any) => s + (w.amount || 0), 0);
-
-      const totalDeliveryFeesDinheiro = orders
-        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
-        .reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
-
-      const report = {
-        openedAt: cashier.openedAt,
-        closedAt: now.toISOString(),
-        openingBalance: cashier.openingBalance,
-        totalOrders: orders.length,
-        canceledOrders: canceledOrders.length,
-        totalDinheiro,
-        totalCartao,
-        totalPix,
-        totalDelivery,
-        totalComandas,
-        totalGeral,
-        totalDeliveryFeesDinheiro,
-        withdrawals,
-        totalWithdrawals,
-        totalLiquido: totalGeral - totalWithdrawals
-      };
-
-      return NextResponse.json({ report });
     }
 
     return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

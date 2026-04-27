@@ -77,6 +77,16 @@ export default function ServiceCatalog({ store, products, categories }: ServiceP
     return () => clearInterval(interval);
   }, [banners.length]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedProduct || showHours || zoomImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [selectedProduct, showHours, zoomImage]);
+
   const filteredProducts = products.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory = activeCategory === "all" || p.categoryId === activeCategory;
@@ -277,25 +287,24 @@ export default function ServiceCatalog({ store, products, categories }: ServiceP
          <p className="text-[9px] font-light text-slate-400 tracking-[0.3em]">Exibido por PedeUe</p>
       </footer>
 
-      {/* MODAL DETALHADO */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-slate-800/20 backdrop-blur-[2px] overflow-y-auto" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-white w-full md:max-w-4xl md:my-6 flex flex-col md:flex-row overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-4 md:zoom-in-95 duration-300 rounded-t-xl md:rounded-xl border border-slate-100" onClick={e => e.stopPropagation()}>
-            
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in slide-in-from-bottom duration-300">
+          <div className="relative flex-1 flex flex-col overflow-hidden">
             <button
                onClick={() => setSelectedProduct(null)}
-               className="fixed md:absolute top-4 right-4 z-[110] bg-white p-2.5 rounded-md shadow-sm border border-slate-50 hover:bg-slate-50 transition-all"
+               className="fixed top-6 right-6 z-[110] bg-slate-900/10 backdrop-blur-md p-3 rounded-full hover:bg-slate-900/20 transition-all"
             >
-               <X size={16} className="text-slate-400" />
+               <X size={24} className="text-slate-900" />
             </button>
 
-            <div className="w-full md:w-1/2 aspect-square flex-shrink-0 bg-slate-50 relative group/zoom">
-               <img
-                 src={productImages[currentImageIndex]}
-                 className="w-full h-full object-cover cursor-zoom-in"
-                 alt={selectedProduct.name}
-                 onClick={() => setZoomImage(productImages[currentImageIndex])}
-               />
+            <div className="flex-1 overflow-y-auto flex flex-col md:flex-row">
+              <div className="w-full md:w-[45%] h-48 md:h-full flex-shrink-0 bg-slate-50 relative group/zoom sticky top-0 md:relative z-10">
+                <img
+                  src={productImages[currentImageIndex]}
+                  className="w-full h-full object-cover cursor-zoom-in"
+                  alt={selectedProduct.name}
+                  onClick={() => setZoomImage(productImages[currentImageIndex])}
+                />
                <div className="absolute bottom-4 right-4 p-2 bg-white/80 rounded-md shadow-sm opacity-0 group-hover/zoom:opacity-100 transition-opacity">
                   <Maximize2 size={16} className="text-slate-400" />
                </div>
@@ -396,14 +405,14 @@ export default function ServiceCatalog({ store, products, categories }: ServiceP
                  </div>
                )}
 
-               <button
-                 onClick={sendToWhatsApp}
-                 disabled={!selectedSize && (selectedVariant?.sizes?.length || 0) > 0}
-                 className="w-full py-4 text-white font-medium tracking-[0.2em] text-[10px] transition-all hover:brightness-105 disabled:opacity-30 rounded-md shadow-lg shadow-black/5 mt-auto"
-                 style={{ backgroundColor: primaryColor }}
-               >
-                 Solicitar Orçamento
-               </button>
+                <button
+                  onClick={sendToWhatsApp}
+                  disabled={!selectedSize && (selectedVariant?.sizes?.length || 0) > 0}
+                  className="w-full py-4 md:py-6 text-white font-black tracking-[0.2em] text-xs transition-all hover:brightness-105 disabled:opacity-30 rounded-xl md:rounded-2xl shadow-xl mt-auto"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  SOLICITAR ORÇAMENTO NO WHATSAPP
+                </button>
             </div>
           </div>
         </div>

@@ -64,7 +64,7 @@ export default function HomePage() {
                <div className="hidden md:flex items-center gap-10">
                   <a href="#funcionalidades" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Funcionalidades</a>
                   <a href="#planos" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Preços</a>
-                  <Link href="/pedeue-burguer" className="text-xs font-black  tracking-widest text-purple-500 hover:text-purple-400 transition-colors flex items-center gap-2">
+                  <Link href="https://loja-demo.pedeue.com" className="text-xs font-black  tracking-widest text-purple-500 hover:text-purple-400 transition-colors flex items-center gap-2">
                      VER DEMO <Play size={12} fill="currentColor" />
                   </Link>
                </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
                         CRIAR MINHA LOJA AGORA <ArrowRight size={18} />
                      </button>
                      <Link
-                        href="/pedeue-burguer"
+                        href="https://loja-demo.pedeue.com"
                         className="px-10 py-5 bg-purple-50 text-purple-700 border border-purple-100 font-black  tracking-widest text-xs rounded-2xl hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
                      >
                         VER EXEMPLO <Store size={18} />
