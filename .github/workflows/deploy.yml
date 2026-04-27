@@ -1,4 +1,4 @@
-name: v1.7.8 - Fix ReferenceError e Update Lucide
+name: v1.7.9 - Deploy Completo e Limpo
 
 on:
   push:
@@ -35,10 +35,12 @@ jobs:
             git reset --hard origin/main
 
             # Reiniciar containers e atualizar banco
-            echo "Reiniciando containers com a nova versão..."
+            echo "Realizando limpeza e reiniciando containers..."
+            docker compose down
+            docker system prune -f
             docker compose up -d --build --remove-orphans
             
             echo "Sincronizando banco de dados..."
             docker compose exec -T app npx prisma db push --accept-data-loss
 
-            echo "🚀 Deploy concluído com sucesso!"
+            echo "🚀 Deploy v1.7.9 concluído com sucesso!"
