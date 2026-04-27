@@ -1391,10 +1391,24 @@ function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: str
         .bg-brand { background-color: ${primaryColor} !important; }
         .text-brand { color: ${primaryColor} !important; }
         .border-brand { border-color: ${primaryColor} !important; }
-        .input-sharp:focus {
-          border-color: ${primaryColor};
-          box-shadow: 0 0 0 4px ${primaryColor}10;
+        .input-sharp {
+          width: 100%;
+          background-color: white;
+          border: 1px solid #f1f5f9;
+          padding: 1rem;
+          font-size: 1rem;
+          letter-spacing: 0.05em;
+          border-radius: 0.75rem;
+          transition: all 0.2s;
         }
+        .input-sharp:focus {
+          outline: none;
+          border-color: ${primaryColor};
+          background-color: #fff;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
       `}} />
     </div>
   );
