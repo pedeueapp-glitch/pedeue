@@ -31,8 +31,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Lógica para o Domínio Principal (pedeue.com)
-  const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}` || hostname.includes('localhost');
+  // 2. Lógica para o Domínio Principal (pedeue.com ou localhost)
+  const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}` || hostname === 'localhost:3000';
   
   if (isMainDomain) {
     const slug = pathname.split('/')[1];
@@ -41,7 +41,8 @@ export async function middleware(request: NextRequest) {
 
     if (!isSystemRoute && pathname !== '/' && isValidSlug) {
       try {
-        const redirectUrl = new URL(`${url.protocol}//${slug}.${rootDomain}${pathname.replace(`/${slug}`, '')}`);
+        const targetHost = hostname.includes('localhost') ? `${slug}.localhost:3000` : `${slug}.${rootDomain}`;
+        const redirectUrl = new URL(`${url.protocol}//${targetHost}${pathname.replace(`/${slug}`, '')}`);
         const res = NextResponse.redirect(redirectUrl);
         res.headers.set('Access-Control-Allow-Origin', origin);
         return res;
@@ -53,8 +54,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Lógica para Subdomínios (ex: loja.pedeue.com)
-  const isSubdomain = hostname.endsWith(`.${rootDomain}`) && !hostname.startsWith('www.');
+  // 3. Lógica para Subdomínios (ex: loja.pedeue.com ou loja.localhost:3000)
+  const isSubdomain = (hostname.endsWith(`.${rootDomain}`) && !hostname.startsWith('www.')) || 
+                      (hostname.endsWith('.localhost:3000') && hostname !== 'localhost:3000');
   
   if (isSubdomain) {
     const slug = hostname.split('.')[0];
