@@ -920,7 +920,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                   <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={48} /></div>
                 )}
               </div>
-              <div className="flex-1 p-8 overflow-y-auto">
+              <div className="flex-1 p-5 md:p-8 overflow-y-auto">
                 <div className="flex flex-col mb-4">
                   {selectedProduct.salePrice ? (
                     <div className="flex items-center gap-3">
@@ -934,11 +934,11 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">{selectedProduct.name}</h2>
                 <p className="text-slate-500 text-sm font-medium mb-4">{selectedProduct.description}</p>
 
-                <div className="space-y-10">
+                <div className="space-y-6 md:space-y-10">
                   {selectedProduct.optiongroup?.map((group: any) => {
                     const groupPriceCalc = group.priceCalculation || "SUM";
                     return (
-                      <div key={group.id} className="border-l-4 p-4 border-brand bg-slate-50">
+                      <div key={group.id} className="border-l-4 p-3 md:p-4 border-brand bg-slate-50">
                         <div className="flex items-center gap-2 mb-4">
                           <h4 className="font-bold text-slate-900 text-sm">{group.name}</h4>
                         </div>
@@ -977,11 +977,11 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                 </div>
               </div>
             </div>
-            <div className="p-8 border-t border-slate-50 bg-slate-50">
+            <div className="p-4 md:p-8 border-t border-slate-50 bg-slate-50">
               <button
                 onClick={confirmAddWithPricing}
                 disabled={!storeOpen}
-                className="w-full bg-brand text-white py-5 flex items-center justify-between px-10 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-2xl"
+                className="w-full bg-brand text-white py-4 md:py-5 flex items-center justify-between px-6 md:px-10 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-2xl"
               >
                 <span className="font-bold text-sm">{storeOpen ? "Adicionar" : "Loja Fechada"}</span>
                 <span className="font-bold text-lg">R$ {(() => {
