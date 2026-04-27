@@ -904,7 +904,7 @@ function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: str
 
       {selectedProduct && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-white w-full max-w-2xl h-full md:h-auto md:max-h-[800px] flex flex-col rounded-none md:rounded-xl shadow-2xl relative animate-slide-up overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[800px] flex flex-col rounded-t-xl md:rounded-xl shadow-2xl relative animate-slide-up overflow-hidden" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setSelectedProduct(null)}
               className="absolute top-6 right-6 z-20 w-10 h-10 bg-white/20 backdrop-blur-lg hover:bg-slate-100 transition-all flex items-center justify-center border border-white/20 rounded-full"
@@ -1387,28 +1387,15 @@ function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: str
         </div>
       )}
 
-      <style jsx>{`
-        .input-sharp {
-           width: 100%;
-           background-color: white;
-           border: 1px solid #e2e8f0;
-           padding: 0.85rem 1rem;
-           font-size: 16px;
-           font-weight: 700;
-           text-transform:;
-           outline: none;
-           transition: all 0.2s;
-           border-radius: 8px;
-        }
+      <style dangerouslySetInnerHTML={{ __html: `
+        .bg-brand { background-color: ${primaryColor} !important; }
+        .text-brand { color: ${primaryColor} !important; }
+        .border-brand { border-color: ${primaryColor} !important; }
         .input-sharp:focus {
-           border-color: ${primaryColor};
-           background-color: #f8fafc;
-           box-shadow: 0 0 0 4px ${primaryColor}10;
+          border-color: ${primaryColor};
+          box-shadow: 0 0 0 4px ${primaryColor}10;
         }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
-      `}</style>
+      `}} />
     </div>
   );
 }
