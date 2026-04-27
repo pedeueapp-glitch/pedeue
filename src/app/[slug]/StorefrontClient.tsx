@@ -262,6 +262,18 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     }, 5000);
     return () => clearInterval(interval);
   }, [store?.restaurantBanners]);
+  
+  // Bloquear scroll do body quando modais estão abertos
+  useEffect(() => {
+    if (selectedProduct || cartOpen || showUpsell || showStoreInfo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedProduct, cartOpen, showUpsell, showStoreInfo]);
 
   async function handleIdentify() {
     if (phoneInput.length < 8) return toast.error("Telefone inválido");
