@@ -1,8 +1,7 @@
-name: v1.7.9 - Deploy Completo e Limpo
+name: v1.8.0 - Deploy por Tags (Correção de Duplicidade)
 
 on:
   push:
-    branches: [ main ]
     tags:
       - 'v*'
 
