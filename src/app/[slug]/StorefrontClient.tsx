@@ -913,7 +913,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
             </button>
 
             <div className="flex-1 overflow-y-auto flex flex-col sm:flex-row">
-              <div className="w-full sm:w-[35%] h-56 sm:h-auto bg-slate-100">
+              <div className="w-full sm:w-[35%] h-40 sm:h-auto bg-slate-100">
                 {selectedProduct.imageUrl ? (
                   <img src={selectedProduct.imageUrl} className="w-full h-full object-cover" alt="p" />
                 ) : (
