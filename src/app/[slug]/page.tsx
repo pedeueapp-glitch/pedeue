@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import StorefrontClient from "./StorefrontClient";
+import StorefrontClient from "@/components/StorefrontClient";
 import Script from "next/script";
 
 import { Metadata } from "next";

@@ -695,7 +695,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .bg-brand { background-color: ${primaryColor} !important; }
         .text-brand { color: ${primaryColor} !important; }
         .border-brand { border-color: ${primaryColor} !important; }
@@ -714,7 +714,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           border-color: ${primaryColor};
           background-color: #fff;
         }
-      `}</style>
+      ` }} />
 
       <div className="relative">
         <div className="h-56 bg-slate-200 relative overflow-hidden">

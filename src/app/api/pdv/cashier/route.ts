@@ -122,6 +122,23 @@ export async function POST(req: NextRequest) {
       });
       if (!cashier) return NextResponse.json({ error: "Nenhum caixa aberto" }, { status: 400 });
 
+      // Verificar se existem pedidos em aberto (exceto DONE, DELIVERED ou CANCELED)
+      const openOrders = await prisma.order.count({
+        where: {
+          storeId: store.id,
+          status: {
+            in: ["PENDING", "ACCEPTED", "PREPARING", "DELIVERING"]
+          }
+        }
+      });
+
+      if (openOrders > 0) {
+        return NextResponse.json({ 
+          error: `Não é possível fechar o caixa: existem ${openOrders} pedido(s) em aberto. Finalize ou cancele todos os pedidos antes de prosseguir.`,
+          openOrdersCount: openOrders
+        }, { status: 400 });
+      }
+
       // Buscar pedidos do período do caixa para gerar relatório
       const openedAt = new Date(cashier.openedAt);
       const now = new Date();
