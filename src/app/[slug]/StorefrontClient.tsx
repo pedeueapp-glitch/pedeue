@@ -707,27 +707,6 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>
-      <style jsx global>{`
-        .bg-brand { background-color: ${primaryColor} !important; }
-        .text-brand { color: ${primaryColor} !important; }
-        .border-brand { border-color: ${primaryColor} !important; }
-        .input-sharp {
-          width: 100%;
-          background-color: white;
-          border: 1px solid #f1f5f9;
-          padding: 1rem;
-          font-size: 1rem;
-          letter-spacing: 0.05em;
-          border-radius: 0.75rem;
-          transition: all 0.2s;
-        }
-        .input-sharp:focus {
-          outline: none;
-          border-color: ${primaryColor};
-          background-color: #fff;
-        }
-      `}</style>
-
       <div className="relative">
         <div className="h-56 bg-slate-200 relative overflow-hidden">
           {(store.coverImage || store.banner) ? (
@@ -1399,28 +1378,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         </div>
       )}
 
-      <style jsx>{`
-        .input-sharp {
-           width: 100%;
-           background-color: white;
-           border: 1px solid #e2e8f0;
-           padding: 0.85rem 1rem;
-           font-size: 16px;
-           font-weight: 700;
-           text-transform:;
-           outline: none;
-           transition: all 0.2s;
-           border-radius: 8px;
-        }
-        .input-sharp:focus {
-           border-color: ${primaryColor};
-           background-color: #f8fafc;
-           box-shadow: 0 0 0 4px ${primaryColor}10;
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
-      `}</style>
+
     </div>
   );
 }

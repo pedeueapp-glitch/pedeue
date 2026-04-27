@@ -48,6 +48,29 @@
   .sidebar-navy {
      @apply bg-purple-950 text-white;
   }
+
+  /* Classes dinâmicas para o Storefront baseadas no CSS customizado */
+  .bg-brand { background-color: var(--primary) !important; }
+  .text-brand { color: var(--primary) !important; }
+  .border-brand { border-color: var(--primary) !important; }
+  
+  .input-sharp {
+    width: 100%;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    font-size: 16px;
+    font-weight: 700;
+    outline: none;
+    transition: all 0.2s;
+    border-radius: 8px;
+  }
+  .input-sharp:focus {
+    border-color: var(--primary);
+    background-color: #f8fafc;
+    box-shadow: 0 0 0 4px var(--primary);
+    opacity: 0.9;
+  }
 }
 
 /* Custom Scrollbar Slim */
@@ -64,6 +87,11 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
 
 /* Sidebar Specific Scrollbar */
 .sidebar-scrollbar::-webkit-scrollbar-thumb {
