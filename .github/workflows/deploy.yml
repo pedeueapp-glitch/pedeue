@@ -36,7 +36,6 @@ jobs:
             # Reiniciar containers e atualizar banco
             echo "Realizando limpeza e reiniciando containers..."
             docker compose down
-            docker system prune -f
             docker compose up -d --build --remove-orphans
             
             echo "Sincronizando banco de dados..."
