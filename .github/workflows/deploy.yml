@@ -35,11 +35,13 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
-            # Reiniciar containers e atualizar banco
-            echo "Reiniciando containers com a nova versão..."
-            docker compose up -d --build --remove-orphans
+            # Reiniciar containers e atualizar banco de forma LIMPA
+            echo "Iniciando DEPLOY LIMPO (reconstruindo imagens sem cache)..."
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d --remove-orphans
             
             echo "Sincronizando banco de dados..."
             docker compose exec -T app npx prisma db push --accept-data-loss
 
-            echo "🚀 Deploy concluído com sucesso!"
+            echo "🚀 Deploy LIMPO concluído com sucesso!"
