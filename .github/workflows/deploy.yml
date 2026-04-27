@@ -20,6 +20,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          command_timeout: 20m
           script: |
             cd /root/saas-delivery
             
@@ -40,4 +41,4 @@ jobs:
             echo "Sincronizando banco de dados..."
             docker compose exec -T app npx prisma db push --accept-data-loss
 
-            echo "🚀 Deploy v1.6.1 concluído com sucesso!"
+            echo "🚀 Deploy concluído com sucesso!"
