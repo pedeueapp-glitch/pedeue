@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
       const openOrders = await prisma.order.findMany({
         where: {
           storeId: store.id,
+          createdAt: { gte: cashier.openedAt },
           status: {
             notIn: ["DONE", "DELIVERED", "CANCELED"]
           }
