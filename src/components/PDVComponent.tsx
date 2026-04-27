@@ -466,6 +466,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     <div class="div"></div>
     <table>
       <tr><td>Total Bruto</td><td align="right">${fmt(report.totalGeral)}</td></tr>
+      ${report.totalDeliveryFees > 0 ? `<tr><td>(-) Taxas de Entrega</td><td align="right">- ${fmt(report.totalDeliveryFees)}</td></tr>` : ""}
       ${report.totalWithdrawals > 0 ? `<tr><td>(-) Retiradas</td><td align="right">- ${fmt(report.totalWithdrawals)}</td></tr>` : ""}
     </table>
     <div class="div"></div>
@@ -604,11 +605,9 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
       } else {
         setCashier(data.cashier);
         setShowCloseConfirm(false);
-        setShowCloseModal(false); // Fecha o modal de relatório após fechar definitivo
-        setCloseReport(data.report || null); // Atualiza com o relatório final se necessário
+        setShowCloseModal(false); 
+        setCloseReport(data.report || null);
         toast.success("Caixa fechado com sucesso!");
-        // Opcionalmente abrir o modal final de novo ou redirecionar
-        setShowCloseModal(true); // Abre o modal final de novo com o status fechado
       }
     } catch (error) {
       toast.error("Erro ao gerenciar caixa");
@@ -864,6 +863,17 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
   const finalizeInternalOrder = async () => {
     if (!isAddingItems && !internalOrder.tableId) return toast.error("Selecione uma mesa");
     if (internalCart.length === 0) return toast.error("Carrinho vazio");
+
+    if (!isAddingItems && storeInfo?.storeType === "RESTAURANT") {
+      // Verifica se a mesa já está aberta neste turno (orders já estão filtrados pelo caixa atual)
+      const isTableOpen = orders.some(o => 
+        o.orderType === "DINING_IN" && 
+        o.tableId === internalOrder.tableId && 
+        !["DELIVERED", "DONE", "CANCELED"].includes(o.status)
+      );
+      if (isTableOpen) return toast.error("Esta mesa já possui uma comanda em aberto neste turno.");
+    }
+
     setLoading(true);
     try {
       if (isAddingItems) {
@@ -2175,6 +2185,12 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                   <span>Total Bruto</span>
                   <span className="font-bold">{formatCurrency(closeReport.totalGeral)}</span>
                 </div>
+                {closeReport.totalDeliveryFees > 0 && (
+                  <div className="flex justify-between text-white/60 text-xs">
+                    <span>(-) Taxas de Entrega</span>
+                    <span className="font-bold">- {formatCurrency(closeReport.totalDeliveryFees)}</span>
+                  </div>
+                )}
                 {closeReport.totalWithdrawals > 0 && (
                   <div className="flex justify-between text-amber-400 text-xs">
                     <span>(-) Retiradas</span>

@@ -126,6 +126,22 @@ export async function POST(req: NextRequest) {
       const openedAt = new Date(cashier.openedAt);
       const now = new Date();
 
+      // Verificação de comandas em aberto para aquele turno
+      const openComandas = await prisma.order.findMany({
+        where: {
+          storeId: store.id,
+          orderType: "DINING_IN",
+          createdAt: { gte: openedAt },
+          status: { notIn: ["DELIVERED", "DONE", "CANCELED"] }
+        }
+      });
+
+      if (openComandas.length > 0) {
+        return NextResponse.json({ 
+          error: `Existem ${openComandas.length} comandas em aberto. É necessário finalizar todas as comandas antes do fechamento.` 
+        }, { status: 400 });
+      }
+
       const orders = await prisma.order.findMany({
         where: {
           storeId: store.id,
@@ -165,6 +181,8 @@ export async function POST(req: NextRequest) {
         .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
         .reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
 
+      const totalDeliveryFees = orders.reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
+
       const report = {
         openedAt: cashier.openedAt,
         closedAt: now.toISOString(),
@@ -178,9 +196,10 @@ export async function POST(req: NextRequest) {
         totalComandas,
         totalGeral,
         totalDeliveryFeesDinheiro,
+        totalDeliveryFees,
         withdrawals,
         totalWithdrawals,
-        totalLiquido: totalGeral - totalWithdrawals
+        totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
       };
 
       const updated = await (prisma as any).cashiersession.update({
@@ -244,6 +263,8 @@ export async function POST(req: NextRequest) {
         .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
         .reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
 
+      const totalDeliveryFees = orders.reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
+
       const report = {
         openedAt: cashier.openedAt,
         closedAt: now.toISOString(),
@@ -257,9 +278,10 @@ export async function POST(req: NextRequest) {
         totalComandas,
         totalGeral,
         totalDeliveryFeesDinheiro,
+        totalDeliveryFees,
         withdrawals,
         totalWithdrawals,
-        totalLiquido: totalGeral - totalWithdrawals
+        totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
       };
 
       return NextResponse.json({ report });
