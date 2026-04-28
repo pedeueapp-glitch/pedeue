@@ -705,7 +705,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .bg-brand { background-color: ${primaryColor} !important; }
         .text-brand { color: ${primaryColor} !important; }
         .border-brand { border-color: ${primaryColor} !important; }
@@ -913,7 +914,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       )}
 
       {selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
+        <div className="inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
           <div className="relative w-full max-w-md bg-white h-[100dvh] flex flex-col shadow-2xl animate-slide-left">
             <button
@@ -982,7 +983,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                   <textarea
                     value={productObservations}
                     onChange={e => setProductObservations(e.target.value)}
-                    placeholder="Ex: sem queijo, etc..."
+                    placeholder="Ex: Sem salada, sem bacon, sem queijo, etc..."
                     className="w-full bg-slate-50 border border-slate-200 p-4 text-sm focus:outline-none focus:border-brand rounded-none min-h-[100px]"
                   />
                 </div>
@@ -1026,7 +1027,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
             </div>
           </div>
         </div>
-      )              }}
+      )}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
