@@ -32,7 +32,9 @@ import {
   QrCode,
   Star,
   Heart,
-  Truck
+  Truck,
+  Sparkles,
+  Trophy
 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
