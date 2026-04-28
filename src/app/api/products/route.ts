@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(products);
   } catch (error: any) {
     console.error("PRODUCTS_GET_ERROR:", error);
-    return NextResponse.json({ error: "Erro ao buscar produtos: " + error.message }, { status: 500 });
+    return NextResponse.json({ error: "Erro interno ao reordenar categorias" }, { status: 500 });
   }
 }
 
@@ -78,13 +78,20 @@ export async function POST(req: NextRequest) {
       orderBy: { position: "desc" },
     });
 
+    const parsedPrice = parseFloat(String(price).replace(',', '.'));
+    const parsedSalePrice = salePrice ? parseFloat(String(salePrice).replace(',', '.')) : null;
+
+    if (isNaN(parsedPrice)) {
+        return NextResponse.json({ error: "Preço inválido" }, { status: 400 });
+    }
+
     const product = await (prisma.product as any).create({
       data: {
         id: `prod_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
         name,
         description,
-        price: parseFloat(price),
-        salePrice: salePrice ? parseFloat(salePrice) : null,
+        price: parsedPrice,
+        salePrice: isNaN(parsedSalePrice as any) ? null : parsedSalePrice,
         imageUrl,
         category: { connect: { id: categoryId } },
         store: { connect: { id: store.id } },
@@ -95,8 +102,8 @@ export async function POST(req: NextRequest) {
         comboConfig: comboConfig || null,
         productType: store.storeType,
         position: (lastProduct?.position ?? 0) + 1,
-        purchasePrice: body.purchasePrice ? parseFloat(body.purchasePrice) : 0,
-        profitMargin: body.profitMargin ? parseFloat(body.profitMargin) : 0,
+        purchasePrice: body.purchasePrice ? parseFloat(String(body.purchasePrice).replace(',', '.')) : 0,
+        profitMargin: body.profitMargin ? parseFloat(String(body.profitMargin).replace(',', '.')) : 0,
         isBestSeller: isBestSeller ?? false,
         isFavorite: isFavorite ?? false,
         updatedAt: new Date()
@@ -106,7 +113,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {
     console.error("PRODUCTS_POST_ERROR:", error);
-    return NextResponse.json({ error: "Erro ao criar: " + error.message }, { status: 500 });
+    return NextResponse.json({ error: "Erro interno ao deletar produto" }, { status: 500 });
   }
 }
 
@@ -120,7 +127,15 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "ID necessário" }, { status: 400 });
 
-    await (prisma.product as any).delete({ where: { id } });
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const deleted = await (prisma.product as any).deleteMany({ 
+      where: { id, storeId: store.id } 
+    });
+
+    if (deleted.count === 0) return NextResponse.json({ error: "Produto não encontrado ou sem permissão" }, { status: 404 });
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("PRODUCTS_DELETE_ERROR:", error);

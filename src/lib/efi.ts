@@ -13,7 +13,6 @@ const isServerless = process.env.VERCEL || process.env.NETLIFY;
 const certDir = isServerless ? '/tmp' : path.join(process.cwd(), 'certs');
 const certPath = path.join(certDir, 'efi-cert.p12');
 
-// Se o certificado estiver em Base64 no ENV, salva no arquivo temporário (necessário para o SDK)
 if (process.env.EFI_CERTIFICATE_BASE64) {
   if (!fs.existsSync(certDir)) {
     fs.mkdirSync(certDir, { recursive: true });
@@ -78,6 +77,63 @@ export async function createPixImmediateCharge(data: {
     };
   } catch (error) {
     console.error('EFI PIX ERROR:', error);
+    throw error;
+  }
+}
+
+export async function sendPixPayment(data: {
+  amount: number;
+  pixKey: string;
+  pixKeyType: string;
+  description: string;
+}) {
+  console.log(`[EFI PIX SEND] Enviando R$${data.amount} para ${data.pixKey} (${data.pixKeyType})`);
+
+  // Mapeamento de tipos de chave para o formato da EFI
+  // EFI usa: cpf, cnpj, email, celular, evp (chave aleatória)
+  const keyTypeMap: Record<string, string> = {
+    "CPF": "cpf",
+    "CNPJ": "cnpj",
+    "EMAIL": "email",
+    "PHONE": "celular",
+    "RANDOM": "evp"
+  };
+
+  const payerKey = process.env.EFI_PIX_KEY || "";
+  const cleanKey = data.pixKey.replace(/[^\w@.+-]/g, "");
+
+  const body = {
+    valor: data.amount.toFixed(2),
+    pagador: {
+      chave: payerKey
+    },
+    favorecido: {
+      chave: cleanKey
+    }
+  };
+
+  try {
+    // A API de transferência PIX da EFI exige um idEnvio único (txid de envio)
+    const idEnvio = "P" + Date.now() + Math.floor(Math.random() * 1000);
+    const params = {
+        idEnvio: idEnvio
+    };
+
+    const response = await efi.pixSend(params, body);
+    return { ...response, idEnvio };
+  } catch (error) {
+    console.error('EFI PIX SEND ERROR:', error);
+    throw error;
+  }
+}
+
+export async function getPixTransferStatus(idEnvio: string) {
+  try {
+    const params = { idEnvio };
+    const response = await efi.pixDetailSend(params);
+    return response;
+  } catch (error) {
+    console.error('EFI PIX TRANSFER STATUS ERROR:', error);
     throw error;
   }
 }

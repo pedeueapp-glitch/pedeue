@@ -528,8 +528,10 @@ model platform_affiliate {
   userId         String                 @unique
   name           String
   email          String                 @unique
+  cpf            String?                @db.VarChar(14)
   pixKey         String?
-  commissionRate Float                  @default(0.1)
+  pixKeyType     String?                @default("CPF")
+  commissionRate Float                  @default(10.0) // Agora representa VALOR FIXO em R$
   isActive       Boolean                @default(true)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
@@ -545,6 +547,7 @@ model affiliate_commission {
   platformTransactionId String
   amount                Float
   status                String             @default("PENDING")
+  efiIdEnvio            String?
   paidAt                DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt

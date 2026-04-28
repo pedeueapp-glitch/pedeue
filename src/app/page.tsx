@@ -28,7 +28,7 @@ export default function HomePage() {
 
       const handleScroll = () => setScrolled(window.scrollY > 50);
       window.addEventListener("scroll", handleScroll);
-      
+
       if (typeof window !== "undefined") {
          const urlParams = new URLSearchParams(window.location.search);
          if (urlParams.get("register") === "true") {
@@ -37,7 +37,7 @@ export default function HomePage() {
             window.history.replaceState({}, document.title, "/");
          }
       }
-      
+
       return () => window.removeEventListener("scroll", handleScroll);
    }, []);
 
@@ -64,7 +64,7 @@ export default function HomePage() {
                <div className="hidden md:flex items-center gap-10">
                   <a href="#funcionalidades" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Funcionalidades</a>
                   <a href="#planos" className="text-xs font-black  tracking-widest text-gray-600 hover:text-purple-600 transition-colors">Preços</a>
-                  <Link href="https://loja-demo.pedeue.com" className="text-xs font-black  tracking-widest text-purple-500 hover:text-purple-400 transition-colors flex items-center gap-2">
+                  <Link href="https://pedeue-burguer.pedeue.com" className="text-xs font-black  tracking-widest text-purple-500 hover:text-purple-400 transition-colors flex items-center gap-2">
                      VER DEMO <Play size={12} fill="currentColor" />
                   </Link>
                </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
                         CRIAR MINHA LOJA AGORA <ArrowRight size={18} />
                      </button>
                      <Link
-                        href="https://loja-demo.pedeue.com"
+                        href="https://pedeue-burguer.pedeue.com"
                         className="px-10 py-5 bg-purple-50 text-purple-700 border border-purple-100 font-black  tracking-widest text-xs rounded-2xl hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
                      >
                         VER EXEMPLO <Store size={18} />
@@ -189,15 +189,15 @@ export default function HomePage() {
 
                         <div className="space-y-4 flex-1">
                            {[
-                              "Zero taxas sobre vendas", 
-                              "Pedidos ilimitados", 
-                              "App para Computador", 
+                              "Zero taxas sobre vendas",
+                              "Pedidos ilimitados",
+                              "App para Computador",
                               "PDV c/ Impressão"
                            ].concat(
-                              Array.isArray(plan.features) ? plan.features.map((f: string) => 
+                              Array.isArray(plan.features) ? plan.features.map((f: string) =>
                                  f === "PDV_SYSTEM" ? "Gestão de Caixa PDV" :
-                                 f === "TABLE_MANAGEMENT" ? "Controle de Mesas" :
-                                 f === "COUPON_SYSTEM" ? "Cupons de Desconto" : f
+                                    f === "TABLE_MANAGEMENT" ? "Controle de Mesas" :
+                                       f === "COUPON_SYSTEM" ? "Cupons de Desconto" : f
                               ) : ["Suporte humanizado"]
                            ).slice(0, 5).map((feat, index) => (
                               <div key={index} className="flex items-center gap-3">

@@ -157,6 +157,7 @@ function SuperAdminContent() {
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [expiringSoon, setExpiringSoon] = useState<any[]>([]);
   const [affiliates, setAffiliates] = useState<any[]>([]);
+  const [affiliateCommissions, setAffiliateCommissions] = useState<any[]>([]);
   const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
   const [affiliateForm, setAffiliateForm] = useState({ name: "", email: "", password: "", pixKey: "", commissionRate: "10" });
   
@@ -219,6 +220,59 @@ function SuperAdminContent() {
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "affiliate_payouts") {
+      fetchAffiliateCommissions();
+    }
+    if (activeTab === "affiliates") {
+      fetchAffiliates();
+    }
+  }, [activeTab]);
+
+  async function fetchAffiliateCommissions() {
+    try {
+      const res = await fetch("/api/superadmin/comissoes");
+      if (res.ok) {
+        const data = await res.json();
+        setAffiliateCommissions(data.commissions);
+      }
+    } catch (e) {
+      toast.error("Erro ao carregar comissões");
+    }
+  }
+
+  async function fetchAffiliates() {
+    try {
+      const res = await fetch("/api/superadmin/afiliados");
+      if (res.ok) {
+        setAffiliates(await res.json());
+      }
+    } catch (e) {
+      toast.error("Erro ao carregar afiliados");
+    }
+  }
+
+  async function handleCommissionAction(id: string, action: "approve" | "manual_approve" | "check_status") {
+    try {
+      const res = await fetch(`/api/superadmin/comissoes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(data.message || "Ação realizada com sucesso!");
+        fetchAffiliateCommissions();
+      } else {
+        toast.error(data.error || "Erro ao processar ação");
+      }
+    } catch (e) {
+      toast.error("Erro na requisição");
     }
   }
 
@@ -1599,7 +1653,7 @@ function SuperAdminContent() {
                       </td>
                       <td className="p-6">
                         <span className="bg-purple-50 text-purple-700 px-3 py-1 text-xs font-black border border-purple-200">
-                          {(aff.commissionRate * 100).toFixed(0)}%
+                          R$ {aff.commissionRate.toFixed(2)}
                         </span>
                       </td>
                       <td className="p-6 text-slate-700">{aff.totalStores} / {aff.activeStores} ativas</td>
@@ -1632,6 +1686,77 @@ function SuperAdminContent() {
           </div>
         )}
 
+        {activeTab === "affiliate_payouts" && (
+           <div className="animate-in slide-in-from-right duration-300 space-y-10">
+              <div className="flex items-center justify-between">
+                 <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Saques de Afiliados</h2>
+                 <button onClick={fetchAffiliateCommissions} className="bg-[#0f172a] text-white px-6 py-4 rounded-none font-black text-xs tracking-widest hover:bg-purple-500 transition-all border-none">Atualizar Lista</button>
+              </div>
+
+              <div className="bg-white rounded-none border border-slate-100 shadow-sm overflow-x-auto">
+                 <table className="w-full text-left min-w-[1000px]">
+                    <thead className="bg-slate-50 border-b border-slate-100 text-xs font-black text-slate-500 uppercase tracking-wider">
+                       <tr>
+                          <th className="p-8">Data</th>
+                          <th className="p-8">Afiliado</th>
+                          <th className="p-8">Valor</th>
+                          <th className="p-8">Status</th>
+                          <th className="p-8">ID Transferência (EFI)</th>
+                          <th className="p-8 text-center">Ações de Pagamento</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                       {affiliateCommissions.length === 0 ? (
+                          <tr><td colSpan={6} className="p-12 text-center text-slate-300 font-black text-sm tracking-widest">Nenhuma comissão encontrada</td></tr>
+                       ) : affiliateCommissions.map(comm => (
+                          <tr key={comm.id} className="hover:bg-slate-50 transition-all font-bold text-sm">
+                             <td className="p-8 text-slate-400">{new Date(comm.createdAt).toLocaleDateString('pt-BR')}</td>
+                             <td className="p-8">
+                                <p className="text-slate-900">{comm.platformAffiliate?.name}</p>
+                                <p className="text-slate-400 text-[10px]">{comm.platformAffiliate?.pixKey} ({comm.platformAffiliate?.pixKeyType})</p>
+                             </td>
+                             <td className="p-8 text-green-600">R$ {comm.amount.toFixed(2)}</td>
+                             <td className="p-8">
+                                <span className={`px-3 py-1 rounded-none text-[10px] border ${comm.status === 'PAID' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                   {comm.status === 'PAID' ? 'PAGO' : 'PENDENTE'}
+                                </span>
+                             </td>
+                             <td className="p-8 font-mono text-[10px] text-slate-400">{comm.efiIdEnvio || '-'}</td>
+                             <td className="p-8 text-center space-x-2">
+                                {comm.status !== 'PAID' ? (
+                                   <>
+                                      <button 
+                                         onClick={() => handleCommissionAction(comm.id, "approve")}
+                                         className="bg-purple-500 text-white px-4 py-2 rounded-none text-[10px] font-black tracking-widest hover:bg-[#0f172a] border-none transition-all"
+                                         title="Realizar PIX via EFI"
+                                      >
+                                         PIX Automático
+                                      </button>
+                                      <button 
+                                         onClick={() => handleCommissionAction(comm.id, "manual_approve")}
+                                         className="bg-slate-100 text-slate-600 px-4 py-2 rounded-none text-[10px] font-black tracking-widest hover:bg-slate-200 border-none transition-all"
+                                         title="Marcar como pago sem transferir"
+                                      >
+                                         Aprovar Manual
+                                      </button>
+                                   </>
+                                ) : (
+                                   <button 
+                                      onClick={() => handleCommissionAction(comm.id, "check_status")}
+                                      className="bg-blue-50 text-blue-600 px-4 py-2 rounded-none text-[10px] font-black tracking-widest hover:bg-blue-600 hover:text-white border-none transition-all"
+                                   >
+                                      Checar Status
+                                   </button>
+                                )}
+                             </td>
+                          </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+        )}
+
       </main>
 
       {/* MODAL CADASTRO DE AFILIADO */}
@@ -1659,8 +1784,8 @@ function SuperAdminContent() {
                   <input className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="CPF, email, celular..." value={affiliateForm.pixKey} onChange={e => setAffiliateForm({...affiliateForm, pixKey: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-black text-slate-400">Comissão (%)</p>
-                  <input type="number" min="1" max="100" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="10" value={affiliateForm.commissionRate} onChange={e => setAffiliateForm({...affiliateForm, commissionRate: e.target.value})} />
+                  <p className="text-xs font-black text-slate-400">Comissão Fixa (R$)</p>
+                  <input type="number" step="0.01" className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-none font-bold text-sm outline-none focus:border-purple-500" placeholder="10.00" value={affiliateForm.commissionRate} onChange={e => setAffiliateForm({...affiliateForm, commissionRate: e.target.value})} />
                 </div>
               </div>
               <button onClick={handleSaveAffiliate} className="w-full bg-purple-500 text-white py-6 rounded-none font-black text-xs tracking-widest shadow-2xl hover:bg-[#0f172a] transition-all border-none">

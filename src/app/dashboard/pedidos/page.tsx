@@ -38,6 +38,16 @@ function formatTime(d: string) {
   return new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function escapeHTML(str: string) {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export default function PedidosRelatorioPage() {
   const today = new Date().toISOString().split("T")[0];
   const [activeTab, setActiveTab] = useState<"orders" | "cashiers">("orders");
@@ -134,9 +144,9 @@ export default function PedidosRelatorioPage() {
       <tr>
         <td>#${o.orderNumber || o.id.slice(-4).toUpperCase()}</td>
         <td>${new Date(o.createdAt).toLocaleString("pt-BR")}</td>
-        <td>${o.customerName}</td>
+        <td>${escapeHTML(o.customerName)}</td>
         <td>${TYPE_LABELS[o.orderType] || o.orderType}</td>
-        <td>${o.paymentMethod || "-"}</td>
+        <td>${escapeHTML(o.paymentMethod || "-")}</td>
         <td>${STATUS_LABELS[o.status]?.label || o.status}</td>
         <td align="right">${formatCurrency(o.total)}</td>
       </tr>
@@ -523,6 +533,17 @@ export default function PedidosRelatorioPage() {
                     )}
                   </div>
                 </div>
+
+                {detailOrder.observations && (
+                  <div className="space-y-2">
+                    <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+                      <ScrollText size={20} className="text-amber-500" /> Observações do Pedido
+                    </h3>
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-xs font-bold text-amber-900 leading-relaxed italic">
+                      "{detailOrder.observations}"
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <h3 className="font-black text-slate-900 text-lg tracking-tight mb-2">Resumo Financeiro</h3>

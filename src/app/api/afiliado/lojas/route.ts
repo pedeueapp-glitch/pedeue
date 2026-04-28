@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name, email, password, storeName, whatsapp, cpf } = await req.json();
+    const { name, email, password, storeName, whatsapp, cpf, planId } = await req.json();
 
-    if (!name || !email || !password || !storeName || !whatsapp || !cpf) {
+    if (!name || !email || !password || !storeName || !whatsapp || !cpf || !planId) {
       return NextResponse.json({ error: "Todos os campos são obrigatórios" }, { status: 400 });
     }
 
@@ -53,6 +53,12 @@ export async function POST(req: NextRequest) {
     const cleanCPF = cpf.replace(/\D/g, "");
     if (!validateCPF(cleanCPF)) {
       return NextResponse.json({ error: "CPF inválido" }, { status: 400 });
+    }
+
+    // Verificar se o plano existe
+    const plan = await prisma.plan.findUnique({ where: { id: planId } });
+    if (!plan) {
+      return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
     }
 
     // Buscar afiliado logado
@@ -84,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Criar usuário + loja já vinculada ao afiliado
+    // Criar usuário + loja + assinatura inicial (Trial de 7 dias)
     const user = await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
@@ -101,10 +107,18 @@ export async function POST(req: NextRequest) {
             cpf: cleanCPF,
             updatedAt: new Date(),
             platformAffiliateId: affiliate.id,
+            subscription: {
+              create: {
+                planId: plan.id,
+                status: "TRIALING",
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias de trial
+                updatedAt: new Date(),
+              }
+            }
           },
         },
       },
-      include: { store: true },
+      include: { store: { include: { subscription: true } } },
     });
 
     return NextResponse.json(

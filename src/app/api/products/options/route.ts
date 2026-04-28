@@ -32,13 +32,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
+    if (!session?.user?.id) return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
 
     const body = await req.json();
     const { productId, name, minChoices, maxChoices, priceCalculation } = body;
 
-    const product = await (prisma as any).product.findUnique({ where: { id: productId } });
-    if (!product) return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const product = await (prisma as any).product.findUnique({ 
+      where: { id: productId, storeId: store.id } 
+    });
+    if (!product) return NextResponse.json({ error: "Produto não encontrado nesta loja" }, { status: 404 });
 
     const group = await (prisma as any).optiongroup.create({
       data: {

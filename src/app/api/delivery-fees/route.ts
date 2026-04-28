@@ -63,7 +63,15 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID vazio" }, { status: 400 });
 
-    await (prisma as any).deliveryarea.delete({ where: { id } });
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const deleted = await (prisma as any).deliveryarea.deleteMany({ 
+      where: { id, storeId: store.id } 
+    });
+
+    if (deleted.count === 0) return NextResponse.json({ error: "Não encontrado ou sem permissão" }, { status: 404 });
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE DELIVERY FEE ERROR:", error);

@@ -82,7 +82,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
 
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
     { name: "Minha Assinatura", href: "/dashboard/subscription", icon: CreditCard },
-    { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+    { name: "Configurações", href: mode === "AFFILIATE" ? "/dashboard/afiliado/settings" : "/dashboard/settings", icon: Settings },
     { name: "Vendas Vitrine", href: "/dashboard/vendas-vitrine", icon: ClipboardList, showcaseOnly: true },
     { name: "Clientes", href: "/dashboard/customers", icon: Users },
     { name: "Orçamentos", href: "/dashboard/quotes", icon: ScrollText, serviceOnly: true },
@@ -169,6 +169,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Analytics Pro", href: "/superadmin?tab=analytics", icon: TrendingUp },
     { name: "Gestão de Lojas", href: "/superadmin?tab=stores", icon: ShoppingBag },
     { name: "Gestão Financeira", href: "/superadmin?tab=payments", icon: CreditCard },
+    { name: "Saques Afiliados", href: "/superadmin?tab=affiliate_payouts", icon: CreditCard },
     { name: "Gestão de Afiliados", href: "/superadmin?tab=affiliates", icon: Users },
     { name: "Planos Mensais", href: "/superadmin?tab=plans", icon: Layers },
     { name: "Relatório Expiração", href: "/superadmin?tab=expiration", icon: Calendar },

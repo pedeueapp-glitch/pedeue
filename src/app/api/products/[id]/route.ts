@@ -22,14 +22,21 @@ export async function PATCH(
     });
     if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
 
+    const parsedPrice = parseFloat(String(data.price).replace(',', '.'));
+    const parsedSalePrice = data.salePrice ? parseFloat(String(data.salePrice).replace(',', '.')) : null;
+
+    if (isNaN(parsedPrice)) {
+      return NextResponse.json({ error: "Preço inválido" }, { status: 400 });
+    }
+
     // Usando cast para 'any' para evitar erros de tipo se o Prisma Client estiver desatualizado
     const product = await (prisma.product as any).update({
       where: { id, storeId: store.id },
       data: {
         name: data.name,
         description: data.description,
-        price: parseFloat(data.price),
-        salePrice: data.salePrice ? parseFloat(data.salePrice) : null,
+        price: parsedPrice,
+        salePrice: isNaN(parsedSalePrice as any) ? null : parsedSalePrice,
         imageUrl: data.imageUrl,
         category: { connect: { id: data.categoryId } },
         isActive: data.isActive,
@@ -37,8 +44,8 @@ export async function PATCH(
         barcode: data.barcode || null,
         isCombo: data.isCombo ?? false,
         comboConfig: data.comboConfig || null,
-        purchasePrice: data.purchasePrice ? parseFloat(data.purchasePrice) : 0,
-        profitMargin: data.profitMargin ? parseFloat(data.profitMargin) : 0,
+        purchasePrice: data.purchasePrice ? parseFloat(String(data.purchasePrice).replace(',', '.')) : 0,
+        profitMargin: data.profitMargin ? parseFloat(String(data.profitMargin).replace(',', '.')) : 0,
         isBestSeller: data.isBestSeller ?? false,
         isFavorite: data.isFavorite ?? false,
         updatedAt: new Date()

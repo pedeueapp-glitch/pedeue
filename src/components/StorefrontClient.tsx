@@ -665,7 +665,14 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           whatsapp: store.whatsapp,
           description: store.description,
           openingHours: store.openingHours,
-          banners: typeof store.showcaseBanners === 'string' ? JSON.parse(store.showcaseBanners || '[]') : (store.showcaseBanners || [])
+          banners: (() => {
+            try {
+              return typeof store.showcaseBanners === 'string' ? JSON.parse(store.showcaseBanners || '[]') : (store.showcaseBanners || []);
+            } catch (e) {
+              console.error("Erro ao processar banners de vitrine", e);
+              return [];
+            }
+          })()
         }}
         products={allProducts}
         categories={categories}
@@ -691,7 +698,14 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           whatsapp: store.whatsapp,
           description: store.description,
           openingHours: store.openingHours,
-          banners: typeof store.serviceBanners === 'string' ? JSON.parse(store.serviceBanners || '[]') : (store.serviceBanners || [])
+          banners: (() => {
+            try {
+              return typeof store.serviceBanners === 'string' ? JSON.parse(store.serviceBanners || '[]') : (store.serviceBanners || []);
+            } catch (e) {
+              console.error("Erro ao processar banners de serviço", e);
+              return [];
+            }
+          })()
         }}
         products={allProducts}
         categories={categories}
@@ -729,7 +743,10 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
   const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
   const total = subtotal + currentFee;
-  const primaryColor = store.primaryColor || "#f97316";
+  
+  // Sanitização da cor primária para evitar injeção de CSS malicioso
+  const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+  const primaryColor = hexRegex.test(store.primaryColor || "") ? store.primaryColor : "#f97316";
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>

@@ -15,6 +15,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Grupo e nome são obrigatórios" }, { status: 400 });
     }
 
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    // Verificar se o grupo pertence a um produto desta loja
+    const group = await (prisma as any).optiongroup.findFirst({
+      where: { 
+        id: groupId,
+        product: { storeId: store.id }
+      }
+    });
+
+    if (!group) return NextResponse.json({ error: "Grupo de opções não encontrado ou sem permissão" }, { status: 404 });
+
     const option = await (prisma as any).option.create({
       data: {
         id: `opti_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
@@ -42,7 +55,20 @@ export async function DELETE(req: Request) {
 
     if (!id) return NextResponse.json({ error: "ID não fornecido" }, { status: 400 });
 
-    await (prisma as any).option.delete({ where: { id } });
+    const store = await prisma.store.findUnique({ where: { userId: (session.user as any).id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    // Deletar apenas se o item pertencer a um grupo da loja
+    const deleted = await (prisma as any).option.deleteMany({
+      where: {
+        id,
+        optiongroup: {
+          product: { storeId: store.id }
+        }
+      }
+    });
+
+    if (deleted.count === 0) return NextResponse.json({ error: "Item não encontrado ou sem permissão" }, { status: 404 });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -24,6 +24,11 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     
+    // Função simples de sanitização de texto (remove tags HTML)
+    const sanitize = (str: string) => typeof str === 'string' ? str.replace(/<[^>]*>?/gm, '') : str;
+    // Função para sanitizar IDs (apenas alfanuméricos e hífens)
+    const sanitizeId = (str: string) => typeof str === 'string' ? str.replace(/[^a-zA-Z0-9-]/g, '') : str;
+
     const { 
       name, 
       slug, 
@@ -66,32 +71,32 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    // 2. Montar objeto de atualização
+    // 2. Montar objeto de atualização com sanitização
     const dataToUpdate: any = {
-      name: name || undefined,
-      description: description !== undefined ? description : undefined,
-      whatsapp: whatsapp !== undefined ? whatsapp : undefined,
+      name: name ? sanitize(name) : undefined,
+      description: description !== undefined ? sanitize(description) : undefined,
+      whatsapp: whatsapp !== undefined ? sanitize(whatsapp) : undefined,
       deliveryTime: deliveryTime ? String(deliveryTime) : undefined,
       logo: logo !== undefined ? logo : undefined,
       coverImage: coverImage !== undefined ? coverImage : undefined,
-      primaryColor: primaryColor || undefined,
+      primaryColor: (primaryColor && /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(primaryColor)) ? primaryColor : undefined,
       isOpen: isOpen !== undefined ? Boolean(isOpen) : undefined,
       storeType: storeType || undefined,
       showcaseBanners: showcaseBanners !== undefined ? (typeof showcaseBanners === 'string' ? showcaseBanners : JSON.stringify(showcaseBanners)) : undefined,
       restaurantBanners: restaurantBanners !== undefined ? (typeof restaurantBanners === 'string' ? restaurantBanners : JSON.stringify(restaurantBanners)) : undefined,
       serviceBanners: serviceBanners !== undefined ? (typeof serviceBanners === 'string' ? serviceBanners : JSON.stringify(serviceBanners)) : undefined,
       openingHours: openingHours !== undefined ? (typeof openingHours === 'string' ? openingHours : JSON.stringify(openingHours)) : undefined,
-      facebookPixelId: facebookPixelId !== undefined ? facebookPixelId : undefined,
-      googleAnalyticsId: googleAnalyticsId !== undefined ? googleAnalyticsId : undefined,
-      googleTagManagerId: googleTagManagerId !== undefined ? googleTagManagerId : undefined,
-      tiktokPixelId: tiktokPixelId !== undefined ? tiktokPixelId : undefined,
-      cpf: cpf !== undefined ? cpf : undefined,
-      customDomain: (customDomain && typeof customDomain === 'string') ? customDomain.trim().toLowerCase() : undefined,
-      pixKey: pixKey !== undefined ? pixKey : undefined,
+      facebookPixelId: facebookPixelId !== undefined ? sanitizeId(facebookPixelId) : undefined,
+      googleAnalyticsId: googleAnalyticsId !== undefined ? sanitizeId(googleAnalyticsId) : undefined,
+      googleTagManagerId: googleTagManagerId !== undefined ? sanitizeId(googleTagManagerId) : undefined,
+      tiktokPixelId: tiktokPixelId !== undefined ? sanitizeId(tiktokPixelId) : undefined,
+      cpf: cpf !== undefined ? sanitizeId(cpf) : undefined,
+      customDomain: (customDomain && typeof customDomain === 'string') ? sanitizeId(customDomain.trim().toLowerCase().replace(/\./g, '-')).replace(/-/g, '.') : undefined,
+      pixKey: pixKey !== undefined ? sanitize(pixKey) : undefined,
       pixEnabled: pixEnabled !== undefined ? Boolean(pixEnabled) : undefined,
-      pixMerchantName: pixMerchantName !== undefined ? pixMerchantName : undefined,
-      pixMerchantCity: pixMerchantCity !== undefined ? pixMerchantCity : undefined,
-      freeDeliveryThreshold: freeDeliveryThreshold !== undefined ? parseFloat(freeDeliveryThreshold) : undefined,
+      pixMerchantName: pixMerchantName !== undefined ? sanitize(pixMerchantName) : undefined,
+      pixMerchantCity: pixMerchantCity !== undefined ? sanitize(pixMerchantCity) : undefined,
+      freeDeliveryThreshold: freeDeliveryThreshold !== undefined ? parseFloat(String(freeDeliveryThreshold).replace(',', '.')) : undefined,
     };
 
     if (slug) {

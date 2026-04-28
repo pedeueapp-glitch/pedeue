@@ -75,13 +75,19 @@ export async function PATCH(req: NextRequest) {
   
       const body = await req.json();
       const { id, name, emoji } = body;
+
+      const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+      if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
   
-      const updated = await prisma.category.update({
-        where: { id },
+      const updated = await prisma.category.updateMany({
+        where: { id, storeId: store.id },
         data: { name, emoji }
       });
   
-      return NextResponse.json(updated);
+      if (updated.count === 0) return NextResponse.json({ error: "Categoria não encontrada ou sem permissão" }, { status: 404 });
+
+      const category = await prisma.category.findUnique({ where: { id } });
+      return NextResponse.json(category);
     } catch (error: any) {
       console.error("CATEGORIES_PATCH_ERROR:", error);
       return NextResponse.json({ error: "Erro ao atualizar" }, { status: 500 });
@@ -100,9 +106,12 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: "Formato inválido" }, { status: 400 });
         }
 
+        const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+        if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
         for (const cat of categories) {
-            await prisma.category.update({
-                where: { id: cat.id },
+            await prisma.category.updateMany({
+                where: { id: cat.id, storeId: store.id },
                 data: { position: cat.position }
             });
         }
@@ -124,15 +133,22 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "ID necessário" }, { status: 400 });
 
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
     // Verificar se existem produtos vinculados
-    const productsCount = await prisma.product.count({ where: { categoryId: id } });
+    const productsCount = await prisma.product.count({ where: { categoryId: id, storeId: store.id } });
     if (productsCount > 0) {
       return NextResponse.json({ 
         error: "Exclua os produtos desta categoria antes de removê-la." 
       }, { status: 400 });
     }
 
-    await prisma.category.delete({ where: { id } });
+    const deleted = await prisma.category.deleteMany({ 
+      where: { id, storeId: store.id } 
+    });
+
+    if (deleted.count === 0) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("CATEGORIES_DELETE_ERROR:", error);

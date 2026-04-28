@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             name,
             email,
             pixKey: pixKey || null,
-            commissionRate: commissionRate ?? 0.10,
+            commissionRate: parseFloat(commissionRate) || 10.0,
             updatedAt: new Date(),
           },
         },

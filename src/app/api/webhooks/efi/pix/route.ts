@@ -60,6 +60,14 @@ export async function POST(req: NextRequest) {
               }
             });
 
+            // 3. Gerar comissão para o afiliado
+            try {
+              const { generateAffiliateCommission } = await import("@/lib/affiliateCommission");
+              await generateAffiliateCommission(transaction.id, transaction.storeId, transaction.amount);
+            } catch (affErr) {
+              console.error("ERRO AO GERAR COMISSÃO NO WEBHOOK:", affErr);
+            }
+
             console.log(`PAGAMENTO CONFIRMADO: TxID ${txid} - Assinatura renovada por ${monthsToAdd} meses.`);
           }
         }
