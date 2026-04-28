@@ -196,7 +196,13 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     setOpenGroups(prev => prev.includes(name) ? prev.filter(g => g !== name) : [...prev, name]);
   };
 
-  const navigationLinks = mode === "SUPERADMIN" ? superAdminLinks : mode === "AFFILIATE" ? affiliateLinks : merchantLinks;
+  const getNavigationLinks = () => {
+    if (mode === "SUPERADMIN") return superAdminLinks;
+    if (mode === "AFFILIATE") return affiliateLinks;
+    return merchantLinks;
+  };
+
+  const navigationLinks = getNavigationLinks();
 
 
   return (
@@ -356,7 +362,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
                 <span>{group.name}</span>
               </Link>
             );
-          }) : superAdminLinks.map((link: any) => {
+          }) : navigationLinks.map((link: any) => {
              const Icon = link.icon;
              const isActive = pathname === link.href || (link.href.includes('?') && pathname === link.href.split('?')[0] && searchParams.get('tab') === new URLSearchParams(link.href.split('?')[1]).get('tab'));
              

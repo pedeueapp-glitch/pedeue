@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   
   const rootDomain = 'pedeue.com';
   // Rotas que DEVEM permanecer no domínio principal
-  const mainRoutes = ['/dashboard', '/api', '/_next', '/entrar', '/cadastrar', '/recuperar-senha', '/superadmin', '/favicon.ico'];
+  const mainRoutes = ['/dashboard', '/api', '/_next', '/entrar', '/cadastrar', '/recuperar-senha', '/superadmin', '/favicon.ico', '/afiliado'];
   const reservedSubdomains = ['www', 'api', 'admin', 'superadmin', 'dev', 'websocket'];
   
   const { pathname } = url;

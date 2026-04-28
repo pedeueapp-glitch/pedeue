@@ -56,7 +56,10 @@ export default function DashboardPage() {
     to: format(new Date(), "yyyy-MM-dd")
   });
 
+  const { data: session } = useSession();
+
   const fetchFinance = useCallback(async () => {
+    if (session?.user?.role === "AFFILIATE") return;
     setLoading(true);
     try {
       const [resFinance, resStore] = await Promise.all([

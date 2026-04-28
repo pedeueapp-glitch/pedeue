@@ -48,7 +48,7 @@ export default function ClientesPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <Link
-        href="/afiliado"
+        href="/dashboard"
         className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
