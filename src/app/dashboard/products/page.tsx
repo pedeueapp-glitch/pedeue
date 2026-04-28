@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { 
   Plus, Search, Edit3, Trash2, Loader2, X, PlusSquare,
   Package, Camera, AlertCircle, CheckCircle2, PlusCircle, Palette,
-  Calculator, TrendingUp, Copy, Wand2, Globe
+  Calculator, TrendingUp, Copy, Wand2, Globe, Move
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Header } from "@/components/Header";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { VariantEditor } from "@/components/VariantEditor";
@@ -346,10 +347,76 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const productsByCategory = categories.map(cat => ({
-    ...cat,
-    items: filteredProducts.filter(p => p.categoryId === cat.id)
-  })).filter(cat => cat.items.length > 0 || searchTerm === "");
+  const productsByCategory = categories
+    .sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map(cat => ({
+      ...cat,
+      items: filteredProducts
+        .filter(p => p.categoryId === cat.id)
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
+    })).filter(cat => cat.items.length > 0 || searchTerm === "");
+
+  const onDragEnd = async (result: any) => {
+    const { destination, source, type } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    if (type === "CATEGORY") {
+      const newCategories = Array.from(categories);
+      const [removed] = newCategories.splice(source.index, 1);
+      newCategories.splice(destination.index, 0, removed);
+
+      const updatedCategories = newCategories.map((cat, index) => ({
+        ...cat,
+        position: index
+      }));
+
+      setCategories(updatedCategories);
+
+      try {
+        await fetch("/api/categories/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categories: updatedCategories.map(c => ({ id: c.id, position: c.position })) })
+        });
+        toast.success("Categorias reordenadas");
+      } catch {
+        toast.error("Erro ao salvar ordem");
+        fetchData(true);
+      }
+    } else {
+      const catId = source.droppableId.replace("droppable-products-", "");
+      const categoryProducts = products.filter(p => p.categoryId === catId).sort((a, b) => (a.position || 0) - (b.position || 0));
+      
+      const newCategoryProducts = Array.from(categoryProducts);
+      const [removed] = newCategoryProducts.splice(source.index, 1);
+      newCategoryProducts.splice(destination.index, 0, removed);
+
+      const updatedProducts = newCategoryProducts.map((prod, index) => ({
+        ...prod,
+        position: index
+      }));
+
+      // Update local state
+      setProducts(prev => {
+        const others = prev.filter(p => p.categoryId !== catId);
+        return [...others, ...updatedProducts];
+      });
+
+      try {
+        await fetch("/api/products/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ products: updatedProducts.map(p => ({ id: p.id, position: p.position })) })
+        });
+        toast.success("Produtos reordenados");
+      } catch {
+        toast.error("Erro ao salvar ordem");
+        fetchData(true);
+      }
+    }
+  };
 
   return (
     <>
@@ -422,145 +489,181 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="space-y-12">
-            {productsByCategory.map((category) => (
-              <section key={category.id}>
-                <div className="flex items-center gap-4 mb-6">
-                   <h3 className="text-lg font-bold text-slate-800">{category.emoji} {category.name}</h3>
-                   <div className="h-[1px] flex-1 bg-slate-200/50" />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {category.items.map((product: any) => (
-                    <div 
-                      key={product.id} 
-                      className={`card-premium group relative flex flex-col h-full !p-4 ${product.isActive === false ? 'opacity-70 saturate-50' : ''}`}
-                    >
-                      <div className="absolute top-3 left-3 z-10">
-                        <button 
-                          onClick={() => toggleStatus(product)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black  tracking-tight transition-all shadow-sm ${
-                            product.isActive !== false 
-                              ? "bg-green-500 text-white" 
-                              : "bg-slate-200 text-slate-500"
-                          }`}
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="droppable-categories" type="CATEGORY">
+              {(provided) => (
+                <div 
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-12"
+                >
+                  {productsByCategory.map((category, index) => (
+                    <Draggable key={category.id} draggableId={category.id} index={index}>
+                      {(provided) => (
+                        <section 
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className="scroll-mt-32"
                         >
-                          <div className={`w-1 h-1 rounded-full ${product.isActive !== false ? "bg-white animate-pulse" : "bg-slate-400"}`} />
-                          {product.isActive !== false ? "Visível" : "Oculto"}
-                        </button>
-                      </div>
-
-                      <button 
-                        onClick={() => deleteProduct(product.id)}
-                        className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm text-slate-300 hover:text-red-500 rounded-lg shadow-sm transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-
-                      <div className="relative h-32 mb-4 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
-                        {product.imageUrl ? (
-                          <img src={product.imageUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-200">
-                             <Package size={30} />
-                          </div>
-                        )}
-                        {isShowcase && (
-                          <div className="absolute bottom-2 right-2 bg-purple-500 text-white text-[8px] font-black  px-2 py-0.5 rounded-none">
-                            {isService ? "SERVIÇO" : "VITRINE"}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex flex-col mb-3">
-                           <h4 className="font-bold text-navy text-sm line-clamp-1">{product.name}</h4>
-                           <div className="text-sm font-black text-purple-500 mt-0.5">
-                              {product.salePrice ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-400 line-through">R$ {product.price.toFixed(2).replace('.', ',')}</span>
-                                  <span>R$ {product.salePrice.toFixed(2).replace('.', ',')}</span>
-                                </div>
-                              ) : (
-                                <>R$ {product.price.toFixed(2).replace('.', ',')}</>
-                              )}
-                           </div>
-                           {isService && product.purchasePrice > 0 && (
-                             <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[9px] font-black text-green-600  bg-green-50 px-1.5 py-0.5 rounded-md">Margem: {product.profitMargin}%</span>
+                          <div className="flex items-center gap-4 mb-6 group/cat">
+                             <div {...provided.dragHandleProps} className="p-1.5 bg-slate-100 rounded-lg text-slate-400 opacity-0 group-hover/cat:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                               <Move size={14} />
                              </div>
-                           )}
-                        </div>
+                             <h3 className="text-lg font-bold text-slate-800">{category.emoji} {category.name}</h3>
+                             <div className="h-[1px] flex-1 bg-slate-200/50" />
+                          </div>
 
-                        <div className="mt-auto pt-3 border-t border-slate-50 flex items-center gap-2">
-                           <button 
-                              onClick={() => { 
-                                setEditingProduct(product); 
-                                setFormData({
-                                  ...product, 
-                                  price: product.price.toString(), 
-                                  salePrice: product.salePrice ? product.salePrice.toString() : "",
-                                  barcode: product.barcode || "",
-                                  isCombo: product.isCombo || false,
-                                  comboConfig: product.comboConfig || "[]",
-                                  purchasePrice: product.purchasePrice ? product.purchasePrice.toString() : "",
-                                  profitMargin: product.profitMargin ? product.profitMargin.toString() : "",
-                                  isBestSeller: product.isBestSeller || false,
-                                  isFavorite: product.isFavorite || false
-                                }); 
-                                setIsModalOpen(true); 
-                              }}
-                              className="w-full py-2 bg-navy text-white rounded-lg hover:bg-purple-500 transition-all flex items-center justify-center gap-2 shadow-sm text-[10px] font-black  tracking-widest"
-                           >
-                              <Edit3 size={14} />
-                              Editar
-                           </button>
+                          <Droppable droppableId={`droppable-products-${category.id}`} type="PRODUCT">
+                            {(provided) => (
+                              <div 
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                              >
+                                {category.items.map((product: any, pIndex: number) => (
+                                  <Draggable key={product.id} draggableId={product.id} index={pIndex}>
+                                    {(provided) => (
+                                      <div 
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={`card-premium group relative flex flex-col h-full !p-4 ${product.isActive === false ? 'opacity-70 saturate-50' : ''}`}
+                                      >
+                                        <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                                          <div {...provided.dragHandleProps} className="p-1.5 bg-white/90 backdrop-blur-sm text-slate-300 hover:text-navy rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing">
+                                            <Move size={14} />
+                                          </div>
+                                          <button 
+                                            onClick={() => toggleStatus(product)}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black tracking-tight transition-all shadow-sm ${
+                                              product.isActive !== false 
+                                                ? "bg-green-500 text-white" 
+                                                : "bg-slate-200 text-slate-500"
+                                            }`}
+                                          >
+                                            <div className={`w-1 h-1 rounded-full ${product.isActive !== false ? "bg-white animate-pulse" : "bg-slate-400"}`} />
+                                            {product.isActive !== false ? "Visível" : "Oculto"}
+                                          </button>
+                                        </div>
 
-                           {!isService && (
-                             isShowcase ? (
-                               <div className="flex gap-1.5">
-                                 <button 
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
-                                    className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
-                                    title="Duplicar"
-                                 >
-                                    <Copy size={14} />
-                                 </button>
-                                 <button 
-                                    type="button"
-                                    onClick={() => { setEditingProduct(product); setIsVariantModalOpen(true); }}
-                                    className="p-2 border-2 border-purple-100 text-purple-500 rounded-lg hover:bg-purple-50 transition-all"
-                                 >
-                                    <Palette size={14} />
-                                 </button>
-                               </div>
-                             ) : (
-                               <div className="flex gap-1.5">
-                                 <button 
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
-                                    className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
-                                    title="Duplicar"
-                                 >
-                                    <Copy size={14} />
-                                 </button>
-                                 <button 
-                                    type="button"
-                                    onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
-                                    className="p-2 border-2 border-slate-100 text-slate-500 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
-                                 >
-                                    <PlusSquare size={14} />
-                                 </button>
-                               </div>
-                             )
-                           )}
-                        </div>
-                      </div>
-                    </div>
+                                        <button 
+                                          onClick={() => deleteProduct(product.id)}
+                                          className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm text-slate-300 hover:text-red-500 rounded-lg shadow-sm transition-all"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+
+                                        <div className="relative h-32 mb-4 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+                                          {product.imageUrl ? (
+                                            <img src={product.imageUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-200">
+                                               <Package size={30} />
+                                            </div>
+                                          )}
+                                          {isShowcase && (
+                                            <div className="absolute bottom-2 right-2 bg-purple-500 text-white text-[8px] font-black px-2 py-0.5 rounded-none">
+                                              {isService ? "SERVIÇO" : "VITRINE"}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        <div className="flex-1 flex flex-col">
+                                          <div className="flex flex-col mb-3">
+                                             <h4 className="font-bold text-navy text-sm line-clamp-1">{product.name}</h4>
+                                             <div className="text-sm font-black text-purple-500 mt-0.5">
+                                                {product.salePrice ? (
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] text-slate-400 line-through">R$ {product.price.toFixed(2).replace('.', ',')}</span>
+                                                    <span>R$ {product.salePrice.toFixed(2).replace('.', ',')}</span>
+                                                  </div>
+                                                ) : (
+                                                  <>R$ {product.price.toFixed(2).replace('.', ',')}</>
+                                                )}
+                                             </div>
+                                          </div>
+
+                                          <div className="mt-auto pt-3 border-t border-slate-50 flex items-center gap-2">
+                                             <button 
+                                                onClick={() => { 
+                                                  setEditingProduct(product); 
+                                                  setFormData({
+                                                    ...product, 
+                                                    price: product.price.toString(), 
+                                                    salePrice: product.salePrice ? product.salePrice.toString() : "",
+                                                    barcode: product.barcode || "",
+                                                    isCombo: product.isCombo || false,
+                                                    comboConfig: product.comboConfig || "[]",
+                                                    purchasePrice: product.purchasePrice ? product.purchasePrice.toString() : "",
+                                                    profitMargin: product.profitMargin ? product.profitMargin.toString() : "",
+                                                    isBestSeller: product.isBestSeller || false,
+                                                    isFavorite: product.isFavorite || false
+                                                  }); 
+                                                  setIsModalOpen(true); 
+                                                }}
+                                                className="w-full py-2 bg-navy text-white rounded-lg hover:bg-purple-500 transition-all flex items-center justify-center gap-2 shadow-sm text-[10px] font-black tracking-widest"
+                                             >
+                                                <Edit3 size={14} />
+                                                Editar
+                                             </button>
+
+                                             {!isService && (
+                                               isShowcase ? (
+                                                 <div className="flex gap-1.5">
+                                                   <button 
+                                                      type="button"
+                                                      onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
+                                                      className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                                      title="Duplicar"
+                                                   >
+                                                      <Copy size={14} />
+                                                   </button>
+                                                   <button 
+                                                      type="button"
+                                                      onClick={() => { setEditingProduct(product); setIsVariantModalOpen(true); }}
+                                                      className="p-2 border-2 border-purple-100 text-purple-500 rounded-lg hover:bg-purple-50 transition-all"
+                                                   >
+                                                      <Palette size={14} />
+                                                   </button>
+                                                 </div>
+                                               ) : (
+                                                 <div className="flex gap-1.5">
+                                                   <button 
+                                                      type="button"
+                                                      onClick={(e) => { e.stopPropagation(); duplicateProduct(product.id); }}
+                                                      className="p-2 border-2 border-slate-100 text-slate-400 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                                      title="Duplicar"
+                                                   >
+                                                      <Copy size={14} />
+                                                   </button>
+                                                   <button 
+                                                      type="button"
+                                                      onClick={() => { setEditingProduct(product); fetchOptions(product.id); setIsOptionsModalOpen(true); }}
+                                                      className="p-2 border-2 border-slate-100 text-slate-500 rounded-lg hover:border-purple-200 hover:text-purple-500 hover:bg-purple-50 transition-all"
+                                                   >
+                                                      <PlusSquare size={14} />
+                                                   </button>
+                                                 </div>
+                                               )
+                                             )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </section>
+                      )}
+                    </Draggable>
                   ))}
+                  {provided.placeholder}
                 </div>
-              </section>
-            ))}
+              )}
+            </Droppable>
+          </DragDropContext>
           </div>
         )}
       </div>

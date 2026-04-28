@@ -166,6 +166,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [showRoulette, setShowRoulette] = useState(false);
   const [wonPrize, setWonPrize] = useState<any>(null);
   const [hasSpun, setHasSpun] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
 
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount, setStoreSlug, getItemQty } = useCartStore();
   
@@ -440,6 +441,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       }
 
       const orderData = await res.json();
+      setLastOrderNumber(orderData.orderNumber);
       setCheckoutStep("success");
 
       // Resetar roleta após pedido concluído
@@ -450,7 +452,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       }
 
       const msg = generateWhatsAppMessage(orderData.orderNumber);
-      window.open(`https://wa.me/${store?.whatsapp}?text=${msg}`, "_blank");
+      // window.open(`https://wa.me/${store?.whatsapp}?text=${msg}`, "_blank");
 
       clearCart();
     } catch (error: any) {
@@ -1520,7 +1522,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                     <p className="text-slate-400 font-medium text-sm mt-4">Seu pedido já está no sistema da nossa loja e estamos preparando tudo com carinho.</p>
                   </div>
                   <button
-                    onClick={() => window.open(`https://wa.me/${store?.whatsapp}?text=${generateWhatsAppMessage(0)}`, "_blank")}
+                    onClick={() => window.open(`https://wa.me/${store?.whatsapp}?text=${generateWhatsAppMessage(lastOrderNumber || 0)}`, "_blank")}
                     className="w-full py-5 bg-navy text-white text-[10px] font-black tracking-widest hover:bg-brand transition-all flex items-center justify-center gap-3 rounded-xl shadow-xl"
                   >
                     Reenviar via WhatsApp
