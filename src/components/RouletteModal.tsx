@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, X, Loader2, Trophy, ShieldCheck } from "lucide-react";
+import { Sparkles, X, Loader2, Trophy, ShieldCheck, RotateCw } from "lucide-react";
 
 interface RouletteOption {
   label: string;
@@ -31,7 +31,7 @@ export default function RouletteModal({ isOpen, onClose, config, onWin }: Roulet
   if (!isOpen || !config.active || config.options.length === 0) return null;
 
   const spin = () => {
-    if (isSpinning) return;
+    if (isSpinning || result) return;
 
     setIsSpinning(true);
     setResult(null);
@@ -51,24 +51,27 @@ export default function RouletteModal({ isOpen, onClose, config, onWin }: Roulet
     const optionCount = config.options.length;
     const degreePerOption = 360 / optionCount;
     
-    const extraSpins = 8 + Math.floor(Math.random() * 5); 
+    // Rotação maior para durar mais e ser mais dinâmica
+    const extraSpins = 10 + Math.floor(Math.random() * 5); 
     const targetDegree = 360 - (selectedIndex * degreePerOption) - (degreePerOption / 2);
     const newRotation = rotation + (extraSpins * 360) + targetDegree;
     
     setRotation(newRotation);
 
+    // 5 segundos de animação total com desaceleração suave
     setTimeout(() => {
       setIsSpinning(false);
-      setResult(config.options[selectedIndex]);
+      const winPrize = config.options[selectedIndex];
+      setResult(winPrize);
       setTimeout(() => {
-        onWin(config.options[selectedIndex]);
+        onWin(winPrize);
       }, 1500);
     }, 5000);
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] relative animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.3)] relative animate-in zoom-in-95 duration-300 border border-white/20">
         <button 
             onClick={onClose}
             disabled={isSpinning}
@@ -77,34 +80,31 @@ export default function RouletteModal({ isOpen, onClose, config, onWin }: Roulet
             <X size={24} />
         </button>
 
-        <div className="p-10 text-center space-y-8">
+        <div className="p-8 md:p-10 text-center space-y-8">
             <div className="space-y-2">
-                <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shadow-inner">
-                        <Sparkles size={32} />
+                <div className="flex justify-center mb-2">
+                    <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shadow-inner">
+                        <Sparkles size={28} />
                     </div>
                 </div>
-                <h2 className="text-3xl font-black text-slate-800 tracking-tighter">Roleta da Sorte!</h2>
-                <div className="flex items-center justify-center gap-2 text-purple-500 bg-purple-50 px-4 py-1.5 rounded-full w-fit mx-auto border border-purple-100">
+                <h2 className="text-3xl font-black text-slate-800 tracking-tighter">Roleta da Sorte</h2>
+                <div className="flex items-center justify-center gap-2 text-emerald-500 bg-emerald-50 px-4 py-1.5 rounded-full w-fit mx-auto border border-emerald-100">
                    <ShieldCheck size={14} />
-                   <p className="text-[10px] font-black uppercase tracking-widest">Resultado Definitivo e Único</p>
+                   <p className="text-[9px] font-black uppercase tracking-widest">Giro Seguro e Único</p>
                 </div>
-                <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-[250px] mx-auto mt-4">
-                   Gire a roda e garanta o seu benefício exclusivo agora!
-                </p>
             </div>
 
             {/* Visual da Roleta */}
-            <div className="relative aspect-square max-w-[300px] mx-auto py-6">
-                {/* Seta Indicadora */}
+            <div className="relative aspect-square max-w-[320px] mx-auto group">
+                {/* Seta Indicadora Premium */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
-                   <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[30px] border-t-red-500 drop-shadow-[0_4px_12px_rgba(239,68,68,0.5)]"></div>
-                   <div className="w-2 h-2 bg-red-600 rounded-full mt-[-10px] z-30 shadow-lg"></div>
+                   <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-red-500 drop-shadow-[0_8px_16px_rgba(239,68,68,0.4)]"></div>
+                   <div className="w-3 h-3 bg-red-600 rounded-full mt-[-12px] z-30 border-2 border-white shadow-lg"></div>
                 </div>
                 
                 <div 
                     ref={wheelRef}
-                    className="w-full h-full rounded-full border-[10px] border-slate-50 shadow-[0_0_40px_rgba(0,0,0,0.1),inset_0_0_20px_rgba(0,0,0,0.05)] relative overflow-hidden transition-transform duration-[5000ms] cubic-bezier(0.15, 0, 0.15, 1)"
+                    className="w-full h-full rounded-full border-[12px] border-slate-50 shadow-[0_20px_50px_rgba(0,0,0,0.15),inset_0_0_40px_rgba(0,0,0,0.05)] relative overflow-hidden transition-transform duration-[5000ms] ease-[cubic-bezier(0.2,0,0,1)]"
                     style={{ transform: `rotate(${rotation}deg)` }}
                 >
                     {config.options.map((opt, i) => {
@@ -117,62 +117,70 @@ export default function RouletteModal({ isOpen, onClose, config, onWin }: Roulet
                                 style={{ 
                                     backgroundColor: opt.color,
                                     transform: `rotate(${i * degree}deg) skewY(${90 - degree}deg)`,
-                                    boxShadow: 'inset 0 0 40px rgba(0,0,0,0.1)'
+                                    boxShadow: 'inset 0 0 60px rgba(0,0,0,0.1)'
                                 }}
                             >
-                                {/* O texto agora está em um container separado que compensa o skew e rotaciona para o centro da fatia */}
                                 <div 
-                                    className="absolute left-[-100%] w-[200%] h-full flex items-start justify-center pt-8"
+                                    className="absolute left-[-100%] w-[200%] h-full flex items-start justify-center pt-10"
                                     style={{ 
                                         transform: `skewY(-${90 - degree}deg) rotate(${degree / 2}deg)`,
                                     }}
                                 >
-                                    <span className="text-[11px] font-black text-white uppercase tracking-tighter drop-shadow-md max-w-[70px] leading-none">
+                                    <span className="text-[10px] font-black text-white uppercase tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] max-w-[60px] leading-none text-center">
                                         {opt.label}
                                     </span>
                                 </div>
                             </div>
                         );
                     })}
-                    
-                    {/* Centro da Roda */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                         <div className="w-20 h-20 bg-white rounded-full shadow-2xl z-10 border-[6px] border-slate-100 flex items-center justify-center">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg">
-                                <Trophy size={24} />
-                            </div>
-                         </div>
-                    </div>
+                </div>
+
+                {/* Botão Central "GIRAR" */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                     <button 
+                        onClick={spin}
+                        disabled={isSpinning || !!result}
+                        className={`
+                            w-24 h-24 bg-white rounded-full shadow-[0_15px_30px_rgba(0,0,0,0.2)] z-40 border-[8px] border-slate-50 
+                            flex flex-col items-center justify-center transition-all active:scale-90 pointer-events-auto
+                            ${isSpinning ? 'opacity-100 cursor-not-allowed' : 'hover:scale-105 cursor-pointer'}
+                        `}
+                     >
+                        {isSpinning ? (
+                            <Loader2 className="animate-spin text-purple-600" size={32} />
+                        ) : result ? (
+                            <Trophy className="text-emerald-500" size={32} />
+                        ) : (
+                            <>
+                                <RotateCw className="text-purple-600 mb-1" size={24} />
+                                <span className="text-[10px] font-black text-slate-800 tracking-widest uppercase">Girar</span>
+                            </>
+                        )}
+                     </button>
                 </div>
             </div>
 
             <div className="pt-2">
                 {result ? (
-                    <div className="animate-in slide-in-from-bottom duration-500">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Resultado Sorteado!</p>
-                        <div className={`text-2xl font-black py-4 px-8 rounded-2xl inline-block ${result.type === 'LOSE' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                    <div className="animate-in slide-in-from-bottom duration-700">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 italic">Seu prêmio foi selecionado!</p>
+                        <div className={`text-xl font-black py-4 px-10 rounded-2xl inline-flex items-center gap-3 shadow-sm ${result.type === 'LOSE' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                            {result.type !== 'LOSE' && <Trophy size={20} />}
                             {result.label}
                         </div>
                     </div>
                 ) : (
-                    <button 
-                        onClick={spin}
-                        disabled={isSpinning}
-                        className="w-full bg-slate-900 text-white py-6 rounded-2xl text-xs font-black tracking-[0.2em] hover:bg-brand transition-all shadow-2xl shadow-slate-900/20 active:scale-95 disabled:opacity-50 disabled:grayscale"
-                    >
-                        {isSpinning ? (
-                           <div className="flex items-center justify-center gap-3">
-                              <Loader2 className="animate-spin" size={18} />
-                              <span>SORTEANDO...</span>
-                           </div>
-                        ) : "GIRAR A ROLETA!"}
-                    </button>
+                   <p className="text-[11px] font-bold text-slate-400 leading-relaxed max-w-[200px] mx-auto uppercase tracking-tighter">
+                      Toque no botão central <br/> para sortear seu prêmio
+                   </p>
                 )}
             </div>
             
-            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest italic">
-               * Caso feche a página, o resultado será mantido.
-            </p>
+            <div className="pt-4 border-t border-slate-50">
+               <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+                  A sorte está lançada! Aproveite.
+               </p>
+            </div>
         </div>
       </div>
     </div>
