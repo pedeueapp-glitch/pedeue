@@ -12,9 +12,11 @@ import {
   Percent,
   Truck,
   XCircle,
-  Palette
+  Palette,
+  Play
 } from "lucide-react";
 import toast from "react-hot-toast";
+import RouletteModal from "@/components/RouletteModal";
 
 interface RouletteOption {
   label: string;
@@ -27,6 +29,7 @@ interface RouletteOption {
 export default function RouletteConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testMode, setTestMode] = useState(false);
   const [config, setConfig] = useState({
     active: false,
     minOrderValue: 50,
@@ -57,6 +60,11 @@ export default function RouletteConfigPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const testRoulette = () => {
+    if (config.options.length === 0) return toast.error("Adicione opções para testar");
+    setTestMode(true);
   };
 
   const addOption = () => {
@@ -100,14 +108,24 @@ export default function RouletteConfigPage() {
           <p className="text-slate-400 text-xs font-medium">Configure prêmios e gamificação para seus clientes.</p>
         </div>
 
-        <button 
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-xs font-black tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
-        >
-          {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-          {saving ? "SALVANDO..." : "SALVAR CONFIGURAÇÃO"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={testRoulette}
+            className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-black tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg"
+          >
+            <Play size={16} />
+            TESTAR ROLETA
+          </button>
+
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-xs font-black tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+          >
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+            {saving ? "SALVANDO..." : "SALVAR CONFIGURAÇÃO"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -272,6 +290,16 @@ export default function RouletteConfigPage() {
            </div>
         </div>
       </div>
+
+      <RouletteModal 
+        isOpen={testMode}
+        onClose={() => setTestMode(false)}
+        config={{ ...config, active: true }}
+        onWin={(prize) => {
+          toast.success(`Teste: Ganhou ${prize.label}`);
+          setTimeout(() => setTestMode(false), 2000);
+        }}
+      />
     </div>
   );
 }
