@@ -111,8 +111,6 @@ interface StoreData {
 }
 
 export default function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: string }) {
-  console.log("[DEBUG] Renderizando StorefrontClient para slug:", slug);
-  console.log("[DEBUG] Definindo estados...");
   const [store, setStore] = useState<StoreData | null>(initialStore);
   const [loading, setLoading] = useState(!initialStore);
   const [notFound, setNotFound] = useState(false);
@@ -122,13 +120,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [showStoreInfo, setShowStoreInfo] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  console.log("[DEBUG] Estados definidos.");
-
   const [activeUpsellRuleId, setActiveUpsellRuleId] = useState<string | null>(null);
-  console.log("[DEBUG] State 2 definido");
 
   const maskPhone = (value: string) => {
     return value
@@ -143,15 +135,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [phoneInput, setPhoneInput] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (selectedProduct || cartOpen || showUpsell || showStoreInfo) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [selectedProduct, cartOpen, showUpsell, showStoreInfo]);
+
 
   const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">("DELIVERY");
   const [selectedArea, setSelectedArea] = useState<DeliveryArea | null>(null);
@@ -174,9 +158,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [productObservations, setProductObservations] = useState("");
   const [currentRestaurantBanner, setCurrentRestaurantBanner] = useState(0);
 
-  console.log("[DEBUG] Antes de useCartStore");
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount, setStoreSlug, getItemQty } = useCartStore();
-  console.log("[DEBUG] Depois de useCartStore");
   const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   console.log("[DEBUG] Depois de categoryRefs");
 
@@ -435,6 +417,20 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   const [showUpsell, setShowUpsell] = useState<{ rule: any, product: any } | null>(null);
 
+  // useEffects moved here to avoid Temporal Dead Zone (TDZ)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (selectedProduct || cartOpen || showUpsell || showStoreInfo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [selectedProduct, cartOpen, showUpsell, showStoreInfo]);
+
   function confirmAddWithPricing() {
     if (!selectedProduct) return;
 
@@ -650,7 +646,6 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     </div>
   );
 
-  console.log("[DEBUG] Store validada, tipo:", store.storeType);
   if (store.storeType === "SHOWCASE") {
     const allProducts = store.category.flatMap(c =>
       c.product.map((p: any) => ({
@@ -734,9 +729,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
   const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
   const total = subtotal + currentFee;
-  console.log("[DEBUG] Calculando primaryColor...");
   const primaryColor = store.primaryColor || "#f97316";
-  console.log("[DEBUG] Primary color definida:", primaryColor);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>
