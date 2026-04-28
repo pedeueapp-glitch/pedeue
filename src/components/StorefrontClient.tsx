@@ -112,6 +112,7 @@ interface StoreData {
 
 export default function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: string }) {
   console.log("[DEBUG] Renderizando StorefrontClient para slug:", slug);
+  console.log("[DEBUG] Definindo estados...");
   const [store, setStore] = useState<StoreData | null>(initialStore);
   const [loading, setLoading] = useState(!initialStore);
   const [notFound, setNotFound] = useState(false);
@@ -124,8 +125,10 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  console.log("[DEBUG] Estados definidos.");
 
   const [activeUpsellRuleId, setActiveUpsellRuleId] = useState<string | null>(null);
+  console.log("[DEBUG] State 2 definido");
 
   const maskPhone = (value: string) => {
     return value
@@ -171,8 +174,11 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [productObservations, setProductObservations] = useState("");
   const [currentRestaurantBanner, setCurrentRestaurantBanner] = useState(0);
 
+  console.log("[DEBUG] Antes de useCartStore");
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount, setStoreSlug, getItemQty } = useCartStore();
+  console.log("[DEBUG] Depois de useCartStore");
   const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  console.log("[DEBUG] Depois de categoryRefs");
 
   useEffect(() => {
     const savedCustomer = localStorage.getItem('customer_data');
