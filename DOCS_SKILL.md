@@ -26,6 +26,16 @@ O sistema adapta sua interface e lógica baseado no campo `storeType` do banco d
   - Focado em orçamentos e agendamentos.
   - Permite campos personalizados para descrição de serviços.
 
+### 🎭 2.1 Comportamento Dinâmico da UI
+A interface se adapta automaticamente para cada tipo de loja através do `Sidebar.tsx` e componentes de PDV:
+- **Sidebar Adaptável:** 
+  - Em `RESTAURANT`, mostra "Mesas", "Garçons" e "Taxas".
+  - Em `SHOWCASE`, oculta itens de alimentação e foca em "Vendas Vitrine".
+  - Em `SERVICE`, prioriza "Orçamentos" e "Calendário".
+- **PDV Inteligente:** 
+  - O sistema alterna entre `PDVComponent.tsx` (Restaurante), `RetailPDV.tsx` (Vitrine) e `ServicePDV.tsx` (Serviços).
+- **Botões de Ação:** O botão principal de "Ver Site" no Sidebar altera o link e o ícone (ex: "Ver Vitrine" vs "Ver Cardápio").
+
 ## 💼 3. Papéis e Permissões (Roles)
 - **MERCHANT (Lojista):** Acessa `/dashboard`. Possui uma loja vinculada.
 - **AFFILIATE (Afiliado):** Acessa `/dashboard/afiliado`. Não possui loja. Ganha comissão vitalícia sobre indicações.
