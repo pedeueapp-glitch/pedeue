@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     if (!isSystemRoute && pathname !== '/' && isValidSlug) {
       try {
         const targetHost = hostname.includes('localhost') ? `${slug}.localhost:3000` : `${slug}.${rootDomain}`;
-        const redirectUrl = new URL(`${url.protocol}//${targetHost}${pathname.replace(`/${slug}`, '')}`);
+        const redirectUrl = new URL(`${url.protocol}//${targetHost}${pathname.replace(`/${slug}`, '')}${url.search}`);
         const res = NextResponse.redirect(redirectUrl);
         res.headers.set('Access-Control-Allow-Origin', origin);
         return res;

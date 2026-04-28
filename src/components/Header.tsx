@@ -25,7 +25,7 @@ export function Header({ title }: HeaderProps) {
           <h1 className="text-sm font-bold text-slate-800 tracking-tight lg:text-base">
             {title}
           </h1>
-          <p className="text-[10px] hidden lg:block text-slate-400 font-medium">Controle total da sua operação. <span className="text-[9px] opacity-30">v1.1.0</span></p>
+          <p className="text-[10px] hidden lg:block text-slate-400 font-medium">Controle total da sua operação. <span className="text-[9px] opacity-30">v1.1.1</span></p>
         </div>
       </div>
 

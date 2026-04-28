@@ -232,7 +232,9 @@ export default function MarketingPage() {
                        <div className="space-y-2 mb-5">
                           <button 
                             onClick={() => {
-                              const url = `${window.location.protocol}//${window.location.host}/${storeSlug}?ref=${aff.code}`;
+                              const isLocal = window.location.hostname === 'localhost';
+                              const baseUrl = isLocal ? `${storeSlug}.localhost:3000` : `${storeSlug}.pedeue.com`;
+                              const url = `${window.location.protocol}//${baseUrl}/?ref=${aff.code}`;
                               navigator.clipboard.writeText(url);
                               toast.success("Link do influenciador copiado!");
                             }}
