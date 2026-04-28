@@ -672,6 +672,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         ).join(", ");
         msg += `  └ ${choicesText}\n`;
       } else if (item.notes) {
+        msg += `  _Nota: ${item.notes}_\n`;
+      }
       msg += "\n";
     });
 
