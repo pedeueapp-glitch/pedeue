@@ -5,14 +5,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // PATCH — marcar comissão como paga
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "SUPERADMIN") {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const { action } = await req.json().catch(() => ({ action: "approve" }));
 
     // Buscar detalhes da comissão e do afiliado
