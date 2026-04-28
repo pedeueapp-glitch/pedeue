@@ -7,12 +7,10 @@ import {
   ShieldCheck, 
   Save, 
   Loader2, 
-  ArrowLeft,
   Fingerprint,
   Banknote
 } from "lucide-react";
 import toast from "react-hot-toast";
-import Link from "next/link";
 
 export default function AffiliateSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -126,53 +124,48 @@ export default function AffiliateSettingsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
-      <div className="p-6 lg:p-10 max-w-4xl mx-auto w-full space-y-10">
+    <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50 pt-6 px-4">
+      <div className="max-w-5xl mx-auto w-full space-y-6">
         
-        <div className="space-y-1">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-purple-600 text-xs font-bold uppercase tracking-widest transition-colors mb-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao Painel
-          </Link>
-          <h1 className="text-4xl font-black text-slate-800 tracking-tighter">Configurações do Afiliado</h1>
-          <p className="text-slate-400 text-sm font-medium">Mantenha seus dados de pagamento e perfil sempre atualizados.</p>
+        <div className="space-y-0.5">
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Configurações de Parceiro</h1>
+          <p className="text-slate-400 text-xs font-medium">Dados de perfil e recebimento via PIX.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Formulário Principal */}
-            <div className="lg:col-span-2 space-y-8">
-                <form onSubmit={handleSubmit} className="bg-white rounded-[40px] border border-slate-100 p-8 lg:p-12 space-y-10 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="space-y-8">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
-                            <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <input className="input-field pl-12" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Seu nome" required />
+            <div className="lg:col-span-2 space-y-6">
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 space-y-8 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                <div className="relative">
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                                    <input className="input-field !py-2.5 pl-10 text-sm" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Seu nome" required />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Seu CPF</label>
-                            <div className="relative">
-                                <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <input 
-                                    className="input-field pl-12" 
-                                    value={maskCPF(formData.cpf)} 
-                                    onChange={e => setFormData({...formData, cpf: e.target.value})} 
-                                    placeholder="000.000.000-00" 
-                                    required 
-                                />
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Seu CPF</label>
+                                <div className="relative">
+                                    <Fingerprint className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                                    <input 
+                                        className="input-field !py-2.5 pl-10 text-sm" 
+                                        value={maskCPF(formData.cpf)} 
+                                        onChange={e => setFormData({...formData, cpf: e.target.value})} 
+                                        placeholder="000.000.000-00" 
+                                        required 
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tipo de Chave PIX</label>
                                 <select 
-                                    className="input-field px-4" 
+                                    className="input-field !py-2.5 px-3 text-sm appearance-none bg-white" 
                                     value={formData.pixKeyType} 
                                     onChange={e => setFormData({...formData, pixKeyType: e.target.value})}
                                 >
@@ -183,12 +176,12 @@ export default function AffiliateSettingsPage() {
                                 </select>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Sua Chave PIX</label>
                                 <div className="relative">
-                                    <Banknote className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                    <Banknote className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                                     <input 
-                                        className="input-field pl-12 border-emerald-100 focus:border-emerald-500" 
+                                        className="input-field !py-2.5 pl-10 text-sm border-emerald-50 focus:border-emerald-500" 
                                         value={formData.pixKey} 
                                         onChange={e => setFormData({...formData, pixKey: e.target.value})} 
                                         placeholder="Digite sua chave" 
@@ -199,28 +192,25 @@ export default function AffiliateSettingsPage() {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={saving} className="w-full bg-purple-600 text-white py-5 rounded-[24px] text-xs font-black tracking-widest hover:bg-purple-700 transition-all shadow-2xl shadow-purple-500/20 flex items-center justify-center gap-3">
-                        {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                    <button type="submit" disabled={saving} className="w-full bg-purple-600 text-white py-3.5 rounded-xl text-xs font-black tracking-widest hover:bg-purple-700 transition-all shadow-md flex items-center justify-center gap-2">
+                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                         {saving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
                     </button>
                 </form>
             </div>
 
             {/* Segurança Lateral */}
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
-                <div className="bg-white rounded-[40px] border border-slate-100 p-8 space-y-8 shadow-sm">
-                    <div className="space-y-2">
-                        <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
-                            <Lock size={20} />
-                        </div>
-                        <h3 className="text-lg font-black text-slate-800 tracking-tight">Alterar Senha</h3>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed">Mantenha seu acesso seguro atualizando sua senha periodicamente.</p>
+            <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6 shadow-sm">
+                    <div className="space-y-1">
+                        <h3 className="text-base font-black text-slate-800 tracking-tight">Alterar Senha</h3>
+                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Mantenha seu acesso seguro.</p>
                     </div>
 
-                    <form onSubmit={handleChangePassword} className="space-y-4">
+                    <form onSubmit={handleChangePassword} className="space-y-3">
                         <input 
                             type="password" 
-                            className="input-field !py-3 !text-xs" 
+                            className="input-field !py-2.5 !text-xs" 
                             placeholder="Senha Atual"
                             value={passwordData.currentPassword}
                             onChange={e => setPasswordData({...passwordData, currentPassword: e.target.value})}
@@ -228,7 +218,7 @@ export default function AffiliateSettingsPage() {
                         />
                         <input 
                             type="password" 
-                            className="input-field !py-3 !text-xs" 
+                            className="input-field !py-2.5 !text-xs" 
                             placeholder="Nova Senha"
                             value={passwordData.newPassword}
                             onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})}
@@ -236,7 +226,7 @@ export default function AffiliateSettingsPage() {
                         />
                         <input 
                             type="password" 
-                            className="input-field !py-3 !text-xs" 
+                            className="input-field !py-2.5 !text-xs" 
                             placeholder="Confirmar Nova"
                             value={passwordData.confirmPassword}
                             onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})}
@@ -245,9 +235,9 @@ export default function AffiliateSettingsPage() {
                         <button 
                             type="submit" 
                             disabled={changingPassword}
-                            className="w-full py-4 bg-[#0f172a] text-white rounded-2xl font-black tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-navy/90 transition-all shadow-lg disabled:opacity-50"
+                            className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold tracking-widest text-[9px] flex items-center justify-center gap-2 hover:bg-slate-900 transition-all disabled:opacity-50"
                         >
-                            {changingPassword ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                            {changingPassword ? <Loader2 className="animate-spin" size={14} /> : <ShieldCheck size={14} />}
                             {changingPassword ? "..." : "ATUALIZAR SENHA"}
                         </button>
                     </form>
