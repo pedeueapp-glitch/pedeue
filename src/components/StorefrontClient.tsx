@@ -277,11 +277,20 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         setStore(data);
         setStoreSlug(slug);
         
-        // Parse da Roleta
+        // Parse da Roleta com Robustez
         if (data.rouletteConfig) {
           try {
-            setRouletteConfig(JSON.parse(data.rouletteConfig));
-          } catch (e) { console.error("Error parsing roulette", e); }
+            const config = typeof data.rouletteConfig === 'string' 
+              ? JSON.parse(data.rouletteConfig) 
+              : data.rouletteConfig;
+            
+            console.log("[ROULETTE_DEBUG] Config carregada:", config);
+            setRouletteConfig(config);
+          } catch (e) { 
+            console.error("[ROULETTE_DEBUG] Erro no parse:", e); 
+          }
+        } else {
+          console.log("[ROULETTE_DEBUG] Nenhuma config encontrada na loja.");
         }
 
         if (data.category && data.category.length > 0) {
@@ -1139,29 +1148,35 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
               {/* Barra de Progresso da Roleta - GLOBAL NO CARRINHO */}
-              {rouletteConfig?.active && !wonPrize && (
-                <div className="mb-6 bg-purple-50 border border-purple-100 p-5 rounded-2xl animate-in slide-in-from-top duration-500">
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                        <Sparkles size={16} className="text-purple-600" />
+              {(() => {
+                const isActive = rouletteConfig?.active === true || rouletteConfig?.active === "true";
+                if (isActive && !wonPrize) {
+                  return (
+                    <div className="mb-6 bg-purple-50 border border-purple-100 p-5 rounded-2xl animate-in slide-in-from-top duration-500">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                            <Sparkles size={16} className="text-purple-600" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            {subtotal >= (parseFloat(rouletteConfig.minOrderValue) || 0)
+                              ? "🎰 Você desbloqueou o giro da roleta!"
+                              : `Faltam R$ ${((parseFloat(rouletteConfig.minOrderValue) || 0) - subtotal).toFixed(2).replace('.', ',')} para girar a roleta!`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-1 rounded">R$ {parseFloat(rouletteConfig.minOrderValue).toFixed(2)}</span>
                       </div>
-                      <span className="text-xs font-bold text-slate-700">
-                        {subtotal >= rouletteConfig.minOrderValue
-                          ? "🎰 Você desbloqueou o giro da roleta!"
-                          : `Faltam R$ ${(rouletteConfig.minOrderValue - subtotal).toFixed(2).replace('.', ',')} para girar a roleta!`}
-                      </span>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 transition-all duration-700 ease-out"
+                          style={{ width: `${Math.min((subtotal / (parseFloat(rouletteConfig.minOrderValue) || 1)) * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-1 rounded">R$ {rouletteConfig.minOrderValue.toFixed(2)}</span>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-purple-500 transition-all duration-700 ease-out"
-                      style={{ width: `${Math.min((subtotal / rouletteConfig.minOrderValue) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+                  );
+                }
+                return null;
+              })()}
 
               {checkoutStep === "identify" && (
                 <div className="space-y-8">
@@ -1220,7 +1235,9 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                         </div>
                         <button
                           onClick={() => {
-                            if (rouletteConfig?.active && subtotal >= rouletteConfig.minOrderValue && !hasSpun) {
+                            const minVal = parseFloat(rouletteConfig?.minOrderValue) || 0;
+                            const isActive = rouletteConfig?.active === true || rouletteConfig?.active === "true";
+                            if (isActive && subtotal >= minVal && !hasSpun) {
                                 setShowRoulette(true);
                             } else {
                                 setCheckoutStep("payment");
