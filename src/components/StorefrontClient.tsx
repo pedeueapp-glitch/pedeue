@@ -913,24 +913,25 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       )}
 
       {selectedProduct && (
-        <div className="fixed inset-0 bg-white z-[100] flex flex-col animate-in fade-in slide-in-from-bottom duration-300">
-          <div className="relative flex-1 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
+          <div className="relative w-full max-w-md bg-white h-[100dvh] flex flex-col shadow-2xl animate-slide-left">
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-6 right-6 z-50 w-12 h-12 bg-slate-900/10 hover:bg-slate-900/20 transition-all flex items-center justify-center rounded-full backdrop-blur-md"
+              className="absolute top-6 right-6 z-50 w-12 h-12 bg-slate-900/10 hover:bg-slate-900/20 transition-all flex items-center justify-center backdrop-blur-md"
             >
               <X size={24} className="text-slate-900" />
             </button>
 
-            <div className="flex-1 overflow-y-auto flex flex-col md:flex-row">
-              <div className="w-full md:w-[45%] h-48 md:h-full bg-slate-100 sticky top-0 md:relative z-10">
+            <div className="flex-1 overflow-y-auto">
+              <div className="w-full aspect-video bg-slate-100">
                 {selectedProduct.imageUrl ? (
                   <img src={selectedProduct.imageUrl} className="w-full h-full object-cover" alt="p" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-200 bg-slate-50"><Package size={48} /></div>
                 )}
               </div>
-              <div className="flex-1 p-8 overflow-y-auto">
+              <div className="p-6">
                 <div className="flex flex-col mb-4">
                   {selectedProduct.salePrice ? (
                     <div className="flex items-center gap-3">
@@ -942,15 +943,15 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                   )}
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">{selectedProduct.name}</h2>
-                <p className="text-slate-500 text-sm font-medium mb-4">{selectedProduct.description}</p>
+                <p className="text-slate-500 text-sm font-medium mb-6">{selectedProduct.description}</p>
 
-                <div className="space-y-10">
+                <div className="space-y-8">
                   {selectedProduct.optiongroup?.map((group: any) => {
                     const groupPriceCalc = group.priceCalculation || "SUM";
                     return (
                       <div key={group.id} className="border-l-4 p-4 border-brand bg-slate-50">
                         <div className="flex items-center gap-2 mb-4">
-                          <h4 className="font-bold text-slate-900 text-sm">{group.name}</h4>
+                          <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">{group.name}</h4>
                         </div>
                         <div className="space-y-1">
                           {group.option.map((opt: any) => {
@@ -976,63 +977,61 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                     );
                   })}
                 </div>
-                <div className="mt-10 space-y-3">
-                  <p className="text-xs font-semibold text-slate-400">Observações do Produto</p>
+                <div className="mt-8 space-y-3">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Observações do Produto</p>
                   <textarea
                     value={productObservations}
                     onChange={e => setProductObservations(e.target.value)}
                     placeholder="Ex: sem queijo, etc..."
-                    className="w-full bg-slate-50 border border-slate-200 p-4 text-sm focus:outline-none focus:border-brand rounded-xl min-h-[80px]"
+                    className="w-full bg-slate-50 border border-slate-200 p-4 text-sm focus:outline-none focus:border-brand rounded-none min-h-[100px]"
                   />
                 </div>
               </div>
             </div>
-            <div className="p-6 md:p-10 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.05)] relative z-20">
-              <div className="max-w-4xl mx-auto">
-                <button
-                  onClick={confirmAddWithPricing}
-                  disabled={!storeOpen}
-                  className="w-full bg-brand text-white py-4 md:py-8 flex items-center justify-between px-8 md:px-16 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-2xl md:rounded-3xl transition-all active:scale-[0.98] shadow-2xl shadow-brand/20"
-                >
-                  <div className="flex flex-col items-start leading-tight">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">{storeOpen ? "Confirmar e" : "Loja"}</span>
-                    <span className="font-black text-base md:text-xl">{storeOpen ? "Adicionar ao Pedido" : "Fechada"}</span>
-                  </div>
-                  <div className="flex flex-col items-end leading-tight">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Total Item</span>
-                    <span className="font-black text-xl md:text-3xl">R$ {(() => {
-                      const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
-                      let currentBasePrice = originalBasePrice;
-                      let sumOfAdicionais = 0;
-                      for (const group of selectedProduct.optiongroup || []) {
-                        const selected = selectedOptions[group.id] || [];
-                        if (selected.length === 0) continue;
-                        const calcType = group.priceCalculation || "SUM";
-                        if (calcType === "HIGHEST") {
-                          const highestOption = Math.max(...selected.map(o => Number(o.price)));
-                          if (highestOption > currentBasePrice) currentBasePrice = highestOption;
-                        } else if (calcType === "AVERAGE") {
-                          const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                          const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
-                          if (avg > currentBasePrice) currentBasePrice = avg;
-                        } else {
-                          sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                        }
+            <div className="p-6 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.05)] relative z-20">
+              <button
+                onClick={confirmAddWithPricing}
+                disabled={!storeOpen}
+                className="w-full bg-brand text-white py-6 flex items-center justify-between px-8 hover:brightness-110 disabled:opacity-50 disabled:grayscale rounded-none transition-all active:scale-[0.98] shadow-2xl shadow-brand/20"
+              >
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">{storeOpen ? "Confirmar e" : "Loja"}</span>
+                  <span className="font-black text-base">{storeOpen ? "Adicionar ao Pedido" : "Fechada"}</span>
+                </div>
+                <div className="flex flex-col items-end leading-tight">
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Total Item</span>
+                  <span className="font-black text-xl">R$ {(() => {
+                    const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
+                    let currentBasePrice = originalBasePrice;
+                    let sumOfAdicionais = 0;
+                    for (const group of selectedProduct.optiongroup || []) {
+                      const selected = selectedOptions[group.id] || [];
+                      if (selected.length === 0) continue;
+                      const calcType = group.priceCalculation || "SUM";
+                      if (calcType === "HIGHEST") {
+                        const highestOption = Math.max(...selected.map(o => Number(o.price)));
+                        if (highestOption > currentBasePrice) currentBasePrice = highestOption;
+                      } else if (calcType === "AVERAGE") {
+                        const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
+                        const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
+                        if (avg > currentBasePrice) currentBasePrice = avg;
+                      } else {
+                        sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
                       }
-                      return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
-                    })()}</span>
-                  </div>
-                </button>
-              </div>
+                    }
+                    return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
+                  })()}</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
-      )}
+      )              }}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
-          <div className="relative w-full max-w-md bg-white h-full flex flex-col shadow-2xl animate-slide-left">
+          <div className="relative w-full max-w-md bg-white h-[100dvh] flex flex-col shadow-2xl animate-slide-left">
 
             <div className="p-8 border-b-2 border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-4">

@@ -338,7 +338,7 @@ export default function ShowcaseCatalog({ store, products, categories }: Showcas
             </div>
 
             {/* Conteúdo */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col bg-white">
+            <div className="flex-1 p-6 md:p-10 flex flex-col bg-white">
                <div className="mb-8">
                  <span className="text-[9px] font-medium text-slate-300 tracking-widest mb-2 inline-block">
                     {categories.find(c => c.id === selectedProduct.categoryId)?.name}
@@ -415,6 +415,7 @@ export default function ShowcaseCatalog({ store, products, categories }: Showcas
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* FULLSCREEN ZOOM */}
