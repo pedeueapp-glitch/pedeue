@@ -6,7 +6,7 @@ import {
   ChevronLeft, X, CreditCard, Banknote, Smartphone, Trash2, Plus,
   PlusCircle, Hash, User, MapPin, Loader2, AlertCircle, Bike,
   Volume2, VolumeX, Navigation, Bell, Settings, Package, ChevronRight, Layers, RotateCcw,
-  Receipt, Barcode, ScrollText
+  Receipt, Barcode, ScrollText, Monitor
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Header } from "@/components/Header";
