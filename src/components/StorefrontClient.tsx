@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
+import RouletteModal from "@/components/RouletteModal";
 import { generatePixPayload, getPixQRCodeUrl } from "@/lib/pix-utils";
 
 interface Option {
@@ -157,8 +158,24 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [selectedOptions, setSelectedOptions] = useState<{ [groupId: string]: Option[] }>({});
   const [productObservations, setProductObservations] = useState("");
   const [currentRestaurantBanner, setCurrentRestaurantBanner] = useState(0);
+  
+  // Estados da Roleta
+  const [rouletteConfig, setRouletteConfig] = useState<any>(null);
+  const [showRoulette, setShowRoulette] = useState(false);
+  const [wonPrize, setWonPrize] = useState<any>(null);
+  const [hasSpun, setHasSpun] = useState(false);
 
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount, setStoreSlug, getItemQty } = useCartStore();
+  
+  const handleRouletteWin = (prize: any) => {
+    setWonPrize(prize);
+    setHasSpun(true);
+    setShowRoulette(false);
+    setCheckoutStep("payment");
+    if (prize.type !== 'LOSE') {
+      toast.success(`Parabéns! Você ganhou: ${prize.label}`, { duration: 5000 });
+    }
+  };
   const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   console.log("[DEBUG] Depois de categoryRefs");
 
@@ -239,6 +256,14 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         const data = await res.json();
         setStore(data);
         setStoreSlug(slug);
+        
+        // Parse da Roleta
+        if (data.rouletteConfig) {
+          try {
+            setRouletteConfig(JSON.parse(data.rouletteConfig));
+          } catch (e) { console.error("Error parsing roulette", e); }
+        }
+
         if (data.category && data.category.length > 0) {
           setActiveCategory(data.category[0].id);
         }
@@ -740,9 +765,23 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   const cartCount = getItemCount();
   const subtotal = getTotal();
-  const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
+  
+  // Lógica de Frete Grátis (Config Geral ou Roleta)
+  const isFreeByThreshold = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
+  const isFreeByRoulette = wonPrize?.type === "FREE_DELIVERY";
+  const isFreeShipping = isFreeByThreshold || isFreeByRoulette;
+
   const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
-  const total = subtotal + currentFee;
+  
+  // Cálculo de Descontos da Roleta
+  let discountAmount = 0;
+  if (wonPrize?.type === "PERCENT") {
+    discountAmount = subtotal * (parseFloat(wonPrize.value) / 100);
+  } else if (wonPrize?.type === "FIXED") {
+    discountAmount = parseFloat(wonPrize.value);
+  }
+
+  const total = Math.max(0, subtotal + currentFee - discountAmount);
   
   // Sanitização da cor primária para evitar injeção de CSS malicioso
   const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -1097,6 +1136,31 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                       </div>
                     </div>
                   )}
+
+                  {/* Barra de Progresso da Roleta */}
+                  {rouletteConfig?.active && !wonPrize && (
+                    <div className="bg-purple-50 border border-purple-100 p-5 rounded-2xl animate-in slide-in-from-top duration-500">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                            <Sparkles size={16} className="text-purple-600" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            {subtotal >= rouletteConfig.minOrderValue
+                              ? "🎰 Você desbloqueou o giro da roleta!"
+                              : `Faltam R$ ${(rouletteConfig.minOrderValue - subtotal).toFixed(2).replace('.', ',')} para você girar a roleta!`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-1 rounded">R$ {rouletteConfig.minOrderValue.toFixed(2)}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 transition-all duration-700 ease-out"
+                          style={{ width: `${Math.min((subtotal / rouletteConfig.minOrderValue) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-4">
                     {items.map(item => (
                       <div key={item.id} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl">
@@ -1128,7 +1192,13 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                           <p className="text-2xl font-black text-brand mt-4">Total: R$ {total.toFixed(2).replace('.', ',')}</p>
                         </div>
                         <button
-                          onClick={() => setCheckoutStep("payment")}
+                          onClick={() => {
+                            if (rouletteConfig?.active && subtotal >= rouletteConfig.minOrderValue && !hasSpun) {
+                                setShowRoulette(true);
+                            } else {
+                                setCheckoutStep("payment");
+                            }
+                          }}
                           className="w-full bg-brand py-6 text-xs font-bold text-white flex items-center justify-center gap-3 hover:brightness-110 transition-all rounded-2xl shadow-lg shadow-brand/20"
                         >
                           Continuar para Pagamento
@@ -1304,6 +1374,17 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                   </div>
 
                   <div className="pt-6 border-t border-slate-100 space-y-4">
+                    {wonPrize && wonPrize.type !== 'LOSE' && (
+                       <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-xl border border-emerald-100 animate-in slide-in-from-right duration-500">
+                          <div className="flex items-center gap-2">
+                             <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                                <Trophy size={12} />
+                             </div>
+                             <span className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Prêmio: {wonPrize.label}</span>
+                          </div>
+                          <span className="text-xs font-black text-emerald-600">- R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+                       </div>
+                    )}
                     <div className="flex justify-between text-2xl font-black text-slate-900 tracking-tighter">
                       <span>TOTAL FINAL</span>
                       <span className="text-brand">R$ {total.toFixed(2).replace('.', ',')}</span>
@@ -1452,6 +1533,12 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
         .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
       `}</style>
+      <RouletteModal 
+        isOpen={showRoulette} 
+        onClose={() => { setShowRoulette(false); setCheckoutStep("payment"); setHasSpun(true); }}
+        config={rouletteConfig}
+        onWin={handleRouletteWin}
+      />
     </div>
   );
 }

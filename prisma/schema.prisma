@@ -247,6 +247,7 @@ model store {
   pixMerchantCity       String?
   freeDeliveryThreshold Float                  @default(0)
   platformAffiliateId   String?
+  rouletteConfig        String?                @db.LongText
   affiliates            affiliate[]
   cashiersession        cashiersession[]
   category              category[]
