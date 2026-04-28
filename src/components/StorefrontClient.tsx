@@ -696,6 +696,31 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     );
   }
 
+  const calculateItemTotal = () => {
+    if (!selectedProduct) return "0,00";
+    const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
+    let currentBasePrice = originalBasePrice;
+    let sumOfAdicionais = 0;
+
+    for (const group of selectedProduct.optiongroup || []) {
+      const selected = selectedOptions[group.id] || [];
+      if (selected.length === 0) continue;
+
+      const calcType = group.priceCalculation || "SUM";
+      if (calcType === "HIGHEST") {
+        const highestOption = Math.max(...selected.map(o => Number(o.price)));
+        if (highestOption > currentBasePrice) currentBasePrice = highestOption;
+      } else if (calcType === "AVERAGE") {
+        const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
+        const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
+        if (avg > currentBasePrice) currentBasePrice = avg;
+      } else {
+        sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
+      }
+    }
+    return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
+  };
+
   const cartCount = getItemCount();
   const subtotal = getTotal();
   const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
@@ -914,7 +939,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       )}
 
       {selectedProduct && (
-        <div className="inset-0 z-[100] flex justify-end">
+        <div className="fixed inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
           <div className="relative w-full max-w-md bg-white h-[100dvh] flex flex-col shadow-2xl animate-slide-left">
             <button
@@ -1001,27 +1026,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                 </div>
                 <div className="flex flex-col items-end leading-tight">
                   <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Total Item</span>
-                  <span className="font-black text-xl">R$ {(() => {
-                    const originalBasePrice = selectedProduct.salePrice || selectedProduct.price;
-                    let currentBasePrice = originalBasePrice;
-                    let sumOfAdicionais = 0;
-                    for (const group of selectedProduct.optiongroup || []) {
-                      const selected = selectedOptions[group.id] || [];
-                      if (selected.length === 0) continue;
-                      const calcType = group.priceCalculation || "SUM";
-                      if (calcType === "HIGHEST") {
-                        const highestOption = Math.max(...selected.map(o => Number(o.price)));
-                        if (highestOption > currentBasePrice) currentBasePrice = highestOption;
-                      } else if (calcType === "AVERAGE") {
-                        const sumOptions = selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                        const avg = (originalBasePrice + sumOptions) / (selected.length + 1);
-                        if (avg > currentBasePrice) currentBasePrice = avg;
-                      } else {
-                        sumOfAdicionais += selected.reduce((acc, opt) => acc + Number(opt.price), 0);
-                      }
-                    }
-                    return (currentBasePrice + sumOfAdicionais).toFixed(2).replace('.', ',');
-                  })()}</span>
+                  <span className="font-black text-xl">R$ {calculateItemTotal()}</span>
                 </div>
               </button>
             </div>
@@ -1413,7 +1418,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
            padding: 0.85rem 1rem;
            font-size: 16px;
            font-weight: 700;
-           text-transform:;
+            text-transform: uppercase;
            outline: none;
            transition: all 0.2s;
            border-radius: 8px;
