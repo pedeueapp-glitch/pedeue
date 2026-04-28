@@ -90,6 +90,28 @@ export default function RouletteConfigPage() {
     setConfig({ ...config, options: newOptions });
   };
 
+  // Helper para desenhar fatias SVG
+  const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+        const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+        return {
+            x: centerX + radius * Math.cos(angleInRadians),
+            y: centerY + radius * Math.sin(angleInRadians)
+        };
+    };
+
+    const start = polarToCartesian(x, y, radius, endAngle);
+    const end = polarToCartesian(x, y, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+    return [
+        "M", start.x, start.y, 
+        "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+        "L", x, y,
+        "Z"
+    ].join(" ");
+  };
+
   if (loading) return (
     <div className="flex-1 flex items-center justify-center p-20">
       <Loader2 className="animate-spin text-purple-600" />
@@ -162,39 +184,63 @@ export default function RouletteConfigPage() {
               </div>
            </div>
 
-           {/* Preview Simples */}
+           {/* Visual da Roleta SVG */}
            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Visualização</h3>
-              <div className="aspect-square relative flex items-center justify-center">
-                 <div className="w-full h-full rounded-full border-4 border-slate-50 relative overflow-hidden flex items-center justify-center">
-                    {config.options.length > 0 ? (
-                        <div className="w-full h-full relative" style={{ transform: 'rotate(0deg)' }}>
-                             {config.options.map((opt, i) => {
-                                 const degree = 360 / config.options.length;
-                                 return (
-                                    <div 
-                                        key={i}
-                                        className="absolute top-0 left-1/2 w-1/2 h-full origin-left"
-                                        style={{ 
-                                            backgroundColor: opt.color, 
-                                            transform: `rotate(${i * degree}deg) skewY(${90 - degree}deg)`,
-                                            opacity: 0.8
-                                        }}
-                                    />
-                                 );
-                             })}
-                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center z-10 border-2 border-slate-50">
-                                   <Sparkles size={20} className="text-purple-500" />
-                                </div>
-                             </div>
-                        </div>
-                    ) : (
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Sem Opções</p>
-                    )}
+              <div className="relative aspect-square w-full max-w-[280px] mx-auto">
+                 {/* Seta Indicadora */}
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
+                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-red-500 drop-shadow-md"></div>
                  </div>
-                 {/* Seta */}
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-red-500 z-20"></div>
+                 
+                 <div className="w-full h-full">
+                    <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible drop-shadow-xl">
+                        {config.options.length > 0 ? config.options.map((opt, i) => {
+                            const count = config.options.length;
+                            const step = 360 / count;
+                            const startAngle = i * step;
+                            const endAngle = (i + 1) * step;
+                            
+                            const textAngle = startAngle + step / 2;
+                            const textRadius = 35;
+                            const textX = 50 + textRadius * Math.cos(((textAngle - 90) * Math.PI) / 180.0);
+                            const textY = 50 + textRadius * Math.sin(((textAngle - 90) * Math.PI) / 180.0);
+
+                            return (
+                                <g key={i}>
+                                    <path 
+                                        d={describeArc(50, 50, 48, startAngle, endAngle)} 
+                                        fill={opt.color}
+                                        stroke="#fff"
+                                        strokeWidth="0.5"
+                                    />
+                                    <text 
+                                        x={textX} 
+                                        y={textY} 
+                                        fill="white" 
+                                        fontSize="3" 
+                                        fontWeight="900" 
+                                        textAnchor="middle" 
+                                        dominantBaseline="middle"
+                                        transform={`rotate(${textAngle}, ${textX}, ${textY})`}
+                                        style={{ textTransform: 'uppercase', pointerEvents: 'none' }}
+                                    >
+                                        {opt.label}
+                                    </text>
+                                </g>
+                            );
+                        }) : (
+                          <circle cx="50" cy="50" r="48" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 2" />
+                        )}
+                    </svg>
+                 </div>
+
+                 {/* Botão Central */}
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-white rounded-full shadow-lg z-10 border-4 border-slate-50 flex items-center justify-center">
+                       <Sparkles size={20} className="text-purple-500" />
+                    </div>
+                 </div>
               </div>
            </div>
         </div>
@@ -214,7 +260,7 @@ export default function RouletteConfigPage() {
            <div className="space-y-3">
               {config.options.map((opt, index) => (
                  <div key={index} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-end md:items-center animate-in slide-in-from-right-2 duration-300">
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[2fr_1.2fr_1.2fr_auto] gap-4 w-full items-center">
                        <div className="space-y-1">
                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Rótulo (Texto)</label>
                           <input 
@@ -235,7 +281,7 @@ export default function RouletteConfigPage() {
                              <option value="PERCENT">% Desconto</option>
                              <option value="FIXED">R$ Desconto</option>
                              <option value="FREE_DELIVERY">Taxa Grátis</option>
-                             <option value="LOSE">Você Perdeu</option>
+                             <option value="LOSE">Não foi desta vez</option>
                           </select>
                        </div>
 
@@ -259,17 +305,15 @@ export default function RouletteConfigPage() {
                           </div>
                        </div>
 
-                       <div className="space-y-1">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                             <Palette size={10} /> Cor
-                          </label>
-                          <input 
-                            type="color"
-                            className="w-full h-8 rounded-lg cursor-pointer border border-slate-100" 
-                            value={opt.color} 
-                            onChange={e => updateOption(index, { color: e.target.value })}
-                          />
-                       </div>
+                        <div className="flex flex-col items-center gap-1">
+                           <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Cor</label>
+                           <input 
+                             type="color"
+                             className="w-8 h-8 rounded-lg cursor-pointer border-2 border-white shadow-sm ring-1 ring-slate-200" 
+                             value={opt.color} 
+                             onChange={e => updateOption(index, { color: e.target.value })}
+                           />
+                        </div>
                     </div>
 
                     <button 

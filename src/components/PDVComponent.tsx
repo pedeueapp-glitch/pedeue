@@ -280,11 +280,37 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
       await fetchData(loadedCashier?.openedAt ?? null); // passa a data diretamente
     }
     init();
-
-    // Polling de 60s usa o estado `cashier` que já foi populado na init
     const interval = setInterval(() => fetchData(), 60000);
     return () => clearInterval(interval);
   }, [fetchData, fetchCashier, fetchSettings]);
+
+  const refreshPrinters = () => {
+    const isElectron = typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
+    if (isElectron && typeof (window as any).require === 'function') {
+      try {
+        const { ipcRenderer } = (window as any).require('electron');
+        ipcRenderer.invoke('get-printers').then((printers: any[]) => {
+          setAvailablePrinters(printers);
+          toast.success("Lista de impressoras atualizada!");
+        });
+      } catch (e) {
+        toast.error("Erro ao listar impressoras");
+      }
+    }
+  };
+
+  const testPrint = () => {
+    const testOrder = {
+      orderNumber: "TESTE",
+      customerName: "Impressão de Teste",
+      createdAt: new Date().toISOString(),
+      items: [{ productName: "Produto de Teste", quantity: 1, price: 0.01 }],
+      total: 0.01,
+      paymentMethod: "TESTE",
+      orderType: "RETAIL"
+    };
+    autoPrintOrder(testOrder);
+  };
 
   const cancelItem = async (itemId: string, isCanceled: boolean) => {
     const toastId = toast.loading("Atualizando item...");
@@ -2025,25 +2051,49 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                     </div>
                   )}
 
-                  {availablePrinters.length > 0 && (
+                  {typeof window !== 'undefined' && (window as any).require && (
                     <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/50 space-y-3">
-                      <p className="text-xs font-black text-slate-700 ">Impressora Térmica</p>
-                      <select
-                        value={selectedPrinter}
-                        onChange={(e) => {
-                          setSelectedPrinter(e.target.value);
-                          localStorage.setItem('thermal_printer_name', e.target.value);
-                          toast.success("Impressora atualizada!");
-                        }}
-                        className="w-full p-4 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-purple-500/30 appearance-none cursor-pointer"
-                      >
-                        <option value="">Padrão do Sistema</option>
-                        {availablePrinters.map((p) => (
-                          <option key={p.name} value={p.name}>
-                            {p.name} {p.isDefault ? "(Padrão)" : ""}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-black text-slate-700 ">Impressora Térmica</p>
+                        <button 
+                          onClick={refreshPrinters}
+                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                        >
+                          <RotateCcw size={10} /> Recarregar
+                        </button>
+                      </div>
+                      
+                      {availablePrinters.length > 0 ? (
+                        <div className="space-y-3">
+                          <select
+                            value={selectedPrinter}
+                            onChange={(e) => {
+                              setSelectedPrinter(e.target.value);
+                              localStorage.setItem('thermal_printer_name', e.target.value);
+                              toast.success("Impressora atualizada!");
+                            }}
+                            className="w-full p-4 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-purple-500/30 appearance-none cursor-pointer"
+                          >
+                            <option value="">Padrão do Sistema</option>
+                            {availablePrinters.map((p) => (
+                              <option key={p.name} value={p.name}>
+                                {p.name} {p.isDefault ? "(Padrão)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={testPrint}
+                            className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[10px] flex items-center justify-center gap-2 hover:bg-slate-100 transition-all"
+                          >
+                            <Printer size={14} /> Imprimir Página de Teste
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-6 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center text-center space-y-2">
+                           <Printer size={24} className="text-slate-300" />
+                           <p className="text-[10px] font-bold text-slate-400">Nenhuma impressora encontrada no sistema.</p>
+                        </div>
+                      )}
                     </div>
                   )}
 

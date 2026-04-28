@@ -76,3 +76,40 @@ export async function DELETE(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const body = await req.json();
+    const { id, name, price, isActive } = body;
+
+    if (!id) return NextResponse.json({ error: "ID não fornecido" }, { status: 400 });
+
+    const store = await prisma.store.findUnique({ where: { userId: (session.user as any).id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const updated = await (prisma as any).option.updateMany({
+      where: {
+        id,
+        optiongroup: {
+          product: { storeId: store.id }
+        }
+      },
+      data: {
+        name: name ?? undefined,
+        price: price !== undefined ? parseFloat(String(price)) : undefined,
+        isActive: isActive ?? undefined,
+        updatedAt: new Date()
+      }
+    });
+
+    if (updated.count === 0) return NextResponse.json({ error: "Item não encontrado ou sem permissão" }, { status: 404 });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("PATCH OPTION ITEM ERROR:", error.message);
+    return NextResponse.json({ error: "Erro ao atualizar item" }, { status: 500 });
+  }
+}
+

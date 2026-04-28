@@ -98,6 +98,8 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
       const serviceOrder = ["Orçamentos", "PDV Pedidos", "Calendário", "Categorias", "Meus Produtos", "Clientes", "Financeiro", "Mídias Sociais", "Marketing e Crescimento", "Cupons e Cashback", "Minha Assinatura", "Configurações", "Suporte"];
       if (!serviceOrder.includes(link.name)) return false;
     } else {
+      const hiddenInRestaurant = ["Clientes"];
+      if (hiddenInRestaurant.includes(link.name)) return false;
       if (link.showcaseOnly || link.serviceOnly) return false;
     }
     return true;
@@ -305,6 +307,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
               });
 
               if (visibleItems.length === 0) return null;
+              if (store?.storeType === "RESTAURANT" && group.name === "Gestão de Pessoas") return null;
 
               return (
                 <div key={group.name} className="space-y-1 py-1">

@@ -106,3 +106,40 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const body = await req.json();
+    const { id, name, minChoices, maxChoices, priceCalculation } = body;
+
+    if (!id) return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+
+    const store = await prisma.store.findUnique({ where: { userId: session.user.id } });
+    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+
+    const updated = await (prisma as any).optiongroup.updateMany({
+      where: {
+        id,
+        product: { storeId: store.id }
+      },
+      data: {
+        name,
+        minOptions: Number(minChoices) ?? undefined,
+        maxOptions: Number(maxChoices) ?? undefined,
+        isRequired: (Number(minChoices) || 0) > 0,
+        priceCalculation,
+        updatedAt: new Date()
+      }
+    });
+
+    if (updated.count === 0) return NextResponse.json({ error: "Grupo não encontrado ou sem permissão" }, { status: 404 });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("PATCH OPTION GROUP ERROR:", error.message);
+    return NextResponse.json({ error: "Erro ao atualizar grupo" }, { status: 500 });
+  }
+}
+

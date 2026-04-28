@@ -467,22 +467,31 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     setProductObservations("");
   }
 
-  function handleOptionToggle(groupId: string, option: Option, group: OptionGroup) {
+  function handleOptionToggle(groupId: string, option: Option, group: OptionGroup, delta: number = 1) {
     const current = selectedOptions[groupId] || [];
-    const isSelected = current.find(o => o.id === option.id);
+    const totalSelected = current.length;
 
-    if (isSelected) {
-      setSelectedOptions({
-        ...selectedOptions,
-        [groupId]: current.filter(o => o.id !== option.id)
-      });
-    } else {
-      if (group.maxOptions === 1) {
+    if (delta > 0) {
+      if (totalSelected < group.maxOptions) {
+        setSelectedOptions({
+          ...selectedOptions,
+          [groupId]: [...current, option]
+        });
+      } else if (group.maxOptions === 1) {
+        // Se for escolha única, substitui
         setSelectedOptions({ ...selectedOptions, [groupId]: [option] });
-      } else if (current.length < group.maxOptions) {
-        setSelectedOptions({ ...selectedOptions, [groupId]: [...current, option] });
       } else {
-        toast.error(`Máximo de ${group.maxOptions} opções para ${group.name}`);
+        toast.error(`Limite de ${group.maxOptions} atingido em ${group.name}`);
+      }
+    } else {
+      const index = current.findLastIndex(o => o.id === option.id);
+      if (index !== -1) {
+        const next = [...current];
+        next.splice(index, 1);
+        setSelectedOptions({
+          ...selectedOptions,
+          [groupId]: next
+        });
       }
     }
   }
@@ -539,7 +548,13 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       }
     }
 
-    const optionsText = Object.values(selectedOptions).flat().map(o => o.name).join(", ");
+    const groupedChoices = Object.values(selectedOptions).flat().reduce((acc: any, c: any) => {
+      acc[c.name] = (acc[c.name] || 0) + 1;
+      return acc;
+    }, {});
+    const optionsText = Object.entries(groupedChoices).map(([name, qty]: [string, any]) => 
+      qty > 1 ? `${qty}x ${name}` : name
+    ).join(", ");
 
     let finalNotes = optionsText || "";
 
@@ -648,10 +663,15 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
       msg += `  R$ ${(item.price * item.quantity).toFixed(2).replace(".", ",")}\n`;
 
       if (item.choices && Array.isArray(item.choices) && item.choices.length > 0) {
-        msg += `  └ ${item.choices.map((c: any) => c.name).join(", ")}\n`;
+        const groupedChoices = item.choices.reduce((acc: any, c: any) => {
+          acc[c.name] = (acc[c.name] || 0) + 1;
+          return acc;
+        }, {});
+        const choicesText = Object.entries(groupedChoices).map(([name, qty]: [string, any]) => 
+          qty > 1 ? `${qty}x ${name}` : name
+        ).join(", ");
+        msg += `  └ ${choicesText}\n`;
       } else if (item.notes) {
-        msg += `  _Nota: ${item.notes}_\n`;
-      }
       msg += "\n";
     });
 
@@ -1080,28 +1100,60 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                 <div className="space-y-8">
                   {selectedProduct.optiongroup?.map((group: any) => {
                     const groupPriceCalc = group.priceCalculation || "SUM";
+                    const activeOptions = group.option.filter((o: any) => o.isActive !== false);
+                    if (activeOptions.length === 0) return null;
+
                     return (
                       <div key={group.id} className="border-l-4 p-4 border-brand bg-slate-50">
                         <div className="flex items-center gap-2 mb-4">
                           <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">{group.name}</h4>
                         </div>
                         <div className="space-y-1">
-                          {group.option.map((opt: any) => {
-                            const active = (selectedOptions[group.id] || []).find(o => o.id === opt.id);
+                          {activeOptions.map((opt: any) => {
+                            const currentInGroup = selectedOptions[group.id] || [];
+                            const optQty = currentInGroup.filter(o => o.id === opt.id).length;
+                            const active = optQty > 0;
+                            
                             return (
-                              <button
+                              <div
                                 key={opt.id}
-                                onClick={() => handleOptionToggle(group.id, opt, group)}
                                 className={`w-full flex items-center justify-between p-3 border transition-all ${active ? "border-slate-900 bg-white" : "border-slate-100 bg-white/50"}`}
                               >
-                                <span className="text-xs font-medium text-slate-700">{opt.name}</span>
-                                <div className="flex items-center gap-3">
-                                  {opt.price > 0 && <span className="text-xs font-semibold text-brand">+ R$ {opt.price.toFixed(2)}</span>}
-                                  <div className={`w-4 h-4 border flex items-center justify-center ${active ? "bg-slate-900 border-slate-900" : "border-slate-200"}`}>
-                                    {active && <CheckCircle size={10} className="text-white" />}
-                                  </div>
+                                <div className="flex flex-col">
+                                   <span className="text-xs font-bold text-slate-700">{opt.name}</span>
+                                   {opt.price > 0 && <span className="text-[10px] font-black text-brand">+ R$ {opt.price.toFixed(2)}</span>}
                                 </div>
-                              </button>
+                                
+                                <div className="flex items-center gap-3">
+                                  {group.maxOptions > 1 ? (
+                                    <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+                                      <button 
+                                        type="button"
+                                        onClick={() => handleOptionToggle(group.id, opt, group, -1)}
+                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500"
+                                      >
+                                        <Minus size={12} />
+                                      </button>
+                                      <span className="text-xs font-black w-4 text-center">{optQty}</span>
+                                      <button 
+                                        type="button"
+                                        onClick={() => handleOptionToggle(group.id, opt, group, 1)}
+                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-green-500"
+                                      >
+                                        <Plus size={12} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button 
+                                      type="button"
+                                      onClick={() => handleOptionToggle(group.id, opt, group)}
+                                      className={`w-5 h-5 border flex items-center justify-center ${active ? "bg-slate-900 border-slate-900 shadow-lg" : "border-slate-200"}`}
+                                    >
+                                      {active && <CheckCircle size={12} className="text-white" />}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             );
                           })}
                         </div>

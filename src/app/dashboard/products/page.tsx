@@ -51,6 +51,8 @@ export default function ProductsPage() {
   const [isMandatory, setIsMandatory] = useState(false);
   const [priceCalculation, setPriceCalculation] = useState("SUM");
   const [addingItemToGroup, setAddingItemToGroup] = useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemPrice, setNewItemPrice] = useState("");
 
@@ -93,8 +95,8 @@ export default function ProductsPage() {
     }
   }, [formData.purchasePrice, formData.profitMargin, isService]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [prodRes, catRes, storeRes] = await Promise.all([
         fetch("/api/products"),
@@ -107,7 +109,7 @@ export default function ProductsPage() {
       setProducts(Array.isArray(prodData) ? prodData : []);
       setCategories(Array.isArray(catData) ? catData : []);
       setStoreType(storeData?.storeType || "RESTAURANT");
-    } catch { toast.error("Erro ao carregar"); } finally { setLoading(false); }
+    } catch { toast.error("Erro ao carregar"); } finally { if (!silent) setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -218,15 +220,23 @@ export default function ProductsPage() {
   };
 
   const toggleStatus = async (product: any) => {
+    // Atualização otimista
+    const originalProducts = [...products];
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, isActive: !p.isActive } : p));
+
     try {
-      await fetch(`/api/products/${product.id}`, {
+      const res = await fetch(`/api/products/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...product, price: product.price.toString(), isActive: !product.isActive }),
       });
+      if (!res.ok) throw new Error();
       toast.success("Status atualizado");
-      fetchData();
-    } catch { toast.error("Erro"); }
+      fetchData(true); // Sincroniza silenciosamente
+    } catch { 
+      toast.error("Erro ao atualizar status"); 
+      setProducts(originalProducts); // Rollback
+    }
   };
 
   const deleteProduct = async (id: string) => { setProductToDelete(id); setIsDeleteModalOpen(true); };
@@ -251,10 +261,14 @@ export default function ProductsPage() {
     const toastId = toast.loading("Duplicando produto...");
     try {
       const res = await fetch(`/api/products/${id}/duplicate`, { method: "POST" });
-      if (!res.ok) throw new Error("Falha ao duplicar");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Falha ao duplicar");
+      }
+      const newProduct = await res.json();
       
-      toast.success("Produto duplicado com sucesso!", { id: toastId });
-      fetchData();
+      setProducts(prev => [newProduct, ...prev]);
+      toast.success("Produto duplicado!", { id: toastId });
     } catch (error: any) {
       toast.error(error.message || "Erro ao duplicar", { id: toastId });
     } finally {
@@ -268,26 +282,56 @@ export default function ProductsPage() {
     setOptionGroups(Array.isArray(data) ? data : []);
   };
 
-  const addOptionGroup = async () => {
+  const saveOptionGroup = async () => {
     if (!newGroupName) return;
+    const method = editingGroupId ? "PATCH" : "POST";
     await fetch("/api/products/options", {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: editingProduct.id, name: newGroupName, minChoices: isMandatory ? 1 : 0, maxChoices: maxSelect, priceCalculation }),
+      body: JSON.stringify({ 
+        id: editingGroupId || undefined,
+        productId: editingProduct.id, 
+        name: newGroupName, 
+        minChoices: isMandatory ? 1 : 0, 
+        maxChoices: maxSelect, 
+        priceCalculation 
+      }),
     });
     setNewGroupName("");
+    setEditingGroupId(null);
     setPriceCalculation("SUM");
+    setIsMandatory(false);
+    setMinSelect(0);
+    setMaxSelect(1);
     fetchOptions(editingProduct.id);
   };
 
-  const addOptionItem = async (groupId: string) => {
+  const saveOptionItem = async (groupId: string) => {
     if (!newItemName) return;
+    const method = editingItemId ? "PATCH" : "POST";
     await fetch("/api/products/options/item", {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId, name: newItemName, price: parseFloat(newItemPrice || "0") }),
+      body: JSON.stringify({ 
+        id: editingItemId || undefined,
+        groupId, 
+        name: newItemName, 
+        price: parseFloat(newItemPrice || "0") 
+      }),
     });
-    setNewItemName(""); setNewItemPrice(""); setAddingItemToGroup(null);
+    setNewItemName(""); 
+    setNewItemPrice(""); 
+    setAddingItemToGroup(null);
+    setEditingItemId(null);
+    fetchOptions(editingProduct.id);
+  };
+
+  const toggleOptionItem = async (itemId: string, currentStatus: boolean) => {
+    await fetch("/api/products/options/item", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: itemId, isActive: !currentStatus }),
+    });
     fetchOptions(editingProduct.id);
   };
 
@@ -763,7 +807,26 @@ export default function ProductsPage() {
                       </div>
                       <span className="text-xs font-bold text-slate-600">Este grupo é obrigatório?</span>
                     </label>
-                    <button onClick={addOptionGroup} className="w-full btn-primary !py-4">Criar Grupo</button>
+                    <div className="flex gap-2">
+                       <button onClick={saveOptionGroup} className="flex-1 btn-primary !py-4">
+                         {editingGroupId ? "Salvar Alterações" : "Criar Grupo"}
+                       </button>
+                       {editingGroupId && (
+                         <button 
+                           onClick={() => {
+                             setEditingGroupId(null);
+                             setNewGroupName("");
+                             setMinSelect(0);
+                             setMaxSelect(1);
+                             setIsMandatory(false);
+                             setPriceCalculation("SUM");
+                           }}
+                           className="px-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all font-bold text-xs"
+                         >
+                           Cancelar
+                         </button>
+                       )}
+                    </div>
                   </div>
                </div>
 
@@ -775,17 +838,52 @@ export default function ProductsPage() {
                             <span className="text-[9px] font-bold text-purple-500  tracking-widest bg-purple-50 px-2 py-1 rounded-md">{group.minOptions > 0 ? "Obrigatório" : "Opcional"}</span>
                             <h5 className="font-bold text-slate-800 text-base mt-2">{group.name}</h5>
                          </div>
-                         <button onClick={() => deleteOptionGroup(group.id)} className="text-slate-300 hover:text-red-400 transition-all"><Trash2 size={18}/></button>
+                         <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setEditingGroupId(group.id);
+                                setNewGroupName(group.name);
+                                setMinSelect(group.minOptions);
+                                setMaxSelect(group.maxOptions);
+                                setIsMandatory(group.minOptions > 0);
+                                setPriceCalculation(group.priceCalculation || "SUM");
+                              }} 
+                              className="text-slate-300 hover:text-purple-500 transition-all"
+                            >
+                              <Edit3 size={16}/>
+                            </button>
+                            <button onClick={() => deleteOptionGroup(group.id)} className="text-slate-300 hover:text-red-400 transition-all"><Trash2 size={16}/></button>
+                         </div>
                       </div>
 
                       <div className="space-y-2">
                          {group.options?.map((opt: any) => (
-                           <div key={opt.id} className="flex justify-between items-center py-2 border-b border-slate-50">
-                              <span className="text-xs font-semibold text-slate-600">{opt.name}</span>
-                              <div className="flex items-center gap-4">
-                                <span className="text-xs font-black text-purple-500">+ R${opt.price.toFixed(2)}</span>
-                                <button onClick={() => deleteOptionItem(opt.id)} className="text-slate-200 hover:text-red-400 transition-all"><X size={14}/></button>
-                              </div>
+                           <div key={opt.id} className={`flex justify-between items-center py-2 border-b border-slate-50 ${opt.isActive === false ? 'opacity-40 grayscale' : ''}`}>
+                               <div className="flex items-center gap-3">
+                                  <button 
+                                    onClick={() => toggleOptionItem(opt.id, opt.isActive !== false)}
+                                    className={`w-3 h-3 rounded-full ${opt.isActive !== false ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-slate-300'}`}
+                                    title={opt.isActive !== false ? "Desativar" : "Ativar"}
+                                  />
+                                  <span className="text-xs font-semibold text-slate-600">{opt.name}</span>
+                               </div>
+                               <div className="flex items-center gap-4">
+                                 <span className="text-xs font-black text-purple-500">+ R${opt.price.toFixed(2)}</span>
+                                 <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={() => {
+                                        setAddingItemToGroup(group.id);
+                                        setEditingItemId(opt.id);
+                                        setNewItemName(opt.name);
+                                        setNewItemPrice(opt.price.toString());
+                                      }}
+                                      className="text-slate-200 hover:text-purple-400 transition-all"
+                                    >
+                                      <Edit3 size={12}/>
+                                    </button>
+                                    <button onClick={() => deleteOptionItem(opt.id)} className="text-slate-200 hover:text-red-400 transition-all"><X size={14}/></button>
+                                 </div>
+                               </div>
                            </div>
                          ))}
                       </div>
@@ -797,12 +895,14 @@ export default function ProductsPage() {
                               <input placeholder="Preço" type="number" className="input-field !py-2 !text-xs" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
                            </div>
                            <div className="flex gap-2">
-                              <button onClick={() => addOptionItem(group.id)} className="flex-1 bg-navy text-white text-[10px] font-bold  py-2.5 rounded-xl">Confirmar</button>
-                              <button onClick={() => setAddingItemToGroup(null)} className="flex-1 bg-white border border-slate-100 text-slate-400 text-[10px] font-bold  py-2.5 rounded-xl">Cancelar</button>
+                              <button onClick={() => saveOptionItem(group.id)} className="flex-1 bg-navy text-white text-[10px] font-bold  py-2.5 rounded-xl">
+                                {editingItemId ? "Salvar" : "Confirmar"}
+                              </button>
+                              <button onClick={() => { setAddingItemToGroup(null); setEditingItemId(null); setNewItemName(""); setNewItemPrice(""); }} className="flex-1 bg-white border border-slate-100 text-slate-400 text-[10px] font-bold  py-2.5 rounded-xl">Cancelar</button>
                            </div>
                         </div>
                       ) : (
-                        <button onClick={() => setAddingItemToGroup(group.id)} className="w-full py-3 border border-dashed border-slate-200 text-slate-400 rounded-2xl text-[10px] font-bold  tracking-widest hover:border-purple-500 hover:text-purple-500 transition-all">+ Adicionar Item</button>
+                        <button onClick={() => { setAddingItemToGroup(group.id); setEditingItemId(null); setNewItemName(""); setNewItemPrice(""); }} className="w-full py-3 border border-dashed border-slate-200 text-slate-400 rounded-2xl text-[10px] font-bold  tracking-widest hover:border-purple-500 hover:text-purple-500 transition-all">+ Adicionar Item</button>
                       )}
                    </div>
                  ))}
