@@ -947,9 +947,9 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           <div className="relative w-full max-w-md bg-white h-[100dvh] flex flex-col shadow-2xl animate-slide-left">
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-6 right-6 z-50 w-12 h-12 bg-slate-900/10 hover:bg-slate-900/20 transition-all flex items-center justify-center backdrop-blur-md"
+              className="absolute top-6 right-6 z-50 w-12 h-12 bg-white shadow-2xl transition-all flex items-center justify-center border border-slate-100"
             >
-              <X size={24} className="text-slate-900" />
+              <X size={24} className="text-black" />
             </button>
 
             <div className="flex-1 overflow-y-auto">
