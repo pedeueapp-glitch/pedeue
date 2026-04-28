@@ -111,6 +111,7 @@ interface StoreData {
 }
 
 export default function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: string }) {
+  console.log("[DEBUG] Renderizando StorefrontClient para slug:", slug);
   const [store, setStore] = useState<StoreData | null>(initialStore);
   const [loading, setLoading] = useState(!initialStore);
   const [notFound, setNotFound] = useState(false);
@@ -643,6 +644,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     </div>
   );
 
+  console.log("[DEBUG] Store validada, tipo:", store.storeType);
   if (store.storeType === "SHOWCASE") {
     const allProducts = store.category.flatMap(c =>
       c.product.map((p: any) => ({
@@ -726,7 +728,9 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const isFreeShipping = store && store.freeDeliveryThreshold > 0 && subtotal >= store.freeDeliveryThreshold;
   const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
   const total = subtotal + currentFee;
+  console.log("[DEBUG] Calculando primaryColor...");
   const primaryColor = store.primaryColor || "#f97316";
+  console.log("[DEBUG] Primary color definida:", primaryColor);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32" style={{ "--primary": primaryColor } as any}>
