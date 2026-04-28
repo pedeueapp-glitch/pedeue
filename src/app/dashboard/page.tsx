@@ -91,7 +91,7 @@ export default function DashboardPage() {
     }).format(value);
   };
 
-  const { data: session } = useSession();
+
 
   if (session?.user?.role === "AFFILIATE") {
     return (
