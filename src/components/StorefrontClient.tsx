@@ -258,6 +258,15 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   useEffect(() => {
     if (initialStore) {
       setStoreSlug(slug);
+      // Suporte a SSR para a Roleta
+      if (initialStore.rouletteConfig) {
+        try {
+          const config = typeof initialStore.rouletteConfig === 'string' 
+            ? JSON.parse(initialStore.rouletteConfig) 
+            : initialStore.rouletteConfig;
+          setRouletteConfig(config);
+        } catch (e) { console.error("Error parsing initial roulette", e); }
+      }
       return;
     }
     async function loadStore() {
