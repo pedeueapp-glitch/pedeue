@@ -1,6 +1,6 @@
 {
   "name": "saas-delivery",
-  "version": "1.8.23",
+  "version": "1.8.24",
   "private": true,
   "main": "electron/main.js",
   "scripts": {

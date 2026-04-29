@@ -8,6 +8,7 @@ import {
   Settings, 
   LogOut, 
   ShoppingBag, 
+  ShoppingCart,
   Users, 
   MapPin,
   UtensilsCrossed,
