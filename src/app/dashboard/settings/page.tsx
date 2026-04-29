@@ -272,12 +272,14 @@ export default function SettingsPage() {
              </button>
            ))}
         </div>
+{/* ... */}
 
         {activeTab !== 'security' ? (
           <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
              
              {/* ABA GERAL */}
              {activeTab === 'general' && (
+               <>
                <div className="bg-white rounded-[40px] border border-slate-100 p-8 lg:p-12 space-y-10 shadow-sm">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-2">
@@ -493,7 +495,7 @@ export default function SettingsPage() {
                         })}
                      </div>
                   </div>
-               </div>
+                </>
              )}
 
              {/* ABA APARÊNCIA */}

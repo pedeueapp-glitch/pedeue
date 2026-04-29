@@ -125,5 +125,6 @@ export default function AffiliateClientsPage() {
         )}
       </div>
     </div>
+  </div>
   );
 }
