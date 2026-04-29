@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
     // Montar filtro de datas
     const dateFilter: any = {};
     if (cashierFrom) {
-      dateFilter.gte = new Date(cashierFrom);
+      const from = new Date(cashierFrom);
+      from.setMinutes(from.getMinutes() - 10); // Margem de segurança de 10 min para evitar perda por fuso/atraso de relógio
+      dateFilter.gte = from;
     } else if (dateFrom) {
       dateFilter.gte = new Date(dateFrom);
     }

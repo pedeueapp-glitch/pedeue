@@ -378,7 +378,9 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
           socket.emit("join-store", storeInfo.id);
         });
 
-        socket.on("order-received", () => {
+        socket.on("order-received", (data) => {
+          console.log("WebSocket: Novo pedido recebido", data);
+          toast.success("Novo pedido recebido!");
           fetchData();
         });
 
