@@ -881,6 +881,14 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     cardSurcharge = surchargeType === "PERCENT" ? (subtotal * (val / 100)) : val;
   }
 
+  // Cálculo do Desconto (Roleta)
+  let discountAmount = 0;
+  if (wonPrize?.type === "PERCENT") {
+    discountAmount = subtotal * (parseFloat(wonPrize.value) / 100);
+  } else if (wonPrize?.type === "FIXED") {
+    discountAmount = parseFloat(wonPrize.value);
+  }
+
   const total = Math.max(0, subtotal + currentFee + cardSurcharge - discountAmount);
   
   // Sanitização da cor primária para evitar injeção de CSS malicioso
