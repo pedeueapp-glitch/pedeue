@@ -79,6 +79,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
     { name: "Mídias Sociais", href: "/dashboard/midias-sociais", icon: Image },
     { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
     { name: "Roleta da Sorte", href: "/dashboard/marketing/roulette", icon: RotateCcw },
+    { name: "Carrinhos Abandonados", href: "/dashboard/marketing/abandoned-carts", icon: ShoppingBag },
     { name: "Financeiro", href: "/dashboard", icon: LayoutDashboard },
 
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
@@ -162,6 +163,7 @@ function SidebarContent({ mode = "MERCHANT", isOpen = false, onClose }: SidebarP
         { name: "Mídias Sociais", href: "/dashboard/midias-sociais", icon: Image },
         { name: "Marketing e Crescimento", href: "/dashboard/marketing", icon: TrendingUp },
         { name: "Roleta da Sorte", href: "/dashboard/marketing/roulette", icon: RotateCcw },
+        { name: "Carrinhos Abandonados", href: "/dashboard/marketing/abandoned-carts", icon: ShoppingCart },
       ]
     },
     { name: "Suporte", href: "/dashboard/support", icon: LifeBuoy },
