@@ -11,6 +11,7 @@ import {
   Banknote
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Header } from "@/components/Header";
 
 export default function AffiliateSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -124,11 +125,12 @@ export default function AffiliateSettingsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50 pt-6 px-4">
-      <div className="max-w-5xl mx-auto w-full space-y-6">
-        
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Configurações de Parceiro</h1>
+    <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">
+      <Header title="Configurações de Parceiro" />
+      
+      <div className="max-w-5xl mx-auto w-full space-y-6 pt-6 px-4 animate-in fade-in duration-500">
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Dados de Parceiro</h1>
           <p className="text-slate-400 text-xs font-medium">Dados de perfil e recebimento via PIX.</p>
         </div>
 

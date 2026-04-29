@@ -8,11 +8,21 @@ import { getCurrentStore } from "@/lib/get-store";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
     const store = await getCurrentStore();
-    if (!store) return NextResponse.json({ error: "Loja não encontrada" }, { status: 404 });
+    if (!store) {
+      // Retornamos 200 null para evitar erro 404 no console
+      // O frontend trata a ausência da loja conforme necessário
+      return NextResponse.json(null);
+    }
 
     return NextResponse.json(store);
   } catch (error: any) {
+    console.error("[STORE_GET_ERROR]", error);
     return NextResponse.json({ error: "Erro ao buscar loja" }, { status: 500 });
   }
 }

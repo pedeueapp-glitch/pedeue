@@ -10,7 +10,9 @@ import {
   Lock,
   Loader2,
   Package,
+  ArrowLeft,
 } from "lucide-react";
+import { Header } from "@/components/Header";
 
 export default function ProspectarPage() {
   const router = useRouter();
@@ -22,6 +24,8 @@ export default function ProspectarPage() {
     password: "",
     storeName: "",
     slug: "",
+    whatsapp: "",
+    cpf: "",
     planId: "",
   });
 
@@ -38,7 +42,16 @@ export default function ProspectarPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.planId) return toast.error("Selecione um plano");
+    
+    // Validações detalhadas para evitar confusão do usuário
+    if (!formData.name) return toast.error("Por favor, preencha o Nome do Responsável");
+    if (!formData.email) return toast.error("Por favor, preencha o E-mail de Login");
+    if (!formData.password) return toast.error("Por favor, defina uma Senha Provisória");
+    if (formData.password.length < 8) return toast.error("A senha deve ter no mínimo 8 caracteres");
+    if (!formData.cpf) return toast.error("O CPF do Lojista é obrigatório");
+    if (!formData.storeName) return toast.error("O Nome do Estabelecimento é obrigatório");
+    if (!formData.whatsapp) return toast.error("O WhatsApp de Contato é obrigatório");
+    if (!formData.planId) return toast.error("Selecione um plano para a loja");
     
     setIsLoading(true);
     try {
@@ -61,11 +74,14 @@ export default function ProspectarPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pt-6 px-4 animate-in fade-in duration-500">
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-1">
-        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Cadastrar Novo Lojista</h1>
-        <p className="text-slate-400 text-xs font-medium">Registre uma nova loja vinculada ao seu código de parceiro.</p>
-      </div>
+    <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">
+      <Header title="Prospectar Lojista" />
+      
+      <div className="max-w-4xl mx-auto w-full space-y-6 pt-6 px-4 animate-in fade-in duration-500">
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Cadastrar Novo Lojista</h1>
+          <p className="text-slate-400 text-xs font-medium">Registre uma nova loja vinculada ao seu código de parceiro.</p>
+        </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
         {/* Dados do Usuário */}
@@ -111,12 +127,23 @@ export default function ProspectarPage() {
                  <input 
                    type="password"
                    className="input-field !py-2.5 pl-10 text-sm" 
-                   placeholder="Mínimo 6 caracteres" 
+                   placeholder="Mínimo 8 caracteres" 
                    required 
                    value={formData.password}
                    onChange={e => setFormData({...formData, password: e.target.value})}
                  />
                </div>
+             </div>
+
+             <div className="space-y-1.5">
+               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">CPF do Lojista</label>
+               <input 
+                 className="input-field !py-2.5 text-sm" 
+                 placeholder="000.000.000-00" 
+                 required 
+                 value={formData.cpf}
+                 onChange={e => setFormData({...formData, cpf: e.target.value})}
+               />
              </div>
           </div>
         </div>
@@ -158,6 +185,17 @@ export default function ProspectarPage() {
               </div>
 
               <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">WhatsApp de Contato</label>
+                <input 
+                  className="input-field !py-2.5 text-sm" 
+                  placeholder="(00) 00000-0000" 
+                  required 
+                  value={formData.whatsapp}
+                  onChange={e => setFormData({...formData, whatsapp: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Plano Inicial</label>
                 <div className="relative">
                   <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
@@ -184,7 +222,8 @@ export default function ProspectarPage() {
             {isLoading ? "PROCESSANDO..." : "FINALIZAR CADASTRO"}
           </button>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

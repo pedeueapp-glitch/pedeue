@@ -33,6 +33,40 @@ function validateCPF(cpf: string) {
   return true;
 }
 
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "AFFILIATE") {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  try {
+    const affiliate = await prisma.platform_affiliate.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!affiliate) {
+      return NextResponse.json({ error: "Perfil de afiliado não encontrado" }, { status: 404 });
+    }
+
+    const stores = await prisma.store.findMany({
+      where: { platformAffiliateId: affiliate.id },
+      include: {
+        subscription: {
+          include: {
+            plan: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    return NextResponse.json(stores);
+  } catch (error) {
+    console.error("[AFILIADO/LOJAS/GET]", error);
+    return NextResponse.json({ error: "Erro interno ao buscar lojas" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "AFFILIATE") {

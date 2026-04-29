@@ -95,7 +95,7 @@ export default function DashboardPage() {
 
   if (session?.user?.role === "AFFILIATE") {
     return (
-      <div className="flex-1 flex flex-col min-h-screen bg-[#0f0f1a]">
+      <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">
         <Header title="Painel do Afiliado" />
         <div className="p-4 lg:p-6 max-w-7xl mx-auto w-full">
           <AffiliateDashboardPage />

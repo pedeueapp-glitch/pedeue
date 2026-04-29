@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
+import { Header } from "@/components/Header";
+
 export default function AffiliateFinancePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,10 @@ export default function AffiliateFinancePage() {
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pt-6 px-4 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">
+      <Header title="Financeiro" />
+      
+      <div className="max-w-6xl mx-auto w-full space-y-6 pt-6 px-4 animate-in fade-in duration-500">
       {/* Header Compacto */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-0.5">
@@ -134,6 +139,7 @@ export default function AffiliateFinancePage() {
              )}
            </div>
         </div>
+      </div>
       </div>
     </div>
   );
