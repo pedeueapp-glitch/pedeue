@@ -80,6 +80,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
   const [showOpenModal, setShowOpenModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [printDetailedReport, setPrintDetailedReport] = useState(false);
   const [closeReport, setCloseReport] = useState<any>(null);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [withdrawalReason, setWithdrawalReason] = useState("");
@@ -501,9 +502,56 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     }
   };
 
-  const buildCashierReportHTML = (report: any, store?: any) => {
+  const buildCashierReportHTML = (report: any, store?: any, includeDetails?: boolean) => {
     const s = store || storeInfo;
     const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+    
+    let detailsHtml = "";
+    if (includeDetails && report.detailedOrders) {
+      const delivery = report.detailedOrders.filter((o: any) => o.orderType === "DELIVERY" || o.orderType === "PICKUP");
+      const local = report.detailedOrders.filter((o: any) => o.orderType === "DINING_IN" || o.orderType === "RETAIL");
+      const abandoned = report.abandonedCarts || [];
+
+      detailsHtml = `
+        <div class="div"></div>
+        <div class="bold center">DETALHAMENTO DE COMANDAS</div>
+        
+        ${delivery.length > 0 ? `
+          <div class="bold" style="margin-top:5px">>>> DELIVERY / RETIRADA</div>
+          <table style="font-size:9px">
+            ${delivery.map((o: any) => `
+              <tr><td>${o.customerName || "S/N"}</td><td align="right">${fmt(o.total)}</td></tr>
+            `).join("")}
+          </table>
+        ` : ""}
+
+        ${local.length > 0 ? `
+          <div class="bold" style="margin-top:5px">>>> CONSUMO LOCAL / PDV</div>
+          <table style="font-size:9px">
+            ${local.map((o: any) => `
+              <tr><td>${o.customerName || "Local"}</td><td align="right">${fmt(o.total)}</td></tr>
+            `).join("")}
+          </table>
+        ` : ""}
+
+        <div class="div"></div>
+        <div class="bold center">CARRINHOS ABANDONADOS</div>
+        <table style="font-size:9px">
+          <tr><td>Qtd Total</td><td align="right">${report.abandonedCartsCount || 0}</td></tr>
+          <tr><td>Valor Total</td><td align="right">${fmt(report.abandonedCartsTotal || 0)}</td></tr>
+        </table>
+        
+        ${abandoned.length > 0 ? `
+          <div class="bold" style="margin-top:5px">>>> LISTA DE ABANDONOS</div>
+          <table style="font-size:8px">
+            ${abandoned.map((c: any) => `
+              <tr><td>${c.customerName || "Anonimo"} (${c.lastStep})</td><td align="right">${fmt(c.total)}</td></tr>
+            `).join("")}
+          </table>
+        ` : ""}
+      `;
+    }
+
     return `<html><head><title>Relatório de Caixa</title>
     <style>
       @page { margin: 0; }
@@ -526,6 +574,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
       <tr><td>Cancelamentos</td><td align="right">${report.canceledOrders}</td></tr>
       <tr><td>Delivery</td><td align="right">${report.totalDelivery}</td></tr>
       <tr><td>Comandas (Local)</td><td align="right">${report.totalComandas}</td></tr>
+      <tr><td>Abandonos</td><td align="right">${report.abandonedCartsCount || 0}</td></tr>
     </table>
 
     <div class="div"></div>
@@ -552,6 +601,8 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     
     <div class="center total">VALOR LÍQUIDO: ${fmt(report.totalLiquido)}</div>
     
+    ${detailsHtml}
+
     <div class="div"></div>
     <div class="center impact">
       Impacto de Prêmios/Isenções: ${fmt(report.totalDiscounts || 0)}<br/>
@@ -2242,6 +2293,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                   { label: "Cancelamentos", value: closeReport.canceledOrders, color: "red" },
                   { label: "Delivery", value: closeReport.totalDelivery, color: "blue" },
                   { label: "Comandas", value: closeReport.totalComandas, color: "indigo" },
+                  { label: "Abandonos", value: closeReport.abandonedCartsCount || 0, color: "amber" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className={`p-4 bg-${color}-50 border border-${color}-100 rounded-2xl text-center`}>
                     <p className="text-2xl font-black text-slate-900">{value}</p>
@@ -2305,13 +2357,31 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
               </div>
             </div>
 
+            <div className="px-6 py-3 border-t border-b border-slate-100 bg-slate-50/50">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input 
+                    type="checkbox" 
+                    className="peer sr-only"
+                    checked={printDetailedReport}
+                    onChange={(e) => setPrintDetailedReport(e.target.checked)}
+                  />
+                  <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-700 group-hover:text-purple-600 transition-colors">Relatório Detalhado</span>
+                  <span className="text-[9px] text-slate-500 font-bold">Incluir lista de pedidos e carrinhos abandonados</span>
+                </div>
+              </label>
+            </div>
+
             <div className="p-4 border-t flex flex-col gap-3 bg-slate-50">
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     const w = window.open("", "_blank");
                     if (w) {
-                      w.document.write(buildCashierReportHTML(closeReport, storeInfo));
+                      w.document.write(buildCashierReportHTML(closeReport, storeInfo, printDetailedReport));
                       w.document.close();
                       setTimeout(() => { w.print(); }, 500);
                     }

@@ -45,6 +45,14 @@ export async function GET(req: NextRequest) {
         }
       });
 
+      // Buscar carrinhos abandonados no período
+      const abandonedCarts = await prisma.abandonedcart.findMany({
+        where: {
+          storeId: store.id,
+          abandonedAt: { gte: openedAt, lte: closedAt }
+        }
+      });
+
       const totalDinheiro = orders
         .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
         .reduce((s: number, o: any) => s + (o.total || 0), 0);
@@ -85,6 +93,19 @@ export async function GET(req: NextRequest) {
         totalDiscounts,
         withdrawals,
         totalWithdrawals,
+        detailedOrders: orders.map(o => ({
+          customerName: o.customerName,
+          total: o.total,
+          orderType: o.orderType || o.deliveryType,
+          createdAt: o.createdAt
+        })),
+        abandonedCarts: abandonedCarts.map(c => ({
+          customerName: c.customerName,
+          total: c.total,
+          lastStep: c.lastStep
+        })),
+        abandonedCartsCount: abandonedCarts.length,
+        abandonedCartsTotal: abandonedCarts.reduce((s: number, c: any) => s + (c.total || 0), 0),
         totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
       };
 
@@ -236,6 +257,14 @@ export async function POST(req: NextRequest) {
         }
       });
 
+      // Buscar carrinhos abandonados no período
+      const abandonedCarts = await prisma.abandonedcart.findMany({
+        where: {
+          storeId: store.id,
+          abandonedAt: { gte: openedAt, lte: now }
+        }
+      });
+
       const totalDinheiro = orders
         .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
         .reduce((s: number, o: any) => s + (o.total || 0), 0);
@@ -281,6 +310,19 @@ export async function POST(req: NextRequest) {
         totalDeliveryFeesDinheiro,
         withdrawals,
         totalWithdrawals,
+        detailedOrders: orders.map(o => ({
+          customerName: o.customerName,
+          total: o.total,
+          orderType: o.orderType || o.deliveryType,
+          createdAt: o.createdAt
+        })),
+        abandonedCarts: abandonedCarts.map(c => ({
+          customerName: c.customerName,
+          total: c.total,
+          lastStep: c.lastStep
+        })),
+        abandonedCartsCount: abandonedCarts.length,
+        abandonedCartsTotal: abandonedCarts.reduce((s: number, c: any) => s + (c.total || 0), 0),
         totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
       };
 
