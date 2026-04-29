@@ -111,6 +111,9 @@ interface StoreData {
   serviceBanners?: string;
   pixKey?: string;
   freeDeliveryThreshold: number;
+  cardSurchargeType?: string;
+  debitSurchargeValue?: number;
+  creditSurchargeValue?: number;
 }
 
 export default function StorefrontClient({ initialStore, slug }: { initialStore: any, slug: string }) {
@@ -640,10 +643,30 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   function generateWhatsAppMessage(orderNumber: number) {
     if (!store) return;
     const totalItems = getTotal();
-    const isFreeShipping = store && store.freeDeliveryThreshold > 0 && totalItems >= store.freeDeliveryThreshold;
+    
+    const isFreeByThreshold = store && store.freeDeliveryThreshold > 0 && totalItems >= store.freeDeliveryThreshold;
+    const isFreeByRoulette = wonPrize?.type === "FREE_DELIVERY";
+    const isFreeShipping = isFreeByThreshold || isFreeByRoulette;
     const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
-    const discount = 0; // Se houver lógica de cupom no futuro, injetar aqui
-    const deliveryTotal = totalItems + currentFee - discount;
+    
+    let rouletteDiscount = 0;
+    if (wonPrize?.type === "PERCENT") {
+      rouletteDiscount = totalItems * (parseFloat(wonPrize.value) / 100);
+    } else if (wonPrize?.type === "FIXED") {
+      rouletteDiscount = parseFloat(wonPrize.value);
+    }
+
+    let cardSurcharge = 0;
+    const surchargeType = store?.cardSurchargeType || "PERCENT";
+    if (paymentMethod === "débito") {
+      const val = store?.debitSurchargeValue || 0;
+      cardSurcharge = surchargeType === "PERCENT" ? (totalItems * (val / 100)) : val;
+    } else if (paymentMethod === "crédito") {
+      const val = store?.creditSurchargeValue || 0;
+      cardSurcharge = surchargeType === "PERCENT" ? (totalItems * (val / 100)) : val;
+    }
+
+    const deliveryTotal = Math.max(0, totalItems + currentFee + cardSurcharge - rouletteDiscount);
 
     let msg = `*PEDIDO #${orderNumber || 'NOVO'} - ${store.name.toUpperCase()}*\n\n`;
     msg += `*Cliente:* ${registerForm.name}\n`;
@@ -685,8 +708,11 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
     if (deliveryType === "DELIVERY") {
       msg += `Taxa de Entrega: R$ ${currentFee.toFixed(2).replace(".", ",")}\n`;
     }
-    if (discount > 0) {
-      msg += `Desconto: - R$ ${discount.toFixed(2).replace(".", ",")}\n`;
+    if (cardSurcharge > 0) {
+      msg += `Acréscimo Cartão: R$ ${cardSurcharge.toFixed(2).replace(".", ",")}\n`;
+    }
+    if (wonPrize && wonPrize.type !== 'LOSE') {
+      msg += `Prêmio Roleta: ${wonPrize.label} (-R$ ${rouletteDiscount.toFixed(2).replace(".", ",")})\n`;
     }
     msg += `*TOTAL: R$ ${deliveryTotal.toFixed(2).replace(".", ",")}*\n\n`;
 
@@ -844,15 +870,18 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
   const currentFee = deliveryType === "DELIVERY" ? (selectedArea ? (isFreeShipping ? 0 : selectedArea.fee) : 0) : 0;
   
-  // Cálculo de Descontos da Roleta
-  let discountAmount = 0;
-  if (wonPrize?.type === "PERCENT") {
-    discountAmount = subtotal * (parseFloat(wonPrize.value) / 100);
-  } else if (wonPrize?.type === "FIXED") {
-    discountAmount = parseFloat(wonPrize.value);
+  // Cálculo de Acréscimo de Cartão
+  let cardSurcharge = 0;
+  const surchargeType = store?.cardSurchargeType || "PERCENT";
+  if (paymentMethod === "débito") {
+    const val = store?.debitSurchargeValue || 0;
+    cardSurcharge = surchargeType === "PERCENT" ? (subtotal * (val / 100)) : val;
+  } else if (paymentMethod === "crédito") {
+    const val = store?.creditSurchargeValue || 0;
+    cardSurcharge = surchargeType === "PERCENT" ? (subtotal * (val / 100)) : val;
   }
 
-  const total = Math.max(0, subtotal + currentFee - discountAmount);
+  const total = Math.max(0, subtotal + currentFee + cardSurcharge - discountAmount);
   
   // Sanitização da cor primária para evitar injeção de CSS malicioso
   const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -1413,8 +1442,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
 
                   <div className="space-y-4">
                     <p className="text-xs font-bold text-slate-800">Pagar com:</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["pix", "cartão", "dinheiro"].map(method => (
+                   <div className="grid grid-cols-2 gap-2">
+                      {["pix", "débito", "crédito", "dinheiro"].map(method => (
                         <button
                           key={method}
                           onClick={() => setPaymentMethod(method)}
@@ -1426,7 +1455,7 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
                                 <path d="M11.642 1.342a.5.5 0 01.716 0l2.585 2.586a.5.5 0 010 .707l-2.585 2.585a.5.5 0 01-.708 0L9.065 4.635a.5.5 0 010-.707L11.642 1.342zM15.467 5.167a.5.5 0 01.708 0l2.585 2.586a.5.5 0 010 .707l-2.586 2.585a.5.5 0 01-.707 0l-2.586-2.585a.5.5 0 010-.708l2.586-2.585zM8.533 5.167a.5.5 0 010 .708L5.948 8.46a.5.5 0 01-.707 0L2.656 5.874a.5.5 0 010-.707l2.585-2.586a.5.5 0 01.707 0l2.585 2.586zM11.642 22.658a.5.5 0 00.716 0l2.585-2.586a.5.5 0 000-.707l-2.585-2.585a.5.5 0 00-.708 0l-2.585 2.586a.5.5 0 000 .707l2.585 2.585zM22.658 11.642a.5.5 0 000 .716l-2.586 2.585a.5.5 0 00-.707 0l-2.585-2.585a.5.5 0 000-.708l2.585-2.585a.5.5 0 00.707 0l2.586 2.585zM1.342 11.642a.5.5 0 010 .716l2.586 2.585a.5.5 0 01.707 0l2.585-2.585a.5.5 0 010-.708l-2.585-2.585a.5.5 0 01-.707 0L1.342 11.642z" fill="currentColor" />
                                 <path d="M12.358 8.455a.5.5 0 00-.716 0l-3.182 3.182a.5.5 0 000 .716l3.182 3.182a.5.5 0 00.716 0l3.182-3.182a.5.5 0 000-.716l-3.182-3.182z" fill="currentColor" />
                               </svg>
-                            ) : method === "cartão" ? <CreditCard size={24} /> : <Banknote size={24} />}
+                            ) : method === "débito" || method === "crédito" ? <CreditCard size={24} /> : <Banknote size={24} />}
                           </div>
                           {method.toUpperCase()}
                         </button>

@@ -16,8 +16,80 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const history = searchParams.get("history") === "true";
+    const sessionId = searchParams.get("sessionId");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
+
+    if (sessionId) {
+      const sessionData = await (prisma as any).cashiersession.findUnique({
+        where: { id: sessionId, storeId: store.id }
+      });
+      if (!sessionData) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
+
+      const openedAt = new Date(sessionData.openedAt);
+      const closedAt = sessionData.closedAt ? new Date(sessionData.closedAt) : new Date();
+
+      const orders = await prisma.order.findMany({
+        where: {
+          storeId: store.id,
+          createdAt: { gte: openedAt, lte: closedAt },
+          status: { not: "CANCELED" }
+        }
+      });
+
+      const canceledOrders = await prisma.order.findMany({
+        where: {
+          storeId: store.id,
+          createdAt: { gte: openedAt, lte: closedAt },
+          status: "CANCELED"
+        }
+      });
+
+      const totalDinheiro = orders
+        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
+        .reduce((s: number, o: any) => s + (o.total || 0), 0);
+
+      const totalCartao = orders
+        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("cart"))
+        .reduce((s: number, o: any) => s + (o.total || 0), 0);
+
+      const totalPix = orders
+        .filter((o: any) => o.paymentMethod?.toLowerCase().includes("pix"))
+        .reduce((s: number, o: any) => s + (o.total || 0), 0);
+
+      const totalDelivery = orders.filter((o: any) => o.orderType === "DELIVERY" || o.deliveryType === "DELIVERY").length;
+      const totalComandas = orders.filter((o: any) => o.orderType === "DINING_IN").length;
+      const totalGeral = orders.reduce((s: number, o: any) => s + (o.total || 0), 0);
+
+      const withdrawals = sessionData.withdrawals ? JSON.parse(sessionData.withdrawals) : [];
+      const totalWithdrawals = withdrawals.reduce((s: number, w: any) => s + (w.amount || 0), 0);
+
+      const totalDeliveryFees = orders.reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
+      const totalCardSurcharges = orders.reduce((s: number, o: any) => s + (o.cardSurcharge || 0), 0);
+      const totalDiscounts = orders.reduce((s: number, o: any) => s + (o.discount || 0), 0);
+
+      const report = {
+        openedAt: sessionData.openedAt,
+        closedAt: sessionData.closedAt,
+        openingBalance: sessionData.openingBalance,
+        totalOrders: orders.length,
+        canceledOrders: canceledOrders.length,
+        totalDinheiro,
+        totalCartao,
+        totalPix,
+        totalDelivery,
+        totalComandas,
+        totalGeral,
+        totalDeliveryFees,
+        totalCardSurcharges,
+        totalDiscounts,
+        withdrawals,
+        totalWithdrawals,
+        totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
+      };
+
+      return NextResponse.json({ session: sessionData, report });
+    }
 
     if (history) {
       const where: any = { storeId: store.id };
@@ -187,6 +259,10 @@ export async function POST(req: NextRequest) {
         .filter((o: any) => o.paymentMethod?.toLowerCase().includes("dinheiro"))
         .reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
 
+      const totalDeliveryFees = orders.reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
+      const totalCardSurcharges = orders.reduce((s: number, o: any) => s + (o.cardSurcharge || 0), 0);
+      const totalDiscounts = orders.reduce((s: number, o: any) => s + (o.discount || 0), 0);
+
       const report = {
         openedAt: cashier.openedAt,
         closedAt: now.toISOString(),
@@ -199,10 +275,13 @@ export async function POST(req: NextRequest) {
         totalDelivery,
         totalComandas,
         totalGeral,
+        totalDeliveryFees,
+        totalCardSurcharges,
+        totalDiscounts,
         totalDeliveryFeesDinheiro,
         withdrawals,
         totalWithdrawals,
-        totalLiquido: totalGeral - totalWithdrawals
+        totalLiquido: totalGeral - totalWithdrawals - totalDeliveryFees
       };
 
       if (action === "PREVIEW") {

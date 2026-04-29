@@ -18,6 +18,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [cashier, setCashier] = useState<any>(null);
+  const [store, setStore] = useState<any>(null);
   
   const { toggle } = useSidebar();
 
@@ -70,6 +71,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       const data = await res.json();
       setProducts(data.products || []);
       setCashier(data.cashier);
+      setStore(data.store);
     } catch {
       toast.error("Erro ao sincronizar PDV");
     } finally {
@@ -178,14 +180,25 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
   const discountAmount = discountType === "percent" 
     ? (subtotal * Math.min(discountNum, 100)) / 100 
     : Math.min(discountNum, subtotal);
-  const totalFinal = Math.max(0, subtotal - discountAmount);
+  
+  // Calculo do Acrescimo de Cartao
+  let cardSurcharge = 0;
+  const surchargeType = store?.cardSurchargeType || "PERCENT";
+  if (paymentMethod === "CARTAO DE DEBITO") {
+    const val = store?.debitSurchargeValue || 0;
+    cardSurcharge = surchargeType === "PERCENT" ? (subtotal * (val / 100)) : val;
+  } else if (paymentMethod === "CARTAO DE CREDITO") {
+    const val = store?.creditSurchargeValue || 0;
+    cardSurcharge = surchargeType === "PERCENT" ? (subtotal * (val / 100)) : val;
+  }
+
+  const totalFinal = Math.max(0, subtotal + cardSurcharge - discountAmount);
 
   // Calculo do troco
   const cashReceivedNum = parseFloat(cashReceived) || 0;
   const changeAmount = cashReceivedNum - totalFinal;
 
   async function handleCheckout() {
-    if (!cashier) return toast.error("Por favor, abra o caixa antes de registrar vendas.");
     if (cart.length === 0) return toast.error("O carrinho esta vazio.");
 
     setCheckoutLoading(true);
@@ -202,6 +215,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
           customerPhone,
           paymentMethod,
           total: totalFinal,
+          cardSurcharge,
           discount: discountAmount,
           subtotal: subtotal
         })
@@ -211,6 +225,12 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
       if (!res.ok) throw new Error(data.error);
 
       toast.success("Venda registrada com sucesso!", { id: toastId });
+      
+      // Imprimir venda
+      if (data.order) {
+        printReceipt(data.order);
+      }
+
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
@@ -224,49 +244,57 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
     }
   }
 
-  // --- CONTROLE DE CAIXA ---
-  async function handleCashierAction(action?: "OPEN" | "CLOSE" | "PREVIEW") {
-    const currentAction = action || cashierAction;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/pdv/cashier", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: currentAction,
-          openingBalance: parseFloat(openingBalance || "0")
-        })
-      });
-      const data = await res.json();
+  function printReceipt(order: any) {
+    const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+    
+    const html = `
+      <html><head><title>Recibo #${order.id.slice(-4).toUpperCase()}</title>
+      <style>
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 280px; padding: 10px; color: #000; }
+        .text-center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 16px; }
+        .divisor { border-top: 1px dashed #000; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; } td { padding: 2px 0; }
+        .total-row { font-size: 14px; font-weight: bold; }
+      </style>
+      </head><body>
+      <div class="text-center"><div class="bold large">${store?.name || "LOJA"}</div></div>
+      <div class="divisor"></div>
+      <div class="text-center bold">RECIBO DE VENDA</div>
+      <div class="text-center" style="font-size: 10px;">${new Date().toLocaleString("pt-BR")}</div>
+      <div class="divisor"></div>
+      <div>CLIENTE: ${order.customerName || "Venda Balcão"}</div>
+      <div class="divisor"></div>
+      <table>
+        <tr class="bold"><td>ITEM</td><td align="right">TOTAL</td></tr>
+        ${order.items?.map((i: any) => `
+          <tr><td>${i.quantity}x ${i.productName || 'Produto'}</td><td align="right">${fmt(i.price * i.quantity)}</td></tr>
+        `).join("") || cart.map((i: any) => `
+          <tr><td>${i.qty}x ${i.name}</td><td align="right">${fmt(i.price * i.qty)}</td></tr>
+        `).join("")}
+      </table>
+      <div class="divisor"></div>
+      <table>
+        <tr><td>SUBTOTAL</td><td align="right">${fmt(order.subtotal || subtotal)}</td></tr>
+        ${order.cardSurcharge > 0 ? `<tr><td>ACRESCIMO CARTAO</td><td align="right">${fmt(order.cardSurcharge)}</td></tr>` : ""}
+        ${order.discount > 0 ? `<tr><td>DESCONTO</td><td align="right">-${fmt(order.discount)}</td></tr>` : ""}
+        <tr class="total-row"><td>TOTAL</td><td align="right">${fmt(order.total)}</td></tr>
+      </table>
+      <div class="divisor"></div>
+      <div>PAGAMENTO: ${order.paymentMethod}</div>
+      <div class="divisor"></div>
+      <div class="text-center" style="font-size: 10px; margin-top: 10px;">OBRIGADO PELA PREFERENCIA!</div>
+      </body></html>
+    `;
 
-      if (!res.ok) {
-        toast.error(data.error || "Erro ao gerenciar caixa");
-        return;
-      }
-
-      if (currentAction === "PREVIEW") {
-        setCloseReport(data.report);
-        setShowCloseModal(true);
-        return;
-      }
-
-      if (currentAction === "OPEN") {
-        setCashier(data.cashier);
-        toast.success("Caixa aberto com sucesso!");
-        setIsCashierModalOpen(false);
-      } else {
-        setCashier(null);
-        toast.success("Caixa fechado com sucesso!");
-        setShowCloseConfirm(false);
-        setCloseReport(null);
-        setShowCloseModal(false);
-        setIsCashierModalOpen(false);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao atualizar caixa");
-    } finally {
-      setLoading(true);
-      fetchData();
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
     }
   }
 
@@ -324,7 +352,6 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
              </div>
            </div>
            
-           <div className="flex items-center gap-2">
              <button 
                onClick={openSalesPanel}
                className="px-4 py-2 font-black  text-[10px] tracking-widest transition-all rounded-none border-2 border-slate-700 text-slate-300 hover:bg-slate-800 flex items-center gap-2"
@@ -332,20 +359,7 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                <ClipboardList size={14} />
                <span className="hidden sm:inline">Vendas</span>
              </button>
-             <button 
-               onClick={() => {
-                 if (cashier) {
-                   handleCashierAction("PREVIEW");
-                 } else {
-                   setCashierAction("OPEN");
-                   setIsCashierModalOpen(true);
-                 }
-               }}
-               className={`px-4 py-2 font-black  text-[10px] tracking-widest transition-all rounded-none border-2 ${cashier ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-green-500 text-green-400 hover:bg-green-500/10'}`}
-             >
-               {cashier ? "Fechar Caixa" : "Abrir Caixa"}
-             </button>
-           </div>
+
         </div>
 
         {/* Barra principal de busca / BARRAS */}

@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       }))
     }));
 
-    return NextResponse.json({ products: parsedProducts, cashier });
+    return NextResponse.json({ products: parsedProducts, cashier, store });
   } catch (error: any) {
     return NextResponse.json({ error: "Erro ao carregar dados", details: error.message }, { status: 500 });
   }
@@ -55,15 +55,6 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { storeId, cart, customerName, customerPhone, paymentMethod, total, discount, subtotal } = body;
-
-    // Verificar caixa
-    const openSession = await prisma.cashiersession.findFirst({
-      where: { storeId, status: "OPEN" }
-    });
-
-    if (!openSession) {
-      return NextResponse.json({ error: "Caixa está fechado. Abra o caixa primeiro." }, { status: 400 });
-    }
 
     // Criar o pedido (RETAIL)
     const order = await prisma.order.create({

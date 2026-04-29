@@ -13,6 +13,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'),
       partition: 'persist:pedeue-session'
     },
     icon: path.join(__dirname, 'assets/icon.png'),
@@ -78,8 +79,14 @@ app.on('activate', () => {
 
 // Lógica para listar impressoras
 ipcMain.handle('get-printers', async () => {
-  const win = BrowserWindow.getFocusedWindow() || mainWindow;
-  return win ? win.webContents.getPrintersAsync() : [];
+  try {
+    const win = mainWindow || BrowserWindow.getAllWindows()[0];
+    if (!win) return [];
+    return await win.webContents.getPrintersAsync();
+  } catch (error) {
+    console.error("Erro ao listar impressoras no processo principal:", error);
+    return [];
+  }
 });
 
 // Auto-start (Iniciar com o Windows)

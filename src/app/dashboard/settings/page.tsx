@@ -23,7 +23,9 @@ import {
   ShoppingBag,
   Box,
   AlertCircle,
-  Banknote
+  Banknote,
+  Percent,
+  CreditCard
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Header } from "@/components/Header";
@@ -64,7 +66,10 @@ export default function SettingsPage() {
     pixEnabled: false,
     pixMerchantName: "",
     pixMerchantCity: "",
-    freeDeliveryThreshold: 0
+    freeDeliveryThreshold: 0,
+    cardSurchargeType: "PERCENT",
+    debitSurchargeValue: 0,
+    creditSurchargeValue: 0
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -371,7 +376,81 @@ export default function SettingsPage() {
                      <textarea disabled={isExpired} className="input-field h-32 resize-none disabled:opacity-50 disabled:cursor-not-allowed" value={formData.description || ""} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Fale um pouco sobre sua loja..." />
                   </div>
 
-                  <div className="space-y-4 pt-6 border-t border-slate-50">
+                   </div>
+                   
+                   <div className="space-y-6 pt-10 border-t border-slate-50">
+                      <div>
+                         <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+                           <CreditCard size={18} className="text-purple-500" />
+                           Taxas de Acréscimo no Cartão
+                         </h3>
+                         <p className="text-[10px] text-slate-400 font-medium">Configure cobranças adicionais para pagamentos em cartão.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Tipo de Acréscimo</label>
+                            <div className="flex bg-slate-50 p-1 rounded-2xl border border-slate-100">
+                               <button 
+                                 type="button"
+                                 onClick={() => setFormData({...formData, cardSurchargeType: 'PERCENT'})}
+                                 className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${formData.cardSurchargeType === 'PERCENT' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-400'}`}
+                               >
+                                 Porcentagem (%)
+                               </button>
+                               <button 
+                                 type="button"
+                                 onClick={() => setFormData({...formData, cardSurchargeType: 'FIXED'})}
+                                 className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${formData.cardSurchargeType === 'FIXED' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-400'}`}
+                               >
+                                 Valor Fixo (R$)
+                               </button>
+                            </div>
+                         </div>
+
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">
+                              Acréscimo Débito {formData.cardSurchargeType === 'PERCENT' ? '(%)' : '(R$)'}
+                            </label>
+                            <div className="relative">
+                               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+                                 {formData.cardSurchargeType === 'PERCENT' ? <Percent size={16} /> : <span className="text-xs font-bold">R$</span>}
+                               </div>
+                               <input 
+                                 type="number"
+                                 step="0.01"
+                                 disabled={isExpired}
+                                 className="input-field pl-12 disabled:opacity-50" 
+                                 value={formData.debitSurchargeValue} 
+                                 onChange={e => setFormData({...formData, debitSurchargeValue: parseFloat(e.target.value || "0")})} 
+                                 placeholder="0.00" 
+                               />
+                            </div>
+                         </div>
+
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">
+                              Acréscimo Crédito {formData.cardSurchargeType === 'PERCENT' ? '(%)' : '(R$)'}
+                            </label>
+                            <div className="relative">
+                               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+                                 {formData.cardSurchargeType === 'PERCENT' ? <Percent size={16} /> : <span className="text-xs font-bold">R$</span>}
+                               </div>
+                               <input 
+                                 type="number"
+                                 step="0.01"
+                                 disabled={isExpired}
+                                 className="input-field pl-12 disabled:opacity-50" 
+                                 value={formData.creditSurchargeValue} 
+                                 onChange={e => setFormData({...formData, creditSurchargeValue: parseFloat(e.target.value || "0")})} 
+                                 placeholder="0.00" 
+                               />
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-4 pt-6 border-t border-slate-50">
                      <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Segmento da Loja (Tipo)</label>
                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[

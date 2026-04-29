@@ -169,8 +169,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
           playNotification();
           if (autoPrint) {
             added.forEach(id => {
-              const order = ordData.find((o: any) => o.id === id);
-              if (order && (order.orderType === "DELIVERY" || order.orderType === "PICKUP")) {
+              if (order && (order.orderType === "DELIVERY" || order.orderType === "PICKUP" || order.orderType === "DINING_IN")) {
                 autoPrintOrder(order, storeInfo);
               }
             });
@@ -256,17 +255,27 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
   // Busca impressoras do Electron quando o modal abrir
   useEffect(() => {
     const isElectron = typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
-    if (showSettings && isElectron && typeof (window as any).require === 'function') {
-      try {
-        const { ipcRenderer } = (window as any).require('electron');
-        ipcRenderer.invoke('get-printers').then((printers: any[]) => {
-          setAvailablePrinters(printers);
-        });
-        ipcRenderer.invoke('get-autostart').then((enabled: boolean) => {
-          setAutoStart(enabled);
-        });
-      } catch (e) {
-        console.error("Erro ao listar impressoras:", e);
+    if (showSettings && isElectron) {
+      // Prioridade para a nova API via Preload
+      if ((window as any).electronAPI) {
+         (window as any).electronAPI.getPrinters().then((printers: any[]) => {
+            setAvailablePrinters(printers);
+         });
+         (window as any).electronAPI.getAutoStart().then((enabled: boolean) => {
+            setAutoStart(enabled);
+         });
+      } 
+      // Fallback para require direto (legado)
+      else if (typeof (window as any).require === 'function') {
+        try {
+          const { ipcRenderer } = (window as any).require('electron');
+          ipcRenderer.invoke('get-printers').then((printers: any[]) => {
+            setAvailablePrinters(printers);
+          });
+          ipcRenderer.invoke('get-autostart').then((enabled: boolean) => {
+            setAutoStart(enabled);
+          });
+        } catch (e) { console.error("Erro ao listar impressoras:", e); }
       }
     }
   }, [showSettings]);
@@ -286,15 +295,23 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
 
   const refreshPrinters = () => {
     const isElectron = typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
-    if (isElectron && typeof (window as any).require === 'function') {
-      try {
-        const { ipcRenderer } = (window as any).require('electron');
-        ipcRenderer.invoke('get-printers').then((printers: any[]) => {
-          setAvailablePrinters(printers);
-          toast.success("Lista de impressoras atualizada!");
-        });
-      } catch (e) {
-        toast.error("Erro ao listar impressoras");
+    if (isElectron) {
+       if ((window as any).electronAPI) {
+          (window as any).electronAPI.getPrinters().then((printers: any[]) => {
+             setAvailablePrinters(printers);
+             toast.success("Lista de impressoras atualizada!");
+          });
+          return;
+       }
+       
+       if (typeof (window as any).require === 'function') {
+        try {
+          const { ipcRenderer } = (window as any).require('electron');
+          ipcRenderer.invoke('get-printers').then((printers: any[]) => {
+            setAvailablePrinters(printers);
+            toast.success("Lista de impressoras atualizada!");
+          });
+        } catch (e) { toast.error("Erro ao listar impressoras"); }
       }
     }
   };
@@ -463,41 +480,58 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
     return `<html><head><title>Relatório de Caixa</title>
     <style>
-      body { font-family: 'Courier New', monospace; font-size: 12px; width: 300px; padding: 10px; color: #000; }
+      body { font-family: 'Courier New', monospace; font-size: 11px; width: 300px; padding: 10px; color: #000; }
       .center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 16px; }
       .div { border-top: 1px dashed #000; margin: 8px 0; } table { width: 100%; } td { padding: 2px 0; }
-      .total { font-size: 15px; font-weight: bold; }
+      .total { font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 5px; margin-top: 10px; }
+      .impact { font-size: 9px; color: #444; font-style: italic; }
     </style></head><body>
     <div class="center bold large">${s?.name || "RELATÓRIO"}</div>
-    <div class="center" style="font-size:10px">Relatório de Fechamento de Caixa</div>
+    <div class="center" style="font-size:10px">RELATÓRIO DE FECHAMENTO</div>
     <div class="div"></div>
-    <div>Abertura: ${new Date(report.openedAt).toLocaleString("pt-BR")}</div>
-    <div>Fechamento: ${new Date(report.closedAt).toLocaleString("pt-BR")}</div>
+    <div>ABERTURA: ${new Date(report.openedAt).toLocaleString("pt-BR")}</div>
+    <div>FECHAMENTO: ${new Date(report.closedAt).toLocaleString("pt-BR")}</div>
     <div class="div"></div>
+    
+    <div class="bold">MOVIMENTAÇÃO</div>
     <table>
-      <tr><td>Total de Pedidos</td><td align="right" class="bold">${report.totalOrders}</td></tr>
+      <tr><td>Pedidos Concluídos</td><td align="right">${report.totalOrders}</td></tr>
       <tr><td>Cancelamentos</td><td align="right">${report.canceledOrders}</td></tr>
       <tr><td>Delivery</td><td align="right">${report.totalDelivery}</td></tr>
       <tr><td>Comandas (Local)</td><td align="right">${report.totalComandas}</td></tr>
     </table>
+
     <div class="div"></div>
-    <div class="bold">FORMAS DE PAGAMENTO</div>
+    <div class="bold">FINANCEIRO POR MÉTODO</div>
     <table>
-      <tr><td>Dinheiro</td><td align="right">${fmt(report.totalDinheiro)}</td></tr>
-      ${report.totalDeliveryFeesDinheiro > 0 ? `<tr style="font-size:10px;color:#555"><td>&nbsp;&nbsp;↳ Somente Taxas Entr.</td><td align="right">${fmt(report.totalDeliveryFeesDinheiro)}</td></tr>` : ""}
-      <tr><td>Cartão</td><td align="right">${fmt(report.totalCartao)}</td></tr>
+      <tr><td>DINHEIRO</td><td align="right">${fmt(report.totalDinheiro)}</td></tr>
+      <tr><td>CARTÃO</td><td align="right">${fmt(report.totalCartao)}</td></tr>
       <tr><td>PIX</td><td align="right">${fmt(report.totalPix)}</td></tr>
     </table>
-    ${report.withdrawals?.length > 0 ? `<div class="div"></div><div class="bold">RETIRADAS</div><table>${report.withdrawals.map((w: any) => `<tr><td>${w.reason}</td><td align="right">- ${fmt(w.amount)}</td></tr>`).join("")}</table>` : ""}
+
+    <div class="div"></div>
+    <div class="bold">DETALHAMENTO</div>
+    <table>
+      <tr><td>(+) Acréscimos Cartão</td><td align="right">${fmt(report.totalCardSurcharges || 0)}</td></tr>
+      <tr><td>(-) Taxas de Entrega</td><td align="right">${fmt(report.totalDeliveryFees || 0)}</td></tr>
+      <tr><td>(-) Descontos/Prêmios</td><td align="right">${fmt(report.totalDiscounts || 0)}</td></tr>
+      ${report.totalWithdrawals > 0 ? `<tr><td>(-) Retiradas (Sangria)</td><td align="right">${fmt(report.totalWithdrawals)}</td></tr>` : ""}
+    </table>
+
     <div class="div"></div>
     <table>
-      <tr><td>Total Bruto</td><td align="right">${fmt(report.totalGeral)}</td></tr>
-      ${report.totalWithdrawals > 0 ? `<tr><td>(-) Retiradas</td><td align="right">- ${fmt(report.totalWithdrawals)}</td></tr>` : ""}
+      <tr><td class="bold">TOTAL BRUTO (Vendas)</td><td align="right" class="bold">${fmt(report.totalGeral)}</td></tr>
     </table>
+    
+    <div class="center total">VALOR LÍQUIDO: ${fmt(report.totalLiquido)}</div>
+    
     <div class="div"></div>
-    <div class="center total">TOTAL LÍQUIDO: ${fmt(report.totalLiquido)}</div>
-    <div class="div"></div>
-    <div class="center" style="font-size:10px;margin-top:10px">Sistema PDV PEDEUE.COM</div>
+    <div class="center impact">
+      Impacto de Prêmios/Isenções: ${fmt(report.totalDiscounts || 0)}<br/>
+      Total de Taxas de Entrega: ${fmt(report.totalDeliveryFees || 0)}
+    </div>
+    
+    <div class="center" style="font-size:9px;margin-top:15px">Sistema PDV PEDEUE.COM</div>
     </body></html>`;
   };
 
@@ -574,7 +608,8 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
       <table>
         <tr><td>SUBTOTAL</td><td align="right">${formatCurrency(subtotal)}</td></tr>
         ${(order.orderType === "DELIVERY" || order.deliveryFee > 0) ? `<tr><td>TAXA DE ENTREGA</td><td align="right">${order.deliveryFee > 0 ? formatCurrency(order.deliveryFee) : "GRÁTIS"}</td></tr>` : ""}
-        ${discount > 0 ? `<tr><td>DESCONTO</td><td align="right">-${formatCurrency(discount)}</td></tr>` : ""}
+        ${order.cardSurcharge > 0 ? `<tr><td>ACRÉSCIMO CARTÃO</td><td align="right">${formatCurrency(order.cardSurcharge)}</td></tr>` : ""}
+        ${discount > 0 ? `<tr><td>DESCONTO/PRÊMIO</td><td align="right">-${formatCurrency(discount)}</td></tr>` : ""}
         <tr class="total-row"><td>TOTAL</td><td align="right">${formatCurrency(total)}</td></tr>
       </table>
 

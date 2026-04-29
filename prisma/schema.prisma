@@ -132,6 +132,7 @@ model order {
   isUpsell         Boolean         @default(false)
   upsellRuleId     String?
   deliveryDeadline DateTime?
+  cardSurcharge    Float           @default(0)
   customer         customer?       @relation(fields: [customerId], references: [id], map: "Order_customerId_fkey")
   driver           driver?         @relation(fields: [driverId], references: [id], map: "Order_driverId_fkey")
   store            store           @relation(fields: [storeId], references: [id], onDelete: Cascade, map: "Order_storeId_fkey")
@@ -187,6 +188,7 @@ model product {
   imageUrl      String?
   isActive      Boolean           @default(true)
   inStock       Boolean           @default(true)
+  stock         Int               @default(0)
   barcode       String?
   purchasePrice Float             @default(0)
   profitMargin  Float             @default(0)
@@ -248,6 +250,9 @@ model store {
   freeDeliveryThreshold Float                  @default(0)
   platformAffiliateId   String?
   rouletteConfig        String?                @db.LongText
+  cardSurchargeType     String                 @default("PERCENT")
+  debitSurchargeValue   Float                  @default(0)
+  creditSurchargeValue  Float                  @default(0)
   affiliates            affiliate[]
   cashiersession        cashiersession[]
   category              category[]

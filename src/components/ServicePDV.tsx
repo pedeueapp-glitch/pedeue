@@ -178,81 +178,164 @@ export default function ServicePDV({ storeId }: { storeId: string }) {
     if (cart.length === 0) return toast.error("Adicione itens para gerar o orçamento");
 
     const doc = new jsPDF() as any;
+    const primaryColor = store?.primaryColor || "#8b5cf6";
     
-    let currentY = 30;
+    // Função para converter Hex para RGB
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [139, 92, 246];
+    };
+    
+    const rgb = hexToRgb(primaryColor);
+    let currentY = 20;
 
-    // Logo (se houver)
+    // --- CABEÇALHO ---
+    // Background decorativo no topo
+    doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+    doc.rect(0, 0, 210, 40, 'F');
+
+    // Logo
     if (store?.logo) {
       try {
         const img = new Image();
+        img.crossOrigin = "Anonymous"; // Tenta evitar problemas de CORS
         img.src = store.logo;
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
           img.onload = resolve;
-          img.onerror = reject;
+          img.onerror = resolve; // Continua mesmo se a logo falhar
         });
-        const maxWidth = 50;
-        const maxHeight = 30;
-        let width = img.width;
-        let height = img.height;
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width *= ratio;
-        height *= ratio;
         
-        doc.addImage(img, 'PNG', 20, 20, width, height);
-        currentY = 20 + height + 10;
-      } catch (e) {
-        console.error("Erro ao carregar logo para PDF", e);
-      }
+        if (img.complete && img.naturalWidth > 0) {
+          const maxWidth = 35;
+          const maxHeight = 25;
+          let width = img.width;
+          let height = img.height;
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width *= ratio;
+          height *= ratio;
+          
+          // Adiciona um círculo branco atrás da logo para destaque
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(15, 7, 45, 26, 3, 3, 'F');
+          doc.addImage(img, 'PNG', 15 + (45 - width) / 2, 7 + (26 - height) / 2, width, height);
+        }
+      } catch (e) { console.error("Erro ao carregar logo", e); }
     }
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(15, 23, 42); // Navy
-    doc.text(store?.name || "Orçamento de Serviço", 20, currentY);
+    // Título do Documento
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.text("ORÇAMENTO", 200, 25, { align: "right" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`#${Math.floor(1000 + Math.random() * 9000)} | ${new Date().toLocaleDateString('pt-BR')}`, 200, 32, { align: "right" });
+
+    currentY = 55;
+
+    // --- INFORMAÇÕES DA LOJA E CLIENTE ---
+    doc.setTextColor(60, 60, 60);
     
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139); // Slate
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, currentY + 10);
-    doc.text(`Prazo de Entrega: ${deadline ? new Date(deadline).toLocaleDateString('pt-BR') : "A combinar"}`, 20, currentY + 15);
-
-    // Cliente
+    // Loja (Emitente)
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Cliente:", 20, currentY + 30);
+    doc.text("EMITENTE", 20, currentY);
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(selectedCustomer.name, 20, currentY + 37);
-    doc.text(selectedCustomer.phone, 20, currentY + 42);
-    if (selectedCustomer.street) {
-        doc.text(`${selectedCustomer.street}, ${selectedCustomer.number} - ${selectedCustomer.neighborhood}`, 20, currentY + 47);
+    doc.text(store?.name || "Nossa Loja", 20, currentY + 7);
+    doc.text(`WhatsApp: ${store?.whatsapp || "N/A"}`, 20, currentY + 12);
+    if (store?.description) {
+        const splitDesc = doc.splitTextToSize(store.description, 80);
+        doc.text(splitDesc, 20, currentY + 17);
     }
 
-    // Tabela de Itens
+    // Cliente (Destinatário)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("CLIENTE", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(selectedCustomer.name, 120, currentY + 7);
+    doc.text(`Tel: ${selectedCustomer.phone}`, 120, currentY + 12);
+    if (selectedCustomer.street) {
+      const addr = `${selectedCustomer.street}, ${selectedCustomer.number}`;
+      const addr2 = `${selectedCustomer.neighborhood}`;
+      doc.text(addr, 120, currentY + 17);
+      doc.text(addr2, 120, currentY + 22);
+    }
+
+    currentY += 40;
+
+    // Prazo de Entrega
+    doc.setDrawColor(rgb[0], rgb[1], rgb[2]);
+    doc.setLineWidth(0.5);
+    doc.line(20, currentY, 190, currentY);
+    doc.setFont("helvetica", "bold");
+    doc.text(`PREVISÃO DE ENTREGA: ${deadline ? new Date(deadline).toLocaleDateString('pt-BR') : "A combinar"}`, 20, currentY + 10);
+    currentY += 20;
+
+    // --- TABELA DE ITENS ---
     const tableData = cart.map(i => [
         i.name,
         i.quantity.toString(),
-        `R$ ${i.price.toFixed(2)}`,
-        `R$ ${(i.price * i.quantity).toFixed(2)}`
+        `R$ ${i.price.toFixed(2).replace('.', ',')}`,
+        `R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}`
     ]);
 
     autoTable(doc, {
-      startY: currentY + 60,
-      head: [['Produto/Serviço', 'Qtd', 'Preço Unit.', 'Total']],
+      startY: currentY,
+      head: [['Descrição do Serviço/Produto', 'Qtd', 'Vlr. Unitário', 'Total']],
       body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [139, 92, 246] }, // Purple
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [rgb[0], rgb[1], rgb[2]],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'right' },
+        3: { halign: 'right' }
+      },
+      styles: { fontSize: 9, cellPadding: 5 },
       margin: { left: 20, right: 20 }
     });
 
-    // Totais
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    // --- TOTAIS E ASSINATURA ---
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Caixa de Resumo
+    doc.setFillColor(248, 250, 252); // Slate-50
+    doc.roundedRect(120, finalY - 5, 70, 35, 3, 3, 'F');
+    
     doc.setFontSize(10);
-    doc.text(`Subtotal: R$ ${subtotal.toFixed(2)}`, 140, finalY);
-    doc.text(`Desconto: R$ ${parseFloat(discount).toFixed(2)}`, 140, finalY + 7);
-    doc.setFontSize(14);
-    doc.text(`TOTAL: R$ ${total.toFixed(2)}`, 140, finalY + 17);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Subtotal:", 125, finalY + 5);
+    doc.text(`R$ ${subtotal.toFixed(2).replace('.', ',')}`, 185, finalY + 5, { align: "right" });
+    
+    doc.text("Desconto:", 125, finalY + 12);
+    doc.text(`- R$ ${parseFloat(discount || "0").toFixed(2).replace('.', ',')}`, 185, finalY + 12, { align: "right" });
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+    doc.text("TOTAL:", 125, finalY + 22);
+    doc.text(`R$ ${total.toFixed(2).replace('.', ',')}`, 185, finalY + 22, { align: "right" });
+
+    // Rodapé / Assinatura
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(60, pageHeight - 30, 150, pageHeight - 30);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Assinatura do Cliente", 105, pageHeight - 25, { align: "center" });
+    
+    doc.setFontSize(7);
+    doc.text("Este documento é um orçamento válido por 7 dias.", 105, pageHeight - 10, { align: "center" });
 
     doc.save(`Orcamento_${selectedCustomer.name.replace(/\s+/g, '_')}.pdf`);
-    toast.success("PDF gerado com sucesso!");
+    toast.success("Orçamento gerado com sucesso!");
   };
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
