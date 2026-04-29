@@ -106,6 +106,17 @@ export async function POST(req: NextRequest) {
         items: true
       }
     });
+
+    // Limpar carrinho abandonado se houver trackingId ou pelo telefone
+    try {
+      if (body.trackingId) {
+        await prisma.abandonedcart.delete({ where: { id: body.trackingId } }).catch(() => {});
+      } else if (customer?.phone) {
+        await prisma.abandonedcart.deleteMany({ 
+          where: { customerPhone: customer.phone, storeId } 
+        }).catch(() => {});
+      }
+    } catch (e) {}
     
     if (upsellRuleId) {
        await prisma.upsell_rule.update({

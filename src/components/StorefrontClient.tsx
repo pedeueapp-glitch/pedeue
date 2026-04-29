@@ -171,6 +171,9 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   const [hasSpun, setHasSpun] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
 
+  const [trackingId, setTrackingId] = useState<string | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
+
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount, setStoreSlug, getItemQty } = useCartStore();
   
   const handleRouletteWin = (prize: any) => {
@@ -432,7 +435,8 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
           change: changeAmount,
           observations: orderObservations,
           affiliateCode,
-          upsellRuleId: activeUpsellRuleId
+          upsellRuleId: activeUpsellRuleId,
+          trackingId: trackingId
         })
       });
 
@@ -507,6 +511,40 @@ export default function StorefrontClient({ initialStore, slug }: { initialStore:
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Abandoned Cart Tracking
+  useEffect(() => {
+    if (!store?.id || items.length === 0) return;
+
+    const timeout = setTimeout(async () => {
+      const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      try {
+        const res = await fetch("/api/tracking/abandoned-cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: trackingId,
+            storeId: store.id,
+            customerName: customer?.name || null,
+            customerPhone: phoneInput || null,
+            items: items,
+            total: getTotal(),
+            lastStep: checkoutStep.toUpperCase(),
+            exitScreen: cartOpen ? "CART" : (checkoutStep === "identify" ? "MENU" : "CHECKOUT"),
+            durationSeconds: duration
+          })
+        });
+        const data = await res.json();
+        if (data.id && !trackingId) {
+          setTrackingId(data.id);
+        }
+      } catch (e) {
+        console.warn("Tracking failed", e);
+      }
+    }, 5000); // 5s debounce
+
+    return () => clearTimeout(timeout);
+  }, [items, checkoutStep, customer, store?.id, cartOpen, phoneInput, trackingId, getTotal]);
 
   useEffect(() => {
     if (selectedProduct || cartOpen || showUpsell || showStoreInfo) {

@@ -35,6 +35,7 @@ const TYPE_LABELS: any = {
 const getTabFilters = (storeType: string) => {
   const tabs = [
     { id: "ALL", label: "Todos" },
+    { id: "ABANDONED", label: "Carrinhos 🛒" }
   ];
 
   if (storeType === "SHOWCASE") {
@@ -74,6 +75,8 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
 
   // Caixa
   const [cashier, setCashier] = useState<any>(null);
+  const [abandonedCarts, setAbandonedCarts] = useState<any[]>([]);
+  const [selectedAbandonedCart, setSelectedAbandonedCart] = useState<any>(null);
   const [cashierLoading, setCashierLoading] = useState(true);
   const [isToday, setIsToday] = useState(false);
   const [openingBalance, setOpeningBalance] = useState("0");
@@ -150,15 +153,16 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
         ? `?cashierFrom=${encodeURIComponent(openedAt)}`
         : "";
 
-      const [resOrders, resDrivers, resTables, resWaiters, resProducts] = await Promise.all([
+      const [resOrders, resDrivers, resTables, resWaiters, resProducts, resAbandoned] = await Promise.all([
         fetch(`/api/orders${cashierQuery}`),
         fetch("/api/drivers"),
         fetch("/api/tables"),
         fetch("/api/waiters"),
         fetch("/api/products"),
+        fetch("/api/pdv/abandoned-carts"),
       ]);
-      const [ordData, drData, tbData, waData, prData] = await Promise.all([
-        resOrders.json(), resDrivers.json(), resTables.json(), resWaiters.json(), resProducts.json()
+      const [ordData, drData, tbData, waData, prData, abData] = await Promise.all([
+        resOrders.json(), resDrivers.json(), resTables.json(), resWaiters.json(), resProducts.json(), resAbandoned.json()
       ]);
 
       if (Array.isArray(ordData)) {
@@ -198,6 +202,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
       setTables(Array.isArray(tbData) ? tbData : (tbData?.tables || []));
       setWaiters(Array.isArray(waData) ? waData : []);
       setProducts(Array.isArray(prData) ? prData : []);
+      setAbandonedCarts(Array.isArray(abData) ? abData : []);
     } catch (e) {
       console.error("Erro ao carregar PDV:", e);
     } finally {
@@ -1229,6 +1234,29 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                 <ShoppingBag size={30} className="text-slate-500" />
                 <p className="text-[10px] font-black text-slate-500 ">Sem pedidos</p>
               </div>
+            ) : tabFilter === "ABANDONED" ? (
+              abandonedCarts.map(cart => (
+                <button
+                  key={cart.id}
+                  onClick={() => setSelectedAbandonedCart(cart)}
+                  className="w-full text-left p-3 rounded-xl border bg-amber-50/50 border-amber-200/50 hover:bg-amber-50 transition-all relative overflow-hidden"
+                >
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+                  <div className="pl-3 space-y-1">
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-xs text-amber-700">🛒 Carrinho Abandonado</span>
+                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white">
+                        {cart.lastStep}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-700">{cart.customerName || "Visitante Anônimo"}</p>
+                    <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold">
+                       <span>{new Date(cart.abandonedAt).toLocaleTimeString()}</span>
+                       <span>{formatCurrency(cart.total)}</span>
+                    </div>
+                  </div>
+                </button>
+              ))
             ) : filteredOrders.map(order => {
               const isLocal = order.orderType === "DINING_IN";
               const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
@@ -2695,6 +2723,81 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
                   Finalizar e Fechar Comanda
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL: DETALHES DO CARRINHO ABANDONADO */}
+      {selectedAbandonedCart && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[150] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-8 border-white">
+            <div className="p-8 border-b border-dashed border-slate-100 flex justify-between items-center bg-amber-50/50">
+               <div>
+                  <h3 className="font-black text-slate-900 text-xl tracking-tight mb-1">Análise de Abandono</h3>
+                  <p className="text-[10px] text-amber-600 font-black uppercase tracking-[0.2em]">
+                    Sessão #{selectedAbandonedCart.id.slice(-4).toUpperCase()}
+                  </p>
+               </div>
+               <button
+                 onClick={() => setSelectedAbandonedCart(null)}
+                 className="p-3 bg-white hover:bg-slate-50 text-slate-400 rounded-2xl transition-all border border-slate-200 shadow-sm"
+               >
+                 <X size={20} />
+               </button>
+            </div>
+
+            <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto no-scrollbar">
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Dados do Cliente</p>
+                     <p className="text-lg font-black text-slate-900">{selectedAbandonedCart.customerName || "Anônimo"}</p>
+                     <p className="text-xs font-bold text-slate-400 mt-1">{selectedAbandonedCart.customerPhone || "Telefone não capturado"}</p>
+                  </div>
+                  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Ponto de Desistência</p>
+                     <p className="text-lg font-black text-red-500 uppercase">{selectedAbandonedCart.lastStep}</p>
+                     <p className="text-xs font-bold text-slate-400 mt-1">Permanência: {selectedAbandonedCart.durationSeconds} segundos</p>
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Itens no Carrinho</h4>
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 space-y-3">
+                     {JSON.parse(selectedAbandonedCart.items || '[]').map((item: any, i: number) => (
+                       <div key={i} className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-slate-700">{item.quantity}x {item.name}</span>
+                          <span className="font-black text-slate-900">{formatCurrency(item.price * item.quantity)}</span>
+                       </div>
+                     ))}
+                     <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+                        <span className="text-sm font-black text-slate-900">Total do Carrinho</span>
+                        <span className="text-sm font-black text-purple-600">{formatCurrency(selectedAbandonedCart.total)}</span>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">🤖 Inteligência de Vendas</h4>
+                  <div className="bg-purple-900 rounded-[2rem] p-8 text-white space-y-4">
+                     <div>
+                        <p className="text-[10px] font-black text-purple-300 uppercase tracking-widest mb-2">Por que abandonou?</p>
+                        <p className="text-sm font-medium leading-relaxed">
+                          {selectedAbandonedCart.lastStep === "PAYMENT" ? "O cliente desistiu na hora de pagar. Provavelmente não encontrou o método preferido ou achou o checkout complexo." : 
+                           selectedAbandonedCart.lastStep === "CHECKOUT" ? "O abandono ocorreu após ver taxas ou prazos. Considere revisar o valor da entrega." : 
+                           "O cliente estava apenas explorando o cardápio e não avançou para a finalização."}
+                        </p>
+                     </div>
+                     <div className="pt-4 border-t border-white/10">
+                        <p className="text-[10px] font-black text-purple-300 uppercase tracking-widest mb-2">Sugestão de Recuperação</p>
+                        <div className="flex items-center gap-3">
+                           <Sparkles size={20} className="text-amber-400" />
+                           <p className="text-sm font-black">
+                             {selectedAbandonedCart.customerPhone ? "Envie um cupom de 10% via WhatsApp para converter agora!" : "Tente simplificar o processo de identificação inicial."}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
             </div>
           </div>
         </div>

@@ -272,6 +272,7 @@ model store {
   table                 table[]
   upsell_rules          upsell_rule[]
   waiter                waiter[]
+  abandoned_carts       abandonedcart[]
 
   @@index([platformAffiliateId])
 }
@@ -579,6 +580,24 @@ model upsell_rule {
   @@index([storeId])
 }
 
+model abandonedcart {
+  id              String   @id @default(cuid())
+  storeId         String
+  customerName    String?
+  customerPhone   String?
+  items           String   @db.LongText // JSON string
+  total           Float
+  lastStep        String   @default("CART") // CART, IDENTIFICATION, CHECKOUT, PAYMENT
+  exitScreen      String?
+  durationSeconds Int      @default(0)
+  abandonedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  store           store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
 enum subscription_status {
   ACTIVE
   CANCELED
@@ -629,3 +648,4 @@ enum ticket_priority {
   HIGH
   URGENT
 }
+
