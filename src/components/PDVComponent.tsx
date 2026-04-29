@@ -382,10 +382,30 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
         socket.on("order-received", (data) => {
           console.log("WebSocket: Novo pedido recebido", data);
           toast.success("Novo pedido recebido!");
-          // Pequeno delay para garantir que o banco processou tudo
+          
+          // Toca som imediatamente
+          playNotification();
+
+          // Se o objeto do pedido veio no socket, já atualiza a UI instantaneamente
+          if (data.order) {
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === data.order.id);
+              if (exists) return prev;
+              const newOrders = [data.order, ...prev];
+              prevOrdersRef.current = newOrders.map(o => o.id);
+              return newOrders;
+            });
+
+            // Se impressão automática ativa, já imprime na hora
+            if (autoPrint && (data.order.orderType === "DELIVERY" || data.order.orderType === "PICKUP" || data.order.orderType === "DINING_IN")) {
+              autoPrintOrder(data.order, storeInfo);
+            }
+          }
+
+          // Delay maior para fetchData não conflitar e atualizar totais/outros dados
           setTimeout(() => {
             fetchData();
-          }, 1000);
+          }, 2000);
         });
 
         socket.on("connect_error", (err: any) => {
