@@ -169,6 +169,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
           playNotification();
           if (autoPrint) {
             added.forEach(id => {
+              const order = ordData.find((o: any) => o.id === id);
               if (order && (order.orderType === "DELIVERY" || order.orderType === "PICKUP" || order.orderType === "DINING_IN")) {
                 autoPrintOrder(order, storeInfo);
               }
@@ -202,7 +203,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     } finally {
       setLoading(false);
     }
-  }, [autoPrint]); // Removido storeInfo para evitar loop
+  }, [autoPrint, cashier, storeInfo, selectedOrder, detailOrder]);
 
   // Retorna o cashier carregado para uso imediato sem depender do estado
   const fetchCashier = useCallback(async () => {
@@ -381,7 +382,10 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
         socket.on("order-received", (data) => {
           console.log("WebSocket: Novo pedido recebido", data);
           toast.success("Novo pedido recebido!");
-          fetchData();
+          // Pequeno delay para garantir que o banco processou tudo
+          setTimeout(() => {
+            fetchData();
+          }, 1000);
         });
 
         socket.on("connect_error", (err: any) => {
@@ -401,7 +405,7 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
         socketRef.current = null;
       }
     };
-  }, [storeInfo?.id, fetchData]);
+  }, [storeInfo?.id]); // Removido fetchData para evitar reconexões constantes
 
   // Atalhos de Teclado
   useEffect(() => {
@@ -482,10 +486,11 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
     return `<html><head><title>Relatório de Caixa</title>
     <style>
-      body { font-family: 'Courier New', monospace; font-size: 11px; width: 300px; padding: 10px; color: #000; }
-      .center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 16px; }
+      @page { margin: 0; }
+      body { font-family: 'Courier New', monospace; font-size: 11px; width: 180px; padding: 2px; margin: 0; color: #000; }
+      .center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 14px; }
       .div { border-top: 1px dashed #000; margin: 8px 0; } table { width: 100%; } td { padding: 2px 0; }
-      .total { font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 5px; margin-top: 10px; }
+      .total { font-size: 12px; font-weight: bold; border: 1px solid #000; padding: 5px; margin-top: 10px; }
       .impact { font-size: 9px; color: #444; font-style: italic; }
     </style></head><body>
     <div class="center bold large">${s?.name || "RELATÓRIO"}</div>
@@ -546,17 +551,18 @@ export default function PDVComponent({ fullscreen = false }: PDVComponentProps) 
     return `
       <html><head><title>Comanda #${order.orderNumber || order.id.slice(-4).toUpperCase()}</title>
       <style>
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 280px; padding: 10px; color: #000; }
+        @page { margin: 0; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: 180px; padding: 2px; margin: 0; color: #000; }
         .text-center { text-align: center; }
         .bold { font-weight: bold; }
-        .large { font-size: 16px; }
+        .large { font-size: 14px; }
         .divisor { border-top: 1px dashed #000; margin: 8px 0; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 2px 0; vertical-align: top; }
-        .item-row { font-size: 11px; }
-        .choices { font-size: 9px; margin-left: 10px; font-style: italic; }
-        .notes { font-size: 9px; margin-left: 10px; font-weight: bold; }
-        .total-row { font-size: 14px; font-weight: bold; }
+        .item-row { font-size: 10px; }
+        .choices { font-size: 9px; margin-left: 5px; font-style: italic; }
+        .notes { font-size: 9px; margin-left: 5px; font-weight: bold; }
+        .total-row { font-size: 12px; font-weight: bold; }
       </style>
       </head><body>
       

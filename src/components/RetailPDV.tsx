@@ -250,11 +250,12 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
     const html = `
       <html><head><title>Recibo #${order.id.slice(-4).toUpperCase()}</title>
       <style>
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 280px; padding: 10px; color: #000; }
-        .text-center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 16px; }
+        @page { margin: 0; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: 180px; padding: 2px; margin: 0; color: #000; }
+        .text-center { text-align: center; } .bold { font-weight: bold; } .large { font-size: 14px; }
         .divisor { border-top: 1px dashed #000; margin: 8px 0; }
         table { width: 100%; border-collapse: collapse; } td { padding: 2px 0; }
-        .total-row { font-size: 14px; font-weight: bold; }
+        .total-row { font-size: 12px; font-weight: bold; }
       </style>
       </head><body>
       <div class="text-center"><div class="bold large">${store?.name || "LOJA"}</div></div>
@@ -916,10 +917,11 @@ export default function RetailPDV({ storeId }: RetailPDVProps) {
                                     <head>
                                         <title>Relatorio de Fechamento</title>
                                         <style>
-                                            body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 14px; line-height: 1.4; color: #000; }
-                                            .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-                                            .row { display: flex; justify-content: space-between; margin: 5px 0; }
-                                            .total { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 16px; }
+                                            @page { margin: 0; }
+                                            body { font-family: 'Courier New', Courier, monospace; padding: 5px; width: 180px; font-size: 11px; line-height: 1.2; color: #000; margin: 0; }
+                                            .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+                                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                            .total { border-top: 1px dashed #000; margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 12px; }
                                             @media print { .no-print { display: none; } }
                                         </style>
                                     </head>

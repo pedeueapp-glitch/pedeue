@@ -140,18 +140,19 @@ export default function PedidosRelatorioPage() {
         <head>
           <title>Relatório de Fechamento</title>
           <style>
-            body { font-family: sans-serif; padding: 40px; color: #333; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-            .card { padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
-            .card-title { font-size: 10px; font-weight: bold; color: #999; text-transform: uppercase; margin-bottom: 5px; }
-            .card-value { font-size: 18px; font-weight: bold; color: #333; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th { text-align: left; background: #eee; padding: 10px; font-size: 12px; }
-            .table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; }
-            .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #999; }
-            .total-liquido { background: #333 !important; color: #fff !important; }
-            .total-liquido .card-value { color: #fff !important; }
+            @page { margin: 0; }
+            body { font-family: 'Courier New', Courier, monospace; padding: 5px; width: 180px; font-size: 10px; line-height: 1.2; color: #000; margin: 0; }
+            .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+            .header h1 { font-size: 14px; margin: 0; }
+            .header p { margin: 2px 0; font-size: 9px; }
+            .grid { display: block; margin-bottom: 10px; }
+            .card { padding: 4px 0; border-bottom: 1px solid #eee; }
+            .card-title { font-size: 8px; font-weight: bold; color: #666; text-transform: uppercase; }
+            .card-value { font-size: 12px; font-weight: bold; color: #000; }
+            .footer { margin-top: 15px; text-align: center; font-size: 8px; color: #666; }
+            .total-liquido { background: #000 !important; color: #fff !important; padding: 5px !important; margin-top: 10px; }
+            .total-liquido .card-title { color: #eee !important; }
+            .total-liquido .card-value { color: #fff !important; font-size: 14px; }
           </style>
         </head>
         <body>
@@ -249,25 +250,36 @@ export default function PedidosRelatorioPage() {
   const printReport = () => {
     const w = window.open("", "_blank");
     if (!w) return;
-    const rows = filteredOrders.map(o => `
-      <tr>
-        <td>#${o.orderNumber || o.id.slice(-4).toUpperCase()}</td>
-        <td>${new Date(o.createdAt).toLocaleString("pt-BR")}</td>
-        <td>${escapeHTML(o.customerName)}</td>
-        <td>${TYPE_LABELS[o.orderType] || o.orderType}</td>
-        <td>${escapeHTML(o.paymentMethod || "-")}</td>
-        <td>${STATUS_LABELS[o.status]?.label || o.status}</td>
-        <td align="right">${formatCurrency(o.total)}</td>
-      </tr>
-    `).join("");
     w.document.write(`<html><head><title>Relatório de Pedidos</title>
-      <style>body{font-family:Arial;font-size:11px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:4px 8px}th{background:#f3f4f6;font-weight:bold}.total{font-size:14px;font-weight:bold;margin-top:10px}</style>
+      <style>
+        @page { margin: 0; }
+        body{ font-family: 'Courier New', Courier, monospace; font-size: 9px; width: 180px; padding: 2px; margin: 0; color: #000; }
+        table{ width: 100%; border-collapse: collapse; margin-top: 5px; }
+        td,th{ border-bottom: 1px solid #ddd; padding: 2px 0; text-align: left; }
+        th{ font-weight: bold; font-size: 8px; text-transform: uppercase; }
+        .total{ font-size: 10px; font-weight: bold; margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; }
+        .header-rep { text-align: center; margin-bottom: 5px; }
+        .header-rep h2 { font-size: 12px; margin: 0; }
+      </style>
       </head><body>
-      <h2>Relatório de Pedidos — ${formatDate(dateFrom)} a ${formatDate(dateTo)}</h2>
-      <table><thead><tr><th>#</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Pagamento</th><th>Status</th><th>Total</th></tr></thead>
-      <tbody>${rows}</tbody></table>
-      <div class="total" style="margin-top:16px">
-        Total Geral: ${formatCurrency(totalGeral)} | Dinheiro: ${formatCurrency(totalDinheiro)} | Cartão: ${formatCurrency(totalCartao)} | PIX: ${formatCurrency(totalPix)}
+      <div class="header-rep">
+        <h2>RELATÓRIO DE PEDIDOS</h2>
+        <p style="font-size: 8px;">${formatDate(dateFrom)} a ${formatDate(dateTo)}</p>
+      </div>
+      <table><thead><tr><th>#</th><th>Data</th><th>Tipo</th><th>Total</th></tr></thead>
+      <tbody>${filteredOrders.map(o => `
+        <tr>
+          <td>#${o.orderNumber || o.id.slice(-4).toUpperCase()}</td>
+          <td>${formatDate(o.createdAt)} ${formatTime(o.createdAt)}</td>
+          <td>${TYPE_LABELS[o.orderType] || o.orderType}</td>
+          <td align="right">${formatCurrency(o.total)}</td>
+        </tr>
+      `).join("")}</tbody></table>
+      <div class="total">
+        TOTAL GERAL: ${formatCurrency(totalGeral)}<br/>
+        DINHEIRO: ${formatCurrency(totalDinheiro)}<br/>
+        CARTÃO: ${formatCurrency(totalCartao)}<br/>
+        PIX: ${formatCurrency(totalPix)}
       </div>
       </body></html>`);
     w.document.close();

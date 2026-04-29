@@ -703,10 +703,17 @@ export default function ServicePDV({ storeId }: { storeId: string }) {
                                 <html>
                                     <head>
                                         <title>Relatorio PDV Servicos</title>
-                                        <style>body { font-family: sans-serif; padding: 40px; line-height: 1.6; }</style>
+                                        <style>
+                                            @page { margin: 0; }
+                                            body { font-family: 'Courier New', Courier, monospace; padding: 5px; width: 180px; font-size: 11px; line-height: 1.2; color: #000; margin: 0; }
+                                            h1 { font-size: 14px; text-align: center; margin-bottom: 5px; }
+                                            p { margin: 2px 0; }
+                                            hr { border: 0; border-top: 1px dashed #000; margin: 5px 0; }
+                                            h2 { font-size: 12px; margin-top: 10px; }
+                                        </style>
                                     </head>
                                     <body>
-                                        <h1>RELATÓRIO DE FECHAMENTO - SERVIÇOS</h1>
+                                        <h1>FECHAMENTO - SERVIÇOS</h1>
                                         <p>Data: ${new Date().toLocaleString()}</p>
                                         <hr/>
                                         <p>Abertura: R$ ${closeReport.openingBalance.toFixed(2)}</p>
@@ -714,6 +721,7 @@ export default function ServicePDV({ storeId }: { storeId: string }) {
                                         <p>Dinheiro: R$ ${closeReport.cashTotal.toFixed(2)}</p>
                                         <p>Cartão: R$ ${closeReport.cardTotal.toFixed(2)}</p>
                                         <p>PIX: R$ ${closeReport.pixTotal.toFixed(2)}</p>
+                                        <hr/>
                                         <h2>Saldo Final: R$ ${(closeReport.openingBalance + closeReport.cashTotal).toFixed(2)}</h2>
                                         <script>window.print();</script>
                                     </body>
